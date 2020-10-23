@@ -1,0 +1,34 @@
+<HTML><HEAD><TITLE>Neural Net ID, random database</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<script src="id_test_random_database_main.js"></script>
+
+</HEAD>
+<BODY bgcolor="Silver" >
+<Center>
+<H2>Neural net ID test, random ciphers database using web worker</H2>
+</Center>
+
+
+<FORM name=puzzle>
+Cipher: <BR><TEXTAREA id="ciphertext" styLe="font-family:monospace" spellcheck="false" name=ciphertext rows=8 cols=85></TEXTAREA><BR>
+Stats: <BR><TEXTAREA id="cipherstats" styLe="font-family:monospace" name=cipherstats rows=12 cols=85></TEXTAREA><BR>
+<BR><BR>
+<!---
+<INPUT onclick=do_compare(); type=button value="Compare" >
+-->
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<!--
+<INPUT onclick=do_id_test(); type=button value="ID test" >
+-->
+<input type="button" value="ID test" id="do_processing">
+<INPUT onclick=do_clear(); type=button value="Clear" >
+&nbsp &nbsp &nbsp &nbsp Maximum period to try: <input type = text name=period_entry  id="period_entry" size = 3 value="10" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+</FORM>
+<br>
+<BR> <B>Directions:</B> Type or paste unknown cipher into cipher box. Click ID test button.
+Results appear in Stats box.<BR>
+ 
+</BODY></HTML>

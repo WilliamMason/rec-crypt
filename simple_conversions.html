@@ -1,0 +1,679 @@
+<html>
+<head>
+<title>Simple conversions</title>
+<style>
+.wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px;
+  grid-auto-rows: minmax(50px, auto);
+  padding: 10px;
+  max-width: 900px;
+  
+
+}
+
+
+.wrapper > div { 
+ padding: 10px;
+ background-color: LightBlue ;
+ 
+}
+
+</style>
+<script type="text/javascript">
+
+function decimate_chain(){
+    var s,i,j,n;
+    var str;
+    var chain = [], chain_len;
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    
+    chain_len = 0;
+    for (i=0;i<str.length;i++){
+        n = alpha.indexOf(str.charAt(i));
+        if ( n != -1)
+            chain[chain_len++] = str.charAt(i);
+    }
+
+    var shift = [1,3,5,7,9,11,15,17,19,21,23,25];
+    s = '';
+    for (j=0;j<shift.length;j++){
+        n = shift[j];
+        s += '\n';
+        for (i=0;i<n*26; i=i+n)
+            s += chain[ i % 26 ];
+    }
+    document.getElementById('output_area').value = s;
+}
+
+
+
+function extend_key(){
+    var i,indx,str;
+    var used_let = [];
+    var key_array = [];
+	var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var n,key_len;
+    var key_word = [];
+
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+
+    key_len = 0;
+    for (i=0;i<str.length;i++){
+        n = alpha.indexOf(str.charAt(i));
+        if ( n != -1)
+            key_word[key_len++] = n;
+    }
+    for (i=0;i<26;i++) used_let[i] = 0;
+    indx =0;
+    for (i=0;i<key_len;i++) {
+        if (used_let[ key_word[i] ] ==0){
+            key_array[indx++] = key_word[i];
+            used_let[ key_word[i] ] = 1;
+        }
+    }
+    for (i=0;i<26;i++)
+        if (used_let[i] == 0)
+            key_array[indx++] = i;
+    /* set up inverse key */
+    //for (i=0;i<26;i++)
+      //  inv_key[ key_array[i] ] = i;
+    str = '';
+    for (i=0;i<26;i++)
+        str += alpha.charAt(key_array[i]);
+    document.getElementById('output_area').value = str;
+}
+
+
+function do_calc(){
+	var str, alpha,caesar_shift,out_str,c,n;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	//caesar_shift = 5;
+	caesar_shift = parseInt(document.getElementById('shift_amount').value);
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			out_str += alpha.charAt( (n+caesar_shift)%26 );
+		else
+			out_str += c;
+	}
+	out_str += " (shift of "+caesar_shift+")\n\nall shifts...\n";
+	for (var j = 0;j<26;j++) {
+		for (var i=0;i<str.length;i++){
+			c = str.charAt(i);
+			n = alpha.indexOf(c);
+			if ( n>=0)
+				out_str += alpha.charAt( (n+j)%26 );
+			else
+				out_str += c;
+		}
+		out_str += "\n";
+	}
+	
+	document.getElementById('output_area').value = out_str;
+}
+
+function do_reverse(){
+	var str, out_str,i,c,n;
+	
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	out_str += '';
+    n = str.length;
+    for (i=0;i<str.length;i++)
+        out_str += str.charAt(n-i-1);
+	
+	document.getElementById('output_area').value = out_str;
+}
+
+
+function do_convert_pairs_single() {
+	var str, alpha,out_str,c,n,c1,c2,s1;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+    var let_pairs ={};
+    var state = 0;
+    var index = 0;
+    s1 = '';
+    for (var i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n== -1) continue;
+        s1 += c;
+        if (state==0){
+            c1 = c;
+            state = 1;
+        }
+        else {
+            c2 = c1+c;
+            if ( !(c2 in let_pairs) ){
+                let_pairs[c2] = index;
+                index++;
+            }
+            state = 0;
+        }
+    }
+    if ( state == 1) {
+        alert("Odd number of letters");
+        return;
+    }
+    if ( index >= 26){
+        alert("More than 26 letter pairs");
+        return;
+    }
+    out_str = '';
+    for (var i = 0;i< s1.length;i=i+2){
+        c = s1.charAt(i)+s1.charAt(i+1);
+        out_str += alpha.charAt( let_pairs[c] )
+    }
+	document.getElementById('output_area').value = out_str;
+}
+
+function do_convert_pairs_digits() {
+	var str, alpha,out_str,c,n,c1,c2,s1;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+    var let_pairs ={};
+    var state = 0;
+    var index = 0;
+    s1 = '';
+    for (var i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n== -1) continue;
+        s1 += c;
+        if (state==0){
+            c1 = c;
+            state = 1;
+        }
+        else {
+            c2 = c1+c;
+            if ( !(c2 in let_pairs) ){
+                let_pairs[c2] = index;
+                index++;
+            }
+            state = 0;
+        }
+    }
+    if ( state == 1) {
+        alert("Odd number of letters");
+        return;
+    }
+    if ( index >= 100){
+        alert("More than 100 different letter pairs");
+        return;
+    }
+    out_str = '';
+    for (var i = 0;i< s1.length;i=i+2){
+        c = s1.charAt(i)+s1.charAt(i+1);
+        if ( let_pairs[c]< 10) out_str += '0';
+        out_str += let_pairs[c]+' ';
+    }
+	document.getElementById('output_area').value = out_str;
+}
+
+function do_even_odd(){
+	var str, alpha,out_str,c,n,c1,c2,s1;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+    var even_let ={};
+    var odd_let = {};
+    var state = 0;
+    var eindex = 0;
+    var oindex = 0;
+    for (var i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n== -1) continue;
+        if (state==0){
+            if ( !(c in even_let) ){
+                even_let[c] = eindex;
+                eindex++;
+            }
+            state = 1;
+        }
+        else {
+            if ( !(c in odd_let) ){
+                odd_let[c] = oindex;
+                oindex++;
+            }
+            state = 0;
+        }
+    }
+
+    out_str += eindex+" even letters: ";
+    for (c in even_let) out_str += c;
+    out_str += '\n';
+    out_str += oindex+"  odd letters: ";
+    for (c in odd_let) out_str += c;
+    out_str += '\n';
+    
+	document.getElementById('output_area').value = out_str;
+
+}
+
+function do_convert_digits(){
+	var str, alpha,out_str,c,n,c1,c2,s1;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var digits = '0123456789';
+	out_str="";
+	str = document.getElementById('input_area').value;
+    for (var i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = digits.indexOf(c);
+        if ( n== -1) continue;
+        out_str += alpha.charAt(n);
+    }
+	document.getElementById('output_area').value = out_str;
+}
+
+function do_convert_letters_to_digits(){
+	var str, alpha,out_str,c,n,c1,c2,s1;
+	
+	alpha="ABCDEFGHIJ";
+    var digits = '0123456789';
+	out_str="";
+	str = document.getElementById('input_area').value;
+    str = str.toUpperCase();
+    for (var i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n== -1) continue;
+        out_str += digits.charAt(n);
+    }
+	document.getElementById('output_area').value = out_str;
+}
+
+
+function do_modi_convert(){
+	var str, alpha,out_str,c,n,c1,c2,s;
+    var i,la1,la2,cnt,state;
+    
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var digits = '0123456789';
+	str = document.getElementById('modi_rows').value;
+    cnt = 0;
+    for (i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = digits.indexOf(c);
+        if ( n== -1) continue;
+        if (cnt==0) {
+            la1 = c;
+            cnt=1;
+        }
+        else if (cnt==1){
+            la2 = c;
+            cnt=2;
+        }
+        else {
+            alert("Too many row labels!");
+            return;
+        }
+    }
+    if ( cnt <2) {
+        alert("Need two row labels!");
+        return;
+    }
+    if ( la1 == la2){
+        alert("Need two different row labels!");
+        return;
+    }
+    // make translation dictionary
+    var xlate = {};
+    cnt = 0;
+    for (i=0;i<10;i++) {
+        c = digits.charAt(i);
+        if ( c==la1 || c== la2) continue;
+        xlate[c] = alpha.charAt(cnt);
+        s = la1+c;
+        xlate[s] = alpha.charAt(cnt+8);
+        s = la2+c;
+        xlate[s] = alpha.charAt(cnt+16);
+        cnt++;
+    }
+    state = 0;
+	out_str="";
+    c1 = '';
+    cnt = 0;
+	str = document.getElementById('input_area').value;
+    for (i = 0; i < str.length;i++){
+        c = str.charAt(i);
+        n = digits.indexOf(c);
+        if ( n== -1) continue;
+
+        if (state == 0){
+            if ( c==la1 || c == la2){
+                c1 = c;
+                state = 1;
+            }
+            else {
+                out_str += xlate[c];
+                if ( ++cnt == 5){
+                    out_str += ' ';
+                    cnt = 0;
+                }
+            }
+        }
+        else {
+            if ( c==la1 || c == la2){
+                alert("Two adjacent row labels!");
+                return;
+            }
+            s = c1+c;
+            out_str += xlate[s];
+            if ( ++cnt == 5){
+                out_str += ' ';
+                cnt = 0;
+            }
+            state = 0;
+            c1 = '';
+        }
+    }
+    if ( c1 != '') {
+        alert("Code ends in row label!");
+        return;
+    }
+    out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function output_groups(){
+  var str,i,j,n,c;
+  var sym_per_group,groups_per_line;
+  var out_str;
+  var s_count,g_count;
+  
+  str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	
+	sym_per_group = parseInt(document.getElementById('symbols_per_group').value);
+	groups_per_line = parseInt(document.getElementById('groups_per_line').value);
+	
+	//out_str = "inputs:"+sym_per_group+" and "+groups_per_line;
+	s_count = g_count = 0;
+	out_str = '';
+	for (i=0;i<str.length;i++){
+	  c = str.charAt(i);
+	  n = alpha.indexOf(c);
+	  if ( n != -1) {
+	    out_str += c;
+	    if (++s_count == sym_per_group){
+	      out_str += ' ';
+	      s_count = 0;
+	      if (++g_count == groups_per_line){
+	        out_str +='\n';
+	        g_count = 0;
+	      }
+	    }
+	  }
+	}
+	out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function convert_digit_order_up(){
+    var i,j,n,c,str;
+    var digits = '0123456789';
+    var out_str;
+    str = document.getElementById('input_area').value;
+    out_str = '';
+    for (i=0;i<str.length;i++){
+        c = str.charAt(i);
+        n = digits.indexOf(c);
+        if (n == -1) continue;
+        j = (n+1)%10;
+        out_str += digits.charAt(j);
+    }
+	out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function convert_digit_order_down(){
+    var i,j,n,c,str;
+    var digits = '0123456789';
+    var out_str;
+    str = document.getElementById('input_area').value;
+    out_str = '';
+    for (i=0;i<str.length;i++){
+        c = str.charAt(i);
+        n = digits.indexOf(c);
+        if (n == -1) continue;
+        j = (9+n)%10;
+        out_str += digits.charAt(j);
+    }
+	out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function convert_mysz_to_numeric(){
+    var i,j,n,c,str,s;
+    var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var numeric_symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXUYZ';
+    var out_str;
+    var current_numb, pattern, flag;
+    
+    str = document.getElementById('input_area').value;
+    str = str.toUpperCase();
+    pattern = [];
+    j = 0;
+    for (i=0;i<str.length;i++){
+      c = str.charAt(i);
+      n = alpha.indexOf(c);
+      if ( n != -1)
+        pattern[j++] = n;
+    }
+    var numb_pattern = [];
+    current_numb = -1;
+    for (j=0;j<26;j++){
+      flag = false;
+      for (i=0;i<pattern.length;i++){
+          if ( pattern[i] == j){
+            if (!flag)
+              current_numb++;
+            flag = true;
+            numb_pattern[i] = current_numb;
+          }
+      }
+    }
+    out_str = '';
+    for (i=0;i<numb_pattern.length;i++)
+      out_str += numeric_symbols.charAt(numb_pattern[i]);
+	out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function convert_col_to_numeric(){
+    var i,j,n,c,str,s;
+    var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var numeric_symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXUYZ';
+    var out_str;
+    var current_numb, pattern;
+    
+    str = document.getElementById('input_area').value;
+    str = str.toUpperCase();
+    pattern = [];
+    j = 0;
+    for (i=0;i<str.length;i++){
+      c = str.charAt(i);
+      n = alpha.indexOf(c);
+      if ( n != -1)
+        pattern[j++] = n;
+    }
+    var numb_pattern = [];
+    current_numb = 0;
+    for (j=0;j<26;j++){
+      for (i=0;i<pattern.length;i++){
+          if ( pattern[i] == j){
+            numb_pattern[i] = current_numb++;
+          }
+      }
+    }
+    out_str = '';
+    for (i=0;i<numb_pattern.length;i++)
+      out_str += numeric_symbols.charAt(numb_pattern[i]);
+	out_str += '\n';
+	document.getElementById('output_area').value = out_str;
+}
+
+function extract_letters(){
+    var i,j,k,n,c,str, out_str,cnt;
+    var alpha = 'abcdefghijklmnopqrstuvwxyz';
+    
+    str = document.getElementById('input_area').value;
+    str = str.toLowerCase();
+    
+    out_str = '';
+    cnt = 0;
+    for (i=0;i<str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n != -1){
+            out_str += c;
+            cnt++;
+        }
+    }
+    out_str += '\n('+cnt+' letters)';
+    document.getElementById('output_area').value = out_str;
+}
+
+function get_inverse_key(){
+    var i,j,k,n,c,str, out_str,cnt;
+    var alpha = 'abcdefghijklmnopqrstuvwxyz';
+    
+    str = document.getElementById('input_area').value;
+    str = str.toLowerCase();
+    
+    out_str = '';
+    for (i=0;i<str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n != -1){
+            k = (26-n)%26;
+            out_str += alpha.charAt(k);
+        }
+        else
+            out_str += c;
+    }
+    document.getElementById('output_area').value = out_str;
+}
+
+function do_transfer(){
+   var str = document.getElementById('output_area').value;
+   document.getElementById('input_area').value = str;
+}
+
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Simple Conversions & Calculations</h3> <br>
+Input:<br>
+<textarea id="input_area" rows = 3 cols=80 >
+</textarea><br>
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=5 cols=80>
+</textarea>
+&nbsp;&nbsp;&nbsp;&nbsp;
+Copy output box to input box: 
+<input type="button" value="Copy" onclick=do_transfer();>
+
+<div class = "wrapper">
+<div>
+<input type="button" value="Get Caesar Shift" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Size of shift =>
+<input type = text id="shift_amount" value = "5" size = 3 >
+</div>
+<div>
+Get even and odd numbered letters:
+<input type="button" value="even-odd" onclick=do_even_odd();>
+<br><br>
+Reverse the text:
+<input type="button" value="reverse" onclick=do_reverse();>
+</div>
+<div id="output_groups" >
+Output symbols in groups:
+<input type="button" value="output groups" onclick=output_groups()>
+<br><br>
+symbols per group <input type="text" id="symbols_per_group" size=3 value='5'>
+groups per line <input type="text" id="groups_per_line" size=3 value='11'>
+</div>
+<div>
+Convert letter pairs (26 or less dfferent pairs) to single letters:
+<input type="button" value="Letter pair convert" onclick=do_convert_pairs_single();>
+<br><br>
+Convert letter pairs (100 or less dfferent pairs) to digit pairs:
+<input type="button" value="Letter pair -> digit pair" onclick=do_convert_pairs_digits();>
+</div>
+<div>
+Convert monome-dinome to single letters:
+<input type="button" value="Monome-dinome convert" onclick=do_modi_convert();>
+using row labels:
+<input type="text" size = 4 id="modi_rows">
+</div>
+<div>
+Convert key word/phrase to complete key:
+<input type="button" value="extend key" onclick=extend_key();>
+<br><br>
+Get decimations of an alphabet:
+<input type="button" value="Decimations" onclick=decimate_chain();>
+</div>
+<div>
+Convert digits to single letters A-J:
+<input type="button" value="Digit convert" onclick=do_convert_digits();>
+<br><br>
+Convert single letters A-J to digits: 
+<input type="button" value="Letter->digit" onclick=do_convert_letters_to_digits();>
+</div>
+
+<div>
+Convert digits in 0-9 order to 1-0 order:
+<input type="button" value="reorder up" onclick=convert_digit_order_up();>
+<br><br>
+Convert digits in 1-0 order to 0-9 order:
+<input type="button" value="reorder down" onclick=convert_digit_order_down();>
+</div>
+<div>
+Convert alphabetic Myszkowski key to numerical key:
+<input type="button" value="convert mysz to numeric" onclick=convert_mysz_to_numeric();>
+<br><br>
+Convert Columnar or monome-dinome alphabetic key to numeric (0-9) key:
+<input type="button" value="convert col to numeric" onclick=convert_col_to_numeric();>
+</div>
+<div>
+Extract letters from text and count them:
+<input type="button" value="extract letters" onclick=extract_letters();>
+<br><br>
+Inverse Vigenere family key:
+<input type="button" value="inverse key" onclick=get_inverse_key();>
+</div>
+
+</div> <!-- end of wrapper div -->
+</body>
+</html>
