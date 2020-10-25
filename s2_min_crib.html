@@ -1,0 +1,320 @@
+<html>
+<head>
+<title>Two square minimum crib</title>
+<script type="text/javascript">
+
+//var digits="0123456789";
+//var symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var plain = [];
+var original_plain = [];
+var crib = [];
+var freq = [];
+
+var skip_index; // number of letters at the beginning of plaintext to skip
+var min_crib_len, min_pos, min_rev;
+var starting_crib_len;
+
+var ROW = 0;
+var COL = 1;
+var SQ1  = 0;
+var SQ2  = 1;
+
+var crib_len;
+
+var labels = [];
+
+var caesar_shift_flag = false;
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+	data = document.getElementById('cipher_area').value;
+  data = data.toUpperCase();
+	state=0;
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( c =='J'){
+		    alert('Cipher has a J');
+		}
+    n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	if ( (cnt%2) != 0 ) {
+		alert("Cipher has odd number of symbols!");
+		return;
+	}
+}
+
+
+function do_calc(){
+	var str, alpha,out_str,c,n,cnt,i,j;
+    var current_pos,crib_len,numb_positions,start_pos;
+    var minimum_reverse, match_pos,nr;
+    var result, cov, min_coverage, current_coverage;
+    var caesar_shift;
+    
+  setup_code();
+	alpha="abcdefghijklmnopqrstuvwxyz";
+	out_str="";
+    if (document.getElementById("c_shift").checked)
+      caesar_shift_flag = true; // global var
+    else
+      caesar_shift_flag = false;   
+	
+	str = document.getElementById('plain_area').value;
+	str = str.toLowerCase();
+    
+  cnt = 0;
+  plain = [];
+  original_plain = [];
+  caesar_shift = 5;
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+        if (caesar_shift_flag){ // original_plain is caesar_shifted by 5. 
+            n = alpha.indexOf(c);
+            if ( n>=0){
+                original_plain[cnt] = n;
+                n = (26+n-caesar_shift)%26; // unshift
+                if (n== 9) // 'j'
+                    n = 8; 'i'
+                plain[cnt++] = n;
+            }
+        }
+        else {
+            if ( c == 'j') c = 'i';
+            n = alpha.indexOf(c);
+            if ( n>=0)
+                original_plain[cnt] = plain[cnt++] = n;
+        }
+	}
+	if ( code.length != plain.length){
+        alert("Plaintext and ciphertext have inconsistent lengths!");
+        return;
+  }
+  skip_index = parseInt(document.getElementById('skip_amount').value);
+  starting_crib_len = 5;
+  minimum_reverse = parseInt(document.getElementById('rev_amount').value);
+  min_crib_len = plain.length;
+  // set up labels array
+  for (i=0;i<26;i++){
+    labels[i] = [];
+    for (j=0;j<2;j++)
+      labels[i][j] = [];
+  }
+  for ( current_pos = skip_index; current_pos < plain.length-starting_crib_len+1;current_pos++){
+      for ( crib_len = starting_crib_len;crib_len< plain.length-current_pos+1; crib_len++) {
+          crib = [];
+	        for (j=0;j<crib_len;j++)
+        	crib[j] = plain[j+current_pos];
+          numb_positions = 0;
+        	for (start_pos=0;start_pos< plain.length -crib_len +1; start_pos++){
+                result =test_pos(start_pos,crib_len);
+                //n = result[0];
+                //cov = result[1];
+                if ( result>= minimum_reverse ){
+	                if (++numb_positions > 1 )// crib fits in more than one place
+	                	break;
+	                nr = result;// number of reverses
+	                match_pos = start_pos;
+                  //current_coverage = Math.floor(cov);
+                }
+            }
+            if (numb_positions == 1 && match_pos == current_pos ){ // OK!
+            if (crib_len<=min_crib_len){ // include same minimum length, the nearer the end of the text the better
+		            min_crib_len = crib_len;
+		            min_pos = current_pos;
+		            min_rev = nr;
+	            	out_str += "New min crib length is "+min_crib_len+" at position "+min_pos+", with "+nr+" reversed pairs\n==>  ";
+                    for (j=min_pos;j<min_pos+min_crib_len;j++)
+                        out_str += alpha.charAt(original_plain[j]);
+                    out_str += "\n";
+                    
+	            }
+	            break;
+            }
+      }
+  }
+  document.getElementById('output_area').value = out_str;
+    
+}
+
+function test_pos(start_pos,crib_len){
+//void show_text(int start_pos) {
+	var i,j,k,index,n1,n2,n3,n4,k1,k2,k3;
+	var c,c1,c2,c3,c4;
+	var row1,col1,row2,col2;
+	var flag,nxt_label,sq_index;
+	var numb_reversals;
+
+	/* intialize array */
+	//memset(labels,-1,sizeof(labels));
+	for (i=0;i<26;i++)
+	  for (j=0;j<2;j++)
+	    for (k=0;k<2;k++)
+	      labels[i][j][k] = -1;
+	nxt_label = 0;
+	/* start at even or odd pos?*/
+	if ( start_pos&1) {
+		index = 1;
+		c3 = crib[0];
+		c1 = code[start_pos-1];
+		c2 = code[start_pos];
+		labels[c1][SQ2][COL] = labels[c3][SQ2][COL] = nxt_label++;
+		labels[c2][SQ1][ROW] = labels[c3][SQ2][ROW] = nxt_label++;
+	}
+	else
+		index = 0;
+	/* find cipher text letters that correspond to the crib
+		at start_pos */
+	for (j=index;j<crib_len;j=j+2) {
+		c1 = code[start_pos+j];
+		c2 = code[start_pos+j+1];
+		c3 = crib[j];
+		n1 = labels[c1][SQ2][ROW];
+		n3 = labels[c3][SQ1][ROW];
+		if ( n1 == -1 && n3 == -1)
+			labels[c1][SQ2][ROW] = labels[c3][SQ1][ROW] = nxt_label++;
+		else if (n1 == -1)
+			labels[c1][SQ2][ROW] = n3;
+		else if (n3 == -1 )
+			labels[c3][SQ1][ROW] = n1;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<26;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( labels[k1][k2][k3] == n3)
+						labels[k1][k2][k3] = n1;
+		}
+		n2 = labels[c2][SQ1][COL];
+		n3 = labels[c3][SQ1][COL];
+		if ( n2 == -1 && n3 == -1)
+			labels[c2][SQ1][COL] = labels[c3][SQ1][COL] = nxt_label++;
+		else if (n2 == -1)
+			labels[c2][SQ1][COL] = n3;
+		else if (n3 == -1 )
+			labels[c3][SQ1][COL] = n2;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<26;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( labels[k1][k2][k3] == n2)
+						labels[k1][k2][k3] = n3;
+		}
+		if ( j==crib_len-1)  /* can't test last pair */
+			break;
+		c4 = crib[j+1];
+		n1 = labels[c1][SQ2][COL];
+		n4 = labels[c4][SQ2][COL];
+		if ( n1 == -1 && n4 == -1)
+			labels[c1][SQ2][COL] = labels[c4][SQ2][COL] = nxt_label++;
+		else if (n1 == -1)
+			labels[c1][SQ2][COL] = n4;
+		else if (n4 == -1 )
+			labels[c4][SQ2][COL] = n1;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<26;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( labels[k1][k2][k3] == n4)
+						labels[k1][k2][k3] = n1;
+		}
+		n2 = labels[c2][SQ1][ROW];
+		n4 = labels[c4][SQ2][ROW];
+		if ( n2 == -1 && n4 == -1)
+			labels[c2][SQ1][ROW] = labels[c4][SQ2][ROW] = nxt_label++;
+		else if (n2 == -1)
+			labels[c2][SQ1][ROW] = n4;
+		else if (n4 == -1 )
+			labels[c4][SQ2][ROW] = n2;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<26;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( labels[k1][k2][k3] == n2)
+						labels[k1][k2][k3] = n4;
+		}
+	}/* next j */
+	/* check squares for inconsistencies */
+	for (j=0;j<nxt_label;j++) for (k1=0;k1<2;k1++) for (k2=0;k2<2;k2++) {
+		n1 = 0;
+		for (k3=0;k3<26;k3++)
+			if ( labels[k3][k1][k2] == j ) {
+				n1++;
+				if ( n1>5) {
+// 				printf("Too many labels in same row/col, pos %li\n",
+// 					start_pos);
+					return(-1);
+				}
+		} /* next k3 */
+	} /* next k2,k1,j*/
+	for (k1=0;k1<2;k1++) for (j=0;j<25;j++) {
+		if ( labels[j][k1][ROW] == -1 ||
+			labels[j][k1][COL] == -1 )
+			continue;
+		for (k3 = j+1;k3<26;k3++)
+		 if ( labels[j][k1][ROW] == labels[k3][k1][ROW] &&
+			labels[j][k1][COL] == labels[k3][k1][COL] ) {
+// 			printf("Different letters in same keysquare cell, pos %li\n",
+// 				start_pos);
+/*
+			printf("Letters %c and %c in sq %li\n",j+'a',k3+'a',k1);
+			printf("Label: row %li col %li\n",labels[j][k1][ROW],
+					labels[j][k1][COL]);
+			for (n1=0;n1<26;n1++)
+				printf("%c %li %li %li %li\n",
+					n1+'A',labels[n1][SQ1][ROW],
+					labels[n1][SQ1][COL],labels[n1][SQ2][ROW],
+					labels[n1][SQ2][COL]);
+*/
+			return(-1);
+		}/* next k3 */
+	} /* next j,k1*/
+	//count number of reversed pairs, the more there are the more likely this is correct position
+	numb_reversals = 0;
+	for (j=index;j<crib_len;j=j+2) {//index is 1 or 0 , depending in start_pos
+		if ( j== crib_len-1) break;
+		if (crib[j] == code[start_pos+j+1] && crib[j+1] == code[start_pos+j])
+			numb_reversals++;
+	}
+	return(numb_reversals);
+// 	printf("OK at position %li with %i reversed pairs\n",start_pos,numb_reversals);
+// 	for (j=0;j<buf_len;j++) final_buffer[j] = '-'-'a';
+// 	for (j=0;j<crib_len;j++) final_buffer[j+start_pos] = crib[j];
+//     printf("\n");
+//     for (j=0;j<buf_len;j++) {
+//            printf("%c",final_buffer[j] + 'a');
+//            if ( ((j+1)%50) == 0)
+//                 printf("\n");
+//         }
+//         printf("\n");
+	
+	/* printf out sample crib? */
+} /* end show_text */
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Two-square minimum crib</h3> <br>
+Directions: Type or paste in ciphertext and plaintext strings. Click Minimum crib button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 >
+</textarea><br>
+Plaintext:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<input type="checkbox" id="c_shift" > check here if plaintext is caesar-shifted by 5 )<br>
+<textarea id="plain_area" rows = 3 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Minimum crib" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Begining letters to skip:
+<input type = text id="skip_amount" value = "25" size = 2 >
+&nbsp;  &nbsp; &nbsp; Minimum reversed symbols:
+<input type = text id="rev_amount" value = "0" size = 2 >
+
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=8 cols=90>
+</textarea>
+
+
+</body>
+</html>
