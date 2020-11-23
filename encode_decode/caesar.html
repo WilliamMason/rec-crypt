@@ -1,0 +1,127 @@
+<html>
+<head>
+<title>Get Caesar Shifts</title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script type="text/javascript">
+
+function do_clear(){
+    document.getElementById('input_area').value='';
+    document.getElementById('output_area').value='';
+}
+
+
+function do_reverse_calc(){
+	var str, alpha,caesar_shift,out_str,c,n;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	//caesar_shift = 5;
+	caesar_shift = parseInt(document.getElementById('shift_amount').value);
+	out_str="";
+	
+	str = document.getElementById('output_area').value;
+	str = str.toUpperCase();
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			out_str += alpha.charAt( (n+26-caesar_shift)%26 );
+		else
+			out_str += c;
+	}
+    out_str = out_str.toLowerCase();
+	out_str += " (unshift by "+caesar_shift+")\n";
+    if (document.getElementById('show_all').checked) {
+        out_str += "\nall shifts...\n";
+        for (var j = 0;j<26;j++) {
+            for (var i=0;i<str.length;i++){
+                c = str.charAt(i);
+                n = alpha.indexOf(c);
+                if ( n>=0)
+                    out_str += alpha.charAt( (n+j)%26 ).toLowerCase();
+                else
+                    out_str += c;
+            }
+            out_str += "\n";
+        }
+	}
+	
+	document.getElementById('input_area').value = out_str;
+}
+
+
+function do_calc(){
+	var str, alpha,caesar_shift,out_str,c,n;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	//caesar_shift = 5;
+	caesar_shift = parseInt(document.getElementById('shift_amount').value);
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			out_str += alpha.charAt( (n+caesar_shift)%26 );
+		else
+			out_str += c;
+	}
+	out_str += " (shift of "+caesar_shift+")\n";
+    if (document.getElementById('show_all').checked) {
+        out_str += "\nall shifts...\n";
+        for (var j = 0;j<26;j++) {
+            for (var i=0;i<str.length;i++){
+                c = str.charAt(i);
+                n = alpha.indexOf(c);
+                if ( n>=0)
+                    out_str += alpha.charAt( (n+j)%26 );
+                else
+                    out_str += c;
+            }
+            out_str += "\n";
+        }
+	}
+	
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+<style>
+.region {
+float:left;
+/*background:yellow;   */
+padding:20px; 
+}
+</style>
+</head>
+<body >
+
+<div style="border:3px ridge black; background:silver; padding:5px; width:700px;">
+<center>
+<h3> Caesar Shift Calculator </h3> <br>
+</center>
+Enter text into one of the boxes below and click appropriate button.<br><br>
+<div id = "plain" class="region">
+<textarea id="input_area" rows = 5 cols=20 >
+</textarea>
+</div>
+<div id = "buttons"  class="region" >
+<input type="button" value="Caesar Shift" onclick=do_calc();> => <br><br>
+<= <input type="button" value="Unshift" onclick=do_reverse_calc();>
+</div>
+<div id = "cipher"  class="region" >
+<textarea id="output_area" rows=5 cols=20>
+</textarea>
+</div>
+<div style="clear:left; ">
+<br>
+<br>
+<center>
+Size of shift =>
+<input type = text id="shift_amount" value = "5" size = 3 >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; <input type="checkbox"   id="show_all" > Show all shifts
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; <input type="button"  onclick="do_clear()" value="Clear"> 
+</center>
+<div>
+</div>
+</body>

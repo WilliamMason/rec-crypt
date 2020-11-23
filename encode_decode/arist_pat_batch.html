@@ -1,0 +1,58 @@
+<!-- encrypt batch of patristocrats/aristocrats in javascript,  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Aristocrat/Patristocrat Encryptor</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+<script src="arist_pat_batch.js"></script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Aristocrat/Patristocrat Encryptor</span></center><br>
+
+<form name="entryform">
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Paste batch of plaintexts, separated by @ symbols, into box labeled plaintexts.
+<br> Then click the Initialize button.<BR>
+</div>
+
+<div id = "controlArea">
+Plaintexts: <br>
+<!-- mark space for cipher -->
+<textarea id="ciphers"  name = "cipherarea" cols=90; rows=10;
+style="background:white;">
+</textarea>
+</div>
+<div id = "keySpace">
+</div>
+</form>
+<div id="button_actions" >
+
+<INPUT id="initialize1" type=button value="Initialize" >
+
+</div>
+
+<div id="ciphertext_space">
+</div>
+<br>
+
+
+
+
+<!---
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
+
