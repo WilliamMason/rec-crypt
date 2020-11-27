@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>Syllabary minimum crib</title>
+<script src="syllabary_min_crib_main.js"></script>
+</head>
+<body bgcolor="Silver">
+<h3> Syllabary minimum crib</h3> <br>
+Directions: Type or paste in ciphertext and plaintext strings. Click Minimum crib button. (May take a long time.)<br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 >
+</textarea><br>
+Plaintext: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<input type="checkbox" id="c_shift" > check here if plaintext is caesar-shifted by 5 )<br>
+<textarea id="plain_area" rows = 3 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Minimum crib" id="do_calc">
+&nbsp  &nbsp &nbsp Begining letters to skip: 
+<input type = text id="skip_amount" value = "25" size = 2 >
+
+&nbsp  &nbsp &nbsp Minimum percent crib coverage: 
+<input type = text id="crib_amount" value = "40" size = 2 >
+
+&nbsp  &nbsp &nbsp Minimum repeated symbols: 
+<input type = text id="rep_amount" value = "0" size = 2 >
+<br><br>
+Key Table:
+<input type="radio"  id="english" name="lang"  checked > English
+<input type="radio"  id="french" name="lang"  > French
+<input type="radio"  id="german" name="lang"  > German
+<input type="radio"  id="italian" name="lang"  > Italian
+<input type="radio"  id="spanish" name="lang"  > Spanish
+<input type="radio"  id="latin" name="lang"  > Latin
+
+<br><br>
+Keysquare:
+<input type="radio"  id="known_key" name="key_info"  > Known
+<input type="radio"  id="unknown_key" name="key_info"  checked > Unknown
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<input type="button" value="Halt search" id="halt_search">
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=8 cols=90>
+</textarea>
+
+
+</body>
+</html>
