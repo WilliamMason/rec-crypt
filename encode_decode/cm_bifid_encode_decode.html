@@ -1,8 +1,5 @@
 <html>
 <head>
-<!--
-<script src="route_select_work.js" ></script>
--->
 <script src="routes.js" ></script>
 <script>
 var alpha = 'abcdefghijklmnopqrstuvwxyz';
@@ -13,18 +10,22 @@ var l_inv_col = [];
 var l_sqr = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[,15,16,17,18,19],[20,21,22,23,24]];
 var r_sqr = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[,15,16,17,18,19],[20,21,22,23,24]];
 
+/*
 var r_inv_row = [];
 var r_inv_col = [];
-
-var s4Flag= false;
+*/
+var inv_row = [];
+var inv_col = [];
 
 var selected_route_right;
 var selected_route_left;
 
 var reverse_left_key;
 var reverse_right_key;
-var plaintext_pairs;
-var codetext_pairs;
+var plaintext_groups;
+var codetext_groups;
+
+var period;
 
 function setup_route_grid(){
     var str,j,i,c,n;
@@ -109,7 +110,7 @@ function get_route_right(){
 
 function do_encrypt(){
 var plaintext,key1,key2,s,codetext,i,j,s1,s2,cnt;
-if (!do_check('in') )
+if (!do_check('in'))
 	return;
 //alert("encrypt");
 plaintext = document.getElementById('input_area').value;
@@ -119,19 +120,15 @@ key1 = document.getElementById('lkey').value.toLowerCase();
 //alert(key1);
 key2 = document.getElementById('rkey').value.toLowerCase();
 //alert(key2)
-if ( document.getElementById('s4t').checked )
-	s4Flag = true;
-else s4Flag = false;
-
-codetext = encrypt(s,key1,selected_route_left,key2,selected_route_right);
+period = document.getElementById('period').value;
+i = parseInt(period);
+codetext = cm_bifid_encrypt(s,key1,key2,selected_route_left,selected_route_right,i);
 
 s = '';
-if (s4Flag)
-	s += "Four square cipher\n";
-else
-	s += "Two square cipher\n";
+s += "Cm bifid cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
+s += "\nperiod: "+period;
 s += "\nleft key: "+document.getElementById('lkey').value;
 s += "\nleft route: "+route_name[selected_route_left];
 if (reverse_left_key)
@@ -144,32 +141,6 @@ if (reverse_right_key)
 // worksheet
 
 s+="\nLeft Keysquare   Right Keysquare:\n"
-if (s4Flag){
-	var upper_c = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
-	cnt = 0;
-	for (i=0;i<5;i++) {
-	s += '   ';
-	for (j=0;j<5;j++)
-		s += upper_c.charAt(cnt++);
-	s += '                 ';
-	for (j=0;j<5;j++)
-		s += r_sqr[i][j].toUpperCase();
-	s += '\n';
-	}
-	s += '\n';
-	cnt =  0;
-	for (i=0;i<5;i++) {
-	s += '   ';
-	for (j=0;j<5;j++)
-		s +=l_sqr[i][j].toUpperCase();
-	s += '                 ';
-	for (j=0;j<5;j++)
-		s += upper_c.charAt(cnt++);
-	s += '\n';
-	}
-
-}
-else {
 	for (i=0;i<5;i++) {
 	s += '   ';
 	for (j=0;j<5;j++)
@@ -179,15 +150,15 @@ else {
 		s += r_sqr[i][j].toUpperCase();
 	s += '\n';
 	}
-}	
+	
 	s += '\nWorksheet:\n';
 	codetext = codetext.toUpperCase();
 	s1 = '';
 	s2 = '';
-	for (i=0;i<codetext.length;i= i+3){
-		s1 += codetext.charAt(i)+codetext.charAt(i+1)+codetext.charAt(i+2);
-		s2 += plaintext_pairs.charAt(i)+plaintext_pairs.charAt(i+1)+plaintext_pairs.charAt(i+2);
-		if ( plaintext_pairs.charAt(i+3) == '\n'){
+	for (i=0;i<codetext.length;i++){
+		s1 += codetext.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext.charAt(i+1) == '\n'){
 			s += s1+'\n'+s2+'\n';
 			s1= '';
 			s2 = '';
@@ -200,19 +171,19 @@ else {
 document.getElementById('output_area').value = s;
 }
 
-function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
+function cm_bifid_encrypt(plaintext,key,key2,route_numb,route_numb2,period){
     var str,i,j,k,n,s,c,c1;
     var out_str,state ;
     var key_len,index, used_let, extended_key, embedded_key,extended_key2, embedded_key2;
-	var codetext,cnt;
-
+	var codetext,cnt,offset,le,pos,x,y;
+	var line_limit;
 	
    extended_key = [];
 	used_let = {};
 	used_let['j'] = 1;
   key_len = 0;
-  for (i=0;i<key1.length;i++){
-        c = key1.charAt(i);
+  for (i=0;i<key.length;i++){
+        c = key.charAt(i);
 	    	if (c=='j') c = 'i';
         if ( alpha.indexOf(c) != -1 && !(c in used_let)){
             extended_key[key_len++] = c
@@ -224,12 +195,9 @@ function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
-	if (reverse_left_key)
-		extended_key = extended_key.reverse();
-  
 	embedded_key = [];
 	for (i=0;i<25;i++)
-		embedded_key[i] = extended_key[routes[route_numb1][i]];
+		embedded_key[i] = extended_key[routes[route_numb][i]];
 	index = 0;
 	for (i=0;i<5;i++) {
 		l_sqr[i] = [];
@@ -238,9 +206,10 @@ function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
 	}
     // get inverse key square
 	for (i=0;i<5;i++) for (j=0;j<5;j++){
-		l_inv_row[ l_sqr[i][j] ] = i;
-		l_inv_col[ l_sqr[i][j] ] = j;
+		inv_row[ l_sqr[i][j] ] = i;
+		inv_col[ l_sqr[i][j] ] = j;
 	}
+// key2
    extended_key2 = [];
 	used_let = {};
 	used_let['j'] = 1;
@@ -258,9 +227,6 @@ function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
         if (!(c in used_let))
             extended_key2[key_len++] = c;
   }
-	if (reverse_right_key)
-		extended_key2 = extended_key2.reverse();
-  
 	embedded_key2 = [];
 	for (i=0;i<25;i++)
 		embedded_key2[i] = extended_key2[routes[route_numb2][i]];
@@ -270,82 +236,60 @@ function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
 		for (j=0;j<5;j++)
 			r_sqr[i][j] = embedded_key2[index++];
 	}
-    // get inverse key square
-	for (i=0;i<5;i++) for (j=0;j<5;j++){
-		r_inv_row[ r_sqr[i][j] ] = i;
-		r_inv_col[ r_sqr[i][j] ] = j;
-	}
+
     
-		
-	state = 0;
+    var plain = '';
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        if (c=='j') c = 'i';
+        n = alpha.indexOf(c);
+        if ( n != -1)
+            plain += c;
+    }
+    
+	var workspace = [];
+    var code = [];
+    le = plain.length;
+    if (period < le)
+        offset = period;
+    else
+        offset = le;
+    index = pos = 0;
+    cnt = 0;
+    for (i=0;i<le;i++){
+        c = plain.charAt(i);
+        workspace[index] = inv_row[c];
+        workspace[index+offset] = inv_col[c];
+        index++;
+        if ( index == offset) {// workspace full
+            for (j=0;j<2*offset; j = j+2){
+                code[cnt++] = r_sqr[ workspace[j] ][ workspace[j+1] ];
+            }
+            index = 0;
+            pos += offset;
+            if (period > le-pos)
+                offset = le-pos;
+        }
+    }
+	line_limit = period*Math.floor(66/(period+1));
+    cnt = 0;
 	codetext = '';
-	cnt = 0;
-	plaintext_pairs = '';
-	for (i=0;i<plaintext.length;i++){
-		c = plaintext.charAt(i);
-		n = alpha.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
+	plaintext_groups = '';
+    for (i=0;i<code.length;i++){
+        codetext += code[i];
+		plaintext_groups += plain.charAt(i);
+        if ( (++cnt)%period == 0){
+            codetext += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext += '\n';
+				plaintext_groups += '\n';
 			}
-			else {
-				result =put_pc(c1,c)
-				codetext += result[0]+result[1]+' ';
-				plaintext_pairs += c1+c+' ';
-				state = 0;
-				cnt += 3;
-				if ( cnt>=65){
-					cnt = 0;
-					codetext += '\n';
-					plaintext_pairs+= '\n'
-				}
-			}
-		}
-	}
-    if (state == 1){
-		result =put_pc(c1,'x')
-		codetext += result[0]+result[1]+' ';
+        }
     }
 	return(codetext);
 }
 
-function put_pc(c1,c2) {
-        var row1,col1,row2,col2;
-		var tmp,c3,c4;
-
-        
-        //if (s4Flag) {
-        if (s4Flag) { // four-square
-        	// four square
-            tmp = alpha.indexOf(c1);
-            if (tmp>=9) tmp--;
-            row1 = Math.floor(tmp/5);
-            col1 = tmp%5;
-            tmp = alpha.indexOf(c2);
-            if (tmp>=9) tmp--;
-            row2 = Math.floor(tmp/5);
-            col2 = tmp%5;
-        	c3 = r_sqr[row1][col2];
-        	c4 = l_sqr[row2][col1];
-    	}
-    	else {
-            row1=l_inv_row[c1];
-            col1=l_inv_col[c1];
-            row2=r_inv_row[c2];
-            col2=r_inv_col[c2];
-        
-	    	// two-square
-        	if ( row1 == row2 ) {
-        	        c3 = c2;
-        	        c4 = c1;
-        	        return([c3,c4]);
-        	}
-        	c3 = r_sqr[row1][col2];
-        	c4 = l_sqr[row2][col1];
-    	}
-		return([c3,c4]);
-}
 
 
 function do_decrypt(){
@@ -360,20 +304,18 @@ key1 = document.getElementById('lkey').value.toLowerCase();
 //alert(key1);
 key2 = document.getElementById('rkey').value.toLowerCase();
 //alert(key2)
-if ( document.getElementById('s4t').checked )
-	s4Flag = true;
-else s4Flag = false;
+period = document.getElementById('period').value;
+i = parseInt(period);
 
 //alert("decrypt");
-plaintext = decrypt(s,key1,selected_route_left,key2,selected_route_right);
+plaintext = cm_bifid_decrypt(s,key1,key2,selected_route_left,selected_route_right,i);
 
 s = '';
-if (s4Flag)
-	s += "Four square cipher\n";
-else
-	s += "Two square cipher\n";
+
+s += "Cm bifid cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
+s += "\nperiod: "+period;
 s += "\nleft key: "+document.getElementById('lkey').value;
 s += "\nleft route: "+route_name[selected_route_left];
 if (reverse_left_key)
@@ -386,32 +328,7 @@ if (reverse_right_key)
 // worksheet
 
 s+="\nLeft Keysquare   Right Keysquare:\n"
-if (s4Flag){
-	var upper_c = "ABCDEFGHIKLMNOPQRSTUVWXYZ";
-	cnt = 0;
-	for (i=0;i<5;i++) {
-	s += '   ';
-	for (j=0;j<5;j++)
-		s += upper_c.charAt(cnt++);
-	s += '                 ';
-	for (j=0;j<5;j++)
-		s += r_sqr[i][j].toUpperCase();
-	s += '\n';
-	}
-	s += '\n';
-	cnt =  0;
-	for (i=0;i<5;i++) {
-	s += '   ';
-	for (j=0;j<5;j++)
-		s +=l_sqr[i][j].toUpperCase();
-	s += '                 ';
-	for (j=0;j<5;j++)
-		s += upper_c.charAt(cnt++);
-	s += '\n';
-	}
 
-}
-else {
 	for (i=0;i<5;i++) {
 	s += '   ';
 	for (j=0;j<5;j++)
@@ -421,42 +338,41 @@ else {
 		s += r_sqr[i][j].toUpperCase();
 	s += '\n';
 	}
-}	
 
-s += '\nWorksheet:\n';
-codetext_pairs = codetext_pairs.toUpperCase();
-s1 = '';
-s2 = '';
-for (i=0;i<codetext_pairs.length;i= i+3){
-	s1 += codetext_pairs.charAt(i)+codetext_pairs.charAt(i+1)+codetext_pairs.charAt(i+2);
-	s2 += plaintext_pairs.charAt(i)+plaintext_pairs.charAt(i+1)+plaintext_pairs.charAt(i+2);
-	if ( plaintext_pairs.charAt(i+3) == '\n'){
-		s += s1+'\n'+s2+'\n';
-		s1= '';
-		s2 = '';
-		i++;
-	}
-}
-if (s1 !='')
+	s += '\nWorksheet:\n';
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
 			s += s1+'\n'+s2+'\n';
-
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+	
 document.getElementById('output_area').value = s;
 
 }
 
-function decrypt(codetext,key1,route_numb1,key2,route_numb2){
-    var str,i,j,k,n,s,c,c1;
+function cm_bifid_decrypt(codetext,key,key2,route_numb,route_numb2,period){
+    var str,i,j,k,n,s,c,c1,c2;
     var out_str,state ;
     var key_len,index, used_let, extended_key, embedded_key,extended_key2, embedded_key2;
-	var plaintext,cnt;
-
+	var codetext,cnt,offset,le,pos,x,y;
+	var line_limit;
 	
-  extended_key = [];
+   extended_key = [];
 	used_let = {};
 	used_let['j'] = 1;
   key_len = 0;
-  for (i=0;i<key1.length;i++){
-        c = key1.charAt(i);
+  for (i=0;i<key.length;i++){
+        c = key.charAt(i);
 	    	if (c=='j') c = 'i';
         if ( alpha.indexOf(c) != -1 && !(c in used_let)){
             extended_key[key_len++] = c
@@ -468,23 +384,23 @@ function decrypt(codetext,key1,route_numb1,key2,route_numb2){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
-	if (reverse_left_key)
-		extended_key = extended_key.reverse();
-  
 	embedded_key = [];
 	for (i=0;i<25;i++)
-		embedded_key[i] = extended_key[routes[route_numb1][i]];
+		embedded_key[i] = extended_key[routes[route_numb][i]];
 	index = 0;
 	for (i=0;i<5;i++) {
 		l_sqr[i] = [];
 		for (j=0;j<5;j++)
 			l_sqr[i][j] = embedded_key[index++];
 	}
+	/*
     // get inverse key square
 	for (i=0;i<5;i++) for (j=0;j<5;j++){
-		l_inv_row[ l_sqr[i][j] ] = i;
-		l_inv_col[ l_sqr[i][j] ] = j;
+		inv_row[ l_sqr[i][j] ] = i;
+		inv_col[ l_sqr[i][j] ] = j;
 	}
+	*/
+// key2
    extended_key2 = [];
 	used_let = {};
 	used_let['j'] = 1;
@@ -502,9 +418,6 @@ function decrypt(codetext,key1,route_numb1,key2,route_numb2){
         if (!(c in used_let))
             extended_key2[key_len++] = c;
   }
-	if (reverse_right_key)
-		extended_key2 = extended_key2.reverse();
-  
 	embedded_key2 = [];
 	for (i=0;i<25;i++)
 		embedded_key2[i] = extended_key2[routes[route_numb2][i]];
@@ -514,85 +427,70 @@ function decrypt(codetext,key1,route_numb1,key2,route_numb2){
 		for (j=0;j<5;j++)
 			r_sqr[i][j] = embedded_key2[index++];
 	}
+	
     // get inverse key square
 	for (i=0;i<5;i++) for (j=0;j<5;j++){
-		r_inv_row[ r_sqr[i][j] ] = i;
-		r_inv_col[ r_sqr[i][j] ] = j;
+		inv_row[ r_sqr[i][j] ] = i;
+		inv_col[ r_sqr[i][j] ] = j;
 	}
+	
     
-		
-	state = 0;
-	plaintext = '';
-	cnt = 0;
-	plaintext_pairs = '';
-	codetext_pairs = '';
-	for (i=0;i<codetext.length;i++){
-		c = codetext.charAt(i);
-		n = alpha.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				result =put_dc(c1,c)
-				plaintext += result[0]+result[1];
-				plaintext_pairs += result[0]+result[1]+' ';
-				codetext_pairs += c1+c+' ';
-				state = 0;
-				cnt += 3;
-				if ( cnt>=65){
-					cnt = 0;
-					//plaintext += '\n';
-					plaintext_pairs+= '\n'
-					codetext_pairs += '\n';
-				}
-			}
-		}
-	}
-    if (state == 1){
-		result =put_pc(c1,'x')
-		codetext += result[0]+result[1]+' ';
+    var code = '';
+    for (i=0;i<codetext.length;i++){
+        c = codetext.charAt(i);
+        if (c=='j') c = 'i';
+        n = alpha.indexOf(c);
+        if ( n != -1)
+            code += c;
     }
+    
+	var workspace = [];
+    var plain = [];
+    le = code.length;
+    if (period < le)
+        offset = period;
+    else
+        offset = le;
+    index = pos = 0;
+    cnt = 0;
+    for (i=0;i<le;i++){
+        c = code.charAt(i);
+        workspace[index++] = inv_row[c];
+        workspace[index++] = inv_col[c];
+        if ( index == 2*offset) {// workspace full
+            for (j=0;j<offset; j++){
+                plain[cnt++] = l_sqr[ workspace[j] ][ workspace[j+offset] ];
+            }
+            index = 0;
+        }
+    }
+	if (index != 0)
+        for (k=0;k<index/2;k++)
+            plain[cnt++]=l_sqr[ workspace[k]][workspace[k+index/2]];		    
+	
+	var plaintext = '';
+	for (i=0;i<plain.length;i++)
+		plaintext += plain[i];
+
+	line_limit = period*Math.floor(66/(period+1));
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+    for (i=0;i<plain.length;i++){
+        codetext_groups += code.charAt(i);
+		plaintext_groups += plain[i];
+        if ( (++cnt)%period == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+        }
+    }
+
 	return(plaintext);
 }
-
-
-function put_dc(c1,c2) {
-        var row1,col1,row2,col2;
-		var tmp,c3,c4;
-
-
-            row1=r_inv_row[c1];
-            col1=r_inv_col[c1];
-            row2=l_inv_row[c2];
-            col2=l_inv_col[c2];
-
-        
-        //if (s4Flag) {
-        if (s4Flag) { // four-square
-        	// four square
-        	tmp = col2+5*row1;
-        	if (tmp>=9) tmp++;
-        	c3 = alpha.charAt(tmp);
-        	tmp = col1+5*row2;
-        	if (tmp>=9) tmp++;
-        	c4 = alpha.charAt(tmp);
-    	}
-    	else {
-        
-	    	// two-square
-        	if ( row1 == row2 ) {
-        	        c3 = c2;
-        	        c4 = c1;
-        	        return([c3,c4]);
-        	}
-        	c3 = l_sqr[row1][col2];
-        	c4 = r_sqr[row2][col1];
-    	}
-		return([c3,c4]);
-}
-
 
 
 
@@ -611,10 +509,19 @@ function do_check(status){
 		if (alpha.indexOf(c) != -1)
 			s1 += c;
 	}
+
+	s = document.getElementById('period').value;
+	if (s == '' || isNaN(s)){
+		alert("No numerical period entered");
+		return(false)
+	}
+	
+	/*
 	if ( (s1.length&1) !=0){
 		alert("Text has odd number of letters!");
 		return(false);
 	}
+	*/
 	if (s1.indexOf('j') != -1 && status=='de'){
 		alert("Ciphertext has a J!");
 		return(false);
@@ -711,7 +618,7 @@ background-color: Moccasin;
 </head>
 <body bgcolor="Silver" >
 <center>
-<h3>Two square/Four square  Encrypt/Decrypt</h3> <br><br>
+<h3>CM Bifid  Encrypt/Decrypt</h3>
 </center>
 Plaintext/Ciphertext:<br>
 <textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
@@ -724,10 +631,9 @@ Plaintext/Ciphertext:<br>
 output:<br>
 <textarea id="output_area" cols=80 rows = 8 spellcheck="false" >
 </textarea>
-<br>
-<b>Cipher Type:</b>
-<input type="radio" id="s4t" name="ntp" value=4 checked > FourSquare
-<input type="radio" id="s2t" name="ntp" value=2 > TwoSquare
+<br><br>
+
+&nbsp;&nbsp; Period: <input type="text" id="period"  size=8  >
 <br><br>
 <div>
 &nbsp;Left key: <input type="text" name = "left_key" id="lkey">
