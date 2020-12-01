@@ -1,0 +1,267 @@
+<html>
+<head>
+<title>Phillips minimum crib</title>
+<script type="text/javascript">
+// find crib of minimum length that has a unique property, default property: only one place it will fit
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var crib = [];
+var EMPTY = -1;
+var plain = [];
+
+var skip_index; // number of letters at the beginning of plaintext to skip
+var min_crib_len, min_pos, min_rev;
+var starting_crib_len;
+
+var crib_len;
+var used_let = [];
+
+var flag_6x6;
+var numb_symbols;
+var keysquare_width;
+var period = 8;
+var en_alphabet = [];
+var de_alphabet = [];
+
+var rc_flag = false;
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('cipher_area').value;
+  data = data.toUpperCase();
+  data = data.replace(/�/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if (  c =='J'){
+		    alert('Cipher has a J');
+			return(false);
+		}
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	return(true);
+}
+
+function ck_alphabets(x,y,depth){
+  var n,r;
+	//for n in range(period):
+	for (n=0;n<period;n++){
+		c = de_alphabet[n][x];
+		if (c == y) return(1);//#no good
+		if (c != EMPTY && depth != 2) {
+			r = ck_alphabets(c,y,depth+1);
+			if(r!=0) return (1);//no good
+		}
+	}
+	return(0);// OK!
+}
+
+
+
+function crib_test(pos){
+  var n,reps,index,count,i,y,r;
+  var c,c1,c2;
+  
+  for (n=0;n<period;n++){
+		for (i=0;i<26;i++)
+		  en_alphabet[n][i] = de_alphabet[n][i] = EMPTY;
+  }
+	reps = 0;
+	count = pos % 5;
+	index = (Math.floor(pos/5)) % period;
+	for (i=0;i<crib.length;i++){
+	  c = code[i+pos];
+      if ( c == crib[i] ) // letter cannot be mapped to itself!
+			return( [0,0]);            
+	  c1 = en_alphabet[index][crib[i]];
+	  c2 = de_alphabet[index][c];
+	  if (c1 != EMPTY && c1 != c)
+			return( [0,0]);
+	  if (c2 != EMPTY && c2 != crib[i])
+			return( [0,0]);
+	  if (de_alphabet[index][c] != EMPTY)
+			reps += 1;
+	  en_alphabet[index][crib[i]]=c;
+	  de_alphabet[index][c] = crib[i];
+	  count += 1;
+	  if (count == 5) {
+			count = 0;
+			index = (index+1)%period;
+	  }
+	}
+	for (i=0; i<25;i++){ //4->0 7->1
+		c1 = de_alphabet[0][i];
+		c2 = de_alphabet[4][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return([0,0]);
+		if (c2 != EMPTY)
+			de_alphabet[0][i]=c2;
+		if (c1 != EMPTY)
+			de_alphabet[4][i]=c1;
+		c1 = en_alphabet[0][i]
+		c2 = en_alphabet[4][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return( [0,0] ) ;
+		c1 = de_alphabet[1][i];
+		c2 = de_alphabet[7][i];
+		if (c1 != EMPTY && c2!=EMPTY && c1!=c2)
+			return([0,0]);
+		if (c2 != EMPTY)
+			de_alphabet[1][i]=c2;
+		if (c1 != EMPTY)
+			de_alphabet[7][i]=c1			
+		c1 = en_alphabet[1][i]
+		c2 = en_alphabet[7][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return( [0,0]);            
+	}
+	//for n in range(period-1):
+	for (n=0;n<period-1;n++){
+		if (n==4) continue;
+		//for i in range(25):
+		for (i=0;i<25;i++){
+			c = de_alphabet[n][i];
+			c1 = c;
+			count = 0;
+			while (c != EMPTY){
+				c = de_alphabet[n][c];
+				count += 1;
+				if (c == c1) {//got chain
+					if (count == 5)
+						break
+					return [0,0];
+				}
+			}
+		}
+	}
+	//letter changed its row/column?
+	//for n in range(period):
+	for (n=0;n<period;n++)
+	 //for y in range(25):
+	 for (y=0;y<25;y++){
+	 	c = de_alphabet[n][y]
+	 	if (c != EMPTY){
+	 		r = ck_alphabets(c,y,0)
+	 		if (r!=0)
+	 			return([2,reps])//RC maybe OK
+	 	}
+	return([1,reps])//passed all tests
+	}
+
+}
+function do_calc(){
+	var str, alpha,out_str,c,n,cnt,i,j;
+    var current_pos,crib_len,numb_positions,start_pos;
+    var minimum_reverse, match_pos,nr;
+    var result, cov, min_coverage, current_coverage;
+    var numb_reps, rc_only_pos;
+    alpha = 'abcdefghijklmnopqrstuvwxyz';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 26; // global
+    keysquare_width = 5; //global
+  if (document.getElementById('phil_rc').checked) 
+    rc_flag = true;
+  else
+    rc_flag = false;
+  setup_code();
+	out_str="";
+	
+	str = document.getElementById('plain_area').value;
+	str = str.toLowerCase();
+  cnt = 0;
+  plain = [];
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		if ( !flag_6x6 && c == 'j') c = 'i';
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			plain[cnt++] = n;
+	}
+	if ( code.length != plain.length){
+        alert("Plaintext and ciphertext have inconsistent lengths!");
+        return;
+  }
+  skip_index = parseInt(document.getElementById('skip_amount').value);
+  starting_crib_len = 5;
+  min_crib_len = plain.length;
+  for (n=0;n<period;n++){
+		en_alphabet[n]= [];
+		de_alphabet[n]= [];
+  }	
+  for ( current_pos = skip_index; current_pos < plain.length-starting_crib_len+1;current_pos++){
+      for ( crib_len = starting_crib_len;crib_len< plain.length-current_pos+1; crib_len++) {
+          crib = [];
+	        for (j=0;j<crib_len;j++)
+        	crib[j] = plain[j+current_pos];
+          numb_positions = 0;
+        	for (start_pos=0;start_pos< plain.length -crib_len +1; start_pos++){
+                result = crib_test(start_pos);
+                if ( result[0] != 0 ){
+                  if (result[0] == 2 && rc_flag == false)
+                    continue;
+	                if (++numb_positions > 1 )// crib fits in more than one place
+	                	break;
+
+	                match_pos = start_pos;
+	                numb_reps = result[1];
+	                if (result[0]==2)
+	                  rc_only_pos = true;
+	                else
+	                  rc_only_pos = false;
+                  //current_coverage = Math.floor(cov);
+                }
+            }
+            if (numb_positions == 1 && match_pos == current_pos ){ // OK!
+            if (crib_len<=min_crib_len){ // include same minimum length, the nearer the end of the text the better
+		            min_crib_len = crib_len;
+		            min_pos = current_pos;
+	            	out_str += "New min crib length is "+min_crib_len+" at position "+min_pos;
+	            	if ( rc_only_pos)
+	            	  out_str += " (RC only) ";
+	            	out_str += " with "+numb_reps+" repeats\n==>  ";
+                for (j=min_pos;j<min_pos+min_crib_len;j++)
+                  out_str += alpha.charAt(plain[j]);
+                out_str += "\n";
+	            }
+	            break;
+            }
+      }
+  }
+  document.getElementById('output_area').value = out_str;
+    
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Phillips minimum crib</h3> <br>
+Directions: Type or paste in ciphertext and plaintext strings. Check RC box if needed. Click Minimum crib button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 >
+</textarea><br>
+Plaintext:<br>
+<textarea id="plain_area" rows = 3 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Minimum crib" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Begining letters to skip:
+<input type = text id="skip_amount" value = "25" size = 2 >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id="phil_rc" > RC
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=8 cols=90>
+</textarea>
+
+
+</body>
+</html>
