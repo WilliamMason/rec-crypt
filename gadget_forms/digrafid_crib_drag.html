@@ -1,0 +1,605 @@
+<html>
+<head>
+<title>Digrafid crib possibilities</title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script type="text/javascript">
+//RAT's two rectangle approach. Cm, MA2005
+// see "notes_digrafid_crib_drag.txt"
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ#";
+
+var digits="0123456789";
+var buffer = [];
+var buf_len, crib_len;
+var crib = [];
+
+var min_per,max_per, period;
+
+var EMPTY = -1;
+var NUMB_SYMBOLS = 27;
+
+var label = [];// # 0=left row, 1 = right row, 2 = left column, 3=right column
+var nxt_label = 0;
+var equlist = [];
+var fragments = [];
+var empty_buffer = [];
+
+
+function setup_cipher() {
+	var i,j,state,cnt,c, data,n1,n;
+    var str;
+    
+    buffer = [];
+    str = document.getElementById('cipher_area').value;
+    str = str.toUpperCase();
+    buf_len = 0;
+    for (i=0;i<str.length;i++) {
+        c = str.charAt(i);
+        n = upperC.indexOf(c);
+        if ( n != -1)
+            buffer[buf_len++] = n;
+    }
+
+}	
+
+function do_calc(){
+	var str, alpha,out_str,c,n,cnt,i,j;
+    var start_pos, numb_symbols,flag;
+    
+    setup_cipher();
+    // set up empty buffer in which to embed crib
+    empty_buffer = [];
+    for (i=0;i<buffer.length;i++)
+        empty_buffer[i] = EMPTY;     
+    alpha="abcdefghijklmnopqrstuvwxyz#";
+    numb_symbols = 27;
+
+	out_str="positions start at 0\n";
+	
+	str = document.getElementById('crib_area').value;
+	str = str.toLowerCase();
+    crib_len = 0;
+    crib = [];
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			crib[crib_len++] = n;
+	}
+    min_per = parseInt(document.getElementById('min_per').value);
+    max_per = parseInt(document.getElementById('max_per').value);
+    // check setup
+    if (buffer.length==0){
+        alert("No ciphertext entered!");
+        return;
+    }
+    if ( (buffer.length%2) != 0){
+        alert("Odd number of cipher symbols.")
+        return;
+    }
+    if (crib.length == 0){
+        alert("No crib entered.");
+        return;
+    }
+    if (isNaN(min_per) || min_per == 0){
+        alert("Minimum period must be a positive number.")
+        return;
+    }
+    if (isNaN(max_per) || max_per == 0){
+        alert("Maximum period must be a positive number.")
+        return;
+    }
+    
+    for (period = min_per; period <= max_per; period++) {
+        out_str += "period "+period+" OK at:";
+        flag = false;
+        for (start_pos = 0;start_pos<buf_len - crib_len+1;start_pos++){
+            n = get_labels(start_pos,crib_len);
+            if ( n == 1) {
+                if ( flag) out_str += ","; 
+                out_str += " "+start_pos;
+                flag = true;
+
+                if (document.getElementById('crib_string').checked){
+                    out_str += '\n';
+                    // add crib string you can paste into hill-climber
+                    cnt = 0;
+                    for (i=0;i<start_pos;i++){
+                        out_str += '-';
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    for (i=0;i<crib.length;i++){
+                        out_str += alpha.charAt(crib[i]);
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    for (i=start_pos+crib.length;i<buffer.length;i++){
+                        out_str += '-';
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    out_str += '\n\n';
+                } 
+            }                
+        }
+        out_str += "\n";
+    }
+    document.getElementById('output_area').value = out_str;        
+    
+}
+
+
+function get_labels(start_pos,crib_len){
+var row,i,j,k,n,c,s, cnt;
+var cbuf, bindex,cindex,count,pstart,bpos,cpos;
+var numb,bl,br,cl,cr;
+var lr,rr,lc,rc;
+
+// "label" is global
+    for (row = 0;row<4;row++){
+        label[row] = [];
+        for (i=0;i<NUMB_SYMBOLS;i++)
+            label[row][i] = EMPTY;
+    }
+ //# insert -1's before and after crib
+ //cbuf = [-1]*pos + crib
+ ///cbuf += [-1]*(len(cipher)-len(cbuf))
+ cbuf = empty_buffer.slice(0);
+ for (i=0;i<crib_len;i++)
+    cbuf[start_pos+i] = crib[i];
+    
+ bindex = cindex = count = 0
+ pstart = bpos = cpos = 0
+ nxt_label = 0
+ equlist = [];
+ fragments = [];
+ numb = period;
+ while (pstart < buffer.length){
+  while (count < 3*numb){
+   bl = buffer[bpos] ;//# cipher letter
+   br = buffer[bpos+1];
+   cl = cbuf[cpos];// # crib entry
+   cr = cbuf[cpos+1];
+   if (cl != EMPTY || cr != EMPTY){// #have real letter
+    if (cindex == 0 && cl != EMPTY){//# row of left key rectangle
+     if (bindex == 0)//# row of left key rectangle
+      two_label(0,0,bl,cl);
+     else if ( bindex == 2)//# row of right key rectangle
+      two_label(1,0,br,cl);
+     else // column-row match 
+      row_columns_label(0,cl,bl,br);
+    }
+    else if (cindex == 2 && cr != EMPTY){//# row of right key rectangle
+     if (bindex == 0)//# row of left key rectangle
+      two_label(0,1,bl,cr)
+     else if( bindex == 2)//# row of right key rectangle
+      two_label(1,1,br,cr)
+     else // # column-row match
+      row_columns_label(1,cr,bl,br) 
+    }
+    else if (cindex == 1){// # columns of key rectangles
+     if (bindex==0){ //row of left key rectangle
+     	if (cl != EMPTY && cr != EMPTY)
+      	 row_columns_label(0,bl,cl,cr)
+      	else if (cr == EMPTY)
+      	 row_first_column_label(0,bl,cl)
+      	else
+      	 row_second_column_label(0,bl,cr)
+     }
+     else if (bindex == 2){ // row of right key rectangle
+     	if (cl != EMPTY && cr != EMPTY)
+      	 row_columns_label(1,br,cl,cr)      
+      	else if (cr == EMPTY)
+      	 row_first_column_label(1,br,cl)
+      	else
+      	 row_second_column_label(1,br,cr) 
+     }
+     else if( bindex == 1) {//# two column matches 
+    	if (cl != EMPTY)
+    	  two_label(2,2,cl,bl)
+    	if (cr != EMPTY)
+    	  two_label(3,3,cr,br) 
+     }
+    }
+   }
+   count += 1;
+   cpos += 2// # next line % is 'MOD'
+   if ((count % numb) == 0){
+    cindex += 1;// # next row
+    cpos = pstart;// # return to start
+   }
+   bindex = (bindex+1) % 3;
+   if (bindex == 0) bpos += 2;
+  }
+  pstart += 2*period;
+  cpos = pstart
+  bpos = pstart
+  count = bindex = cindex = 0
+  if ((pstart + 2*period) > buffer.length)
+    numb = (buffer.length - pstart)/2
+   
+ } // labels array filled
+ //#Are these labels possible?
+ for (i=0;i<nxt_label;i++){
+    cnt = 0;
+    for (j=0;j<NUMB_SYMBOLS;j++)
+        if (label[0][j] == i){
+            cnt++;
+            if ( cnt>3) return(0); // reject
+    }
+    cnt = 0;
+    for (j=0;j<NUMB_SYMBOLS;j++)
+        if (label[1][j] == i){
+            cnt++;
+            if ( cnt>3) return(0); // reject
+    }
+    cnt = 0;
+    for (j=0;j<NUMB_SYMBOLS;j++)
+        if (label[2][j] == i){
+            cnt++;
+            if ( cnt>9) return(0); // reject
+    }
+    cnt = 0;
+    for (j=0;j<NUMB_SYMBOLS;j++)
+        if (label[3][j] == i){
+            cnt++;
+            if ( cnt>9) return(0); // reject
+    }
+  } // next i
+// #check for duplicate cells		
+ for (i=0;i<NUMB_SYMBOLS;i++){
+ 	lr=label[0][i];
+ 	rr=label[1][i];
+ 	lc=label[2][i];
+ 	rc=label[3][i];
+ 	if (lr != EMPTY && lc != EMPTY){
+        for (j =i+1;j<NUMB_SYMBOLS;j++)
+			if (label[0][j] == lr &&  label[2][j] == lc)
+			   return(0); // reject		
+    }
+ 	if (rr != EMPTY && rc != EMPTY){
+        for (j =i+1;j<NUMB_SYMBOLS;j++)
+			if (label[1][j] == rr && label[3][j] == rc)
+			   return(0); // reject
+    }
+ }               
+ return(1)// # passed all tests
+
+}// end get_labels
+
+function two_label(ib,ic,b,c){
+    var i,j,k,n,c,s,t;
+    var lb,lc;
+    
+    lb = label[ib][b]
+    lc = label[ic][c]
+    if (lb == EMPTY && lc == EMPTY){
+      label[ib][b] = nxt_label;
+      label[ic][c] = nxt_label;
+      nxt_label += 1
+    }
+    else if (lc == EMPTY)
+     label[ic][c] = lb;
+    else if (lb == EMPTY)
+     label[ib][b] = lc;
+    else{ // # merge labels
+     for (i=0;i<4;i++)
+      for (j=0;j<NUMB_SYMBOLS;j++)
+       if (label[i][j] == lc)
+     	label[i][j] = lb;
+
+     for (i=0;i<equlist.length;i++){
+        t = equlist[i];
+		if (t[0]==lc) t[0]=lb;
+		if (t[1]==lc) t[1]=lb;
+		if (t[2]==lc) t[2]=lb;
+     }
+
+     for (i=0;i<fragments.length;i++){
+        t = fragments[i];
+		if (t[0]==lc) t[0]=lb;
+		if (t[1]==lc) t[1]=lb;
+		if (t[2]==lc) t[2]=lb;
+     }
+     merge_equlist();	
+    } 
+
+}
+
+function merge_equlist(){				
+	//"""find any elements of equlist with two common entries or same row entries, merge them."""
+    var flag,n,t,i,j,u;
+	flag = 1;
+	while (flag == 1){
+	  flag = 0
+
+      for (n=0;n<equlist.length;n++){
+		t = equlist[n]
+        for (j=n+1;j<equlist.length;j++){
+			u = equlist[j] //#have two entries same as t?
+            if (t[0]==u[0] && t[1] == u[1]){
+				consolidate(t[2],u[2])
+				flag = 1
+            }
+			else if (t[1]==u[1] && t[2] == u[2]){//t[1:] == u[1:]:
+				consolidate(t[0],u[0])
+				flag = 1
+            }
+			else if (t[2]==u[2]) {//#may have to consolidate both columns
+				consolidate(t[1],u[1])
+				flag = 1
+            }
+			if (flag) break
+        }
+		if (flag) break
+      }
+	  //# now find any fragments with a row label already in equlist, remove the fragments
+    
+      for (i=0;i<equlist.length;i++){
+            t  = equlist[i];
+            for (j=0;j<fragments.length;j++){
+                u = fragments[j];
+                if (t[2] == u[2]){
+                    if (u[0] != EMPTY)
+                        consolidate(u[0],t[0])
+                    else
+                        consolidate(u[1],t[1])
+                    fragments.splice(j,1);
+                    flag = 1
+                }
+                if (flag) break
+            }
+            if (flag) break
+      }      
+    } // end while
+}
+
+function consolidate(old,nxt){
+// 	merge label 'old' into label 'nxt'
+var i,j,n,c,t,u;
+var flag;
+
+    for (i=0;i<equlist.length;i++){
+        t = equlist[i];
+		if (t[0]==old) t[0]=nxt;
+		if (t[1]==old) t[1]=nxt;
+		if (t[2]==old) t[2]=nxt;
+    }
+	flag = 1
+	while (flag){// #remove any duplicates
+		flag = 0
+        for (i=0;i<equlist.length-1;i++){
+            for (j=i+1;j<equlist.length;j++)
+                if (equlist[i][0] == equlist[j][0] && equlist[i][1] == equlist[j][1] && 
+                        equlist[i][2] == equlist[j][2]){
+                    equlist.splice(j,1);
+                    flag = 1
+                    break
+            }
+            if (flag) break;
+        }
+    }
+    for (i=0;i<fragments.length;i++){
+        t = fragments[i];
+		if (t[0]==old) t[0]=nxt;
+		if (t[1]==old) t[1]=nxt;
+		if (t[2]==old) t[2]=nxt;
+    }
+	flag = 1
+	while (flag){// #remove any duplicates
+		flag = 0
+        for (i=0;i<fragments.length-1;i++){
+            for (j=i+1;j<fragments.length;j++)
+                if (fragments[i][0] == fragments[j][0] && fragments[i][1] == fragments[j][1] && 
+                        fragments[i][2] == fragments[j][2]){
+                
+                    fragments.splice(j,1);
+                    flag = 1
+                    break
+            }
+            if (flag) break;
+        }
+    }
+    // label array merge
+    for (i=0;i<4;i++)
+        for (j=0;j<NUMB_SYMBOLS;j++)
+            if (label[i][j] == old) label[i][j] = nxt;
+}
+
+function row_columns_label(ir,r,c2,c3){
+var i,j,n,c,s,lbl,lbr,lc;
+
+	lbl = label[2][c2];
+	lbr = label[3][c3];
+	lc = label[ir][r];
+	if (lbl == EMPTY && lbr == EMPTY && lc == EMPTY){
+	  n = nxt_label; // nxt_label global
+	  label[2][c2] = n;
+	  label[3][c3] = n+1;
+	  label[ir][r] = n+2;
+      equlist.push([n,n+1,n+2]);
+	  nxt_label += 3;
+    }
+	else if (lbl == EMPTY && lbr == EMPTY){
+	  n = nxt_label; // nxt_label global
+	  label[2][c2] = n;
+	  label[3][c3] = n+1;
+      equlist.push([n,n+1,lc]);
+	  nxt_label += 2;
+	  merge_equlist();
+    }
+	else if (lbl == EMPTY && lc == EMPTY){
+	  n = nxt_label; // nxt_label global
+	  label[2][c2] = n;
+	  label[ir][r] = n+1;
+      equlist.push([n,lbr,n+1]);
+	  nxt_label += 2;
+    }
+	else if (lbr == EMPTY && lc == EMPTY){
+	  n = nxt_label;
+	  label[3][c3] = n;
+	  label[ir][r] = n+1;
+      equlist.push([lbl,n,n+1]);
+	  nxt_label += 2;
+    }
+	else if (lbl == EMPTY){
+		label[2][c2] = nxt_label;
+        equlist.push([nxt_label,lbr,lc])  ;
+		nxt_label += 1;        
+		merge_equlist();
+    }
+	else if (lbr == EMPTY){
+		label[3][c3] = nxt_label;
+        equlist.push([lbl,nxt_label,lc])  
+		nxt_label += 1 ;       
+		merge_equlist();
+    }
+	else if (lc == EMPTY){
+		label[ir][r] = nxt_label;
+        equlist.push([lbl,lbr,nxt_label])  
+		nxt_label += 1 ;       
+		merge_equlist();
+    }
+	else {//: # all elements already labeled
+      equlist.push([lbl,lbr,lc]);
+	  merge_equlist();
+    }
+
+}
+
+function row_first_column_label(ir,r,c2){
+var lbl,lc,i,j,n;
+
+	lbl = label[2][c2];
+	lc = label[ir][r];
+	if (lbl == EMPTY && lc == EMPTY){
+	  n = nxt_label; // nxt_label global
+	  label[2][c2] = n;
+	  label[ir][r] = n+1;
+      fragments.push([n,-1,n+1]);
+	  nxt_label += 2;
+    }
+	else if (lc == EMPTY){
+	  label[ir][r] = nxt_label;
+      fragments.push([lbl,-1,nxt_label]);
+	  nxt_label += 1;
+    }
+	else if (lbl == EMPTY){
+	  label[2][c2] = nxt_label;
+      fragments.push([nxt_label,-1,lc])
+	  nxt_label += 1;
+	  combine_fragments();
+	  merge_equlist();
+    }
+	else {
+      fragments.push([lbl,EMPTY,lc])  ;
+	  combine_fragments();
+	  merge_equlist();
+    }
+
+}
+
+function combine_fragments(){
+var flag,i,j,t,u,n;
+// find any fragments that can be combined into a complete equlist element and 
+//merge fragments with common row labels
+  flag = 1
+  while (flag) {
+	flag = 0	
+    for (n=0;n<fragments.length;n++){
+		t = fragments[n];
+        for (j=n+1;j<fragments.length;j++){
+			u = fragments[j];
+			if (t[2] == u[2]) {
+				if (t[0] != EMPTY && u[1] != EMPTY){
+					equlist.push([t[0],u[1],t[2]])
+                    fragments.splice(j,1); // remove j index first because it's to right of n
+					fragments.splice(n,1);
+					flag = 1;
+                }
+				else if (u[0] != EMPTY && t[1] != EMPTY){
+					equlist.push([u[0],t[1],t[2]])
+                    fragments.splice(j,1); // remove j index first because it's to right of n
+					fragments.splice(n,1);                    
+					flag = 1;
+                }
+				else if (t[0] != EMPTY){
+					consolidate(t[0],u[0]);
+					flag = 1;
+                }
+				else {
+					consolidate(t[1],u[1]);
+					flag = 1;
+                }
+            }
+			if (flag) break
+        }
+		if (flag) break
+    }
+  } // end while
+    
+}
+
+function row_second_column_label(ir,r,c3){
+var i,j,n,lbr,lc;
+
+	lbr = label[3][c3];
+	lc = label[ir][r];
+	if (lbr == EMPTY && lc == EMPTY){
+	  n = nxt_label; // nxt_label is global
+	  label[3][c3] = n;
+	  label[ir][r] = n+1;
+	  fragments.push([EMPTY,n,n+1]);
+	  nxt_label += 2;
+    }
+	else if (lc  == EMPTY){
+	  label[ir][r] = nxt_label;
+	  fragments.push([EMPTY,lbr,nxt_label])
+	  nxt_label += 1
+    }
+	else if (lbr == EMPTY){
+	  label[2][c3] = nxt_label;
+	  fragments.push([EMPTY,nxt_label,lc])
+	  nxt_label += 1;
+	  combine_fragments();
+	  merge_equlist();
+    }
+	else {
+	  fragments.push([EMPTY,lbr,lc])  
+	  combine_fragments();
+	  merge_equlist();
+    }
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3>Digrafid crib possibilities</h3> <br>
+Directions: Type or paste in ciphertext and crib. Click Crib Drag button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 spellcheck="false" >
+</textarea><br>
+crib:<br>
+<textarea id="crib_area" rows = 2 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Crib Drag" onclick=do_calc();>
+&nbsp  &nbsp &nbsp Minimum Period for pairs: 
+<input type = text id="min_per" value = "3" size = 2 >
+&nbsp  &nbsp &nbsp Maximum Period for pairs: 
+<input type = text id="max_per" value = "9" size = 2 >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id="crib_string"> Include crib string
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+
+
+</body>
+</html>

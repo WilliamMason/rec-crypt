@@ -1,0 +1,969 @@
+<html>
+<head>
+<!-- version 3 adds key letter dragging 
+version 4 adds crib dragging
+-->
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>CONDI Worksheet</TITLE>
+
+<script>
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var c_symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+var digits="0123456789";
+
+var solving_flag = 0;
+var code,data;
+var plain ;
+var line_limit = 90;
+var fire_fox = 1;
+var dobj, cpos;
+var key_order = [];
+var key_array = []; // indexed by digits, filled with c_symbols elements
+var DASH = 26;
+
+var letter_selected = 0;
+
+var temp_plain = [];
+var temp_key_array = [];
+var crib_buffer = [];
+var current_crib_pos = -2;
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+var undo_array2 = [];
+var redo_array2 = [];
+
+var undo_array3 = [];
+var redo_array3 = [];
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+  redo_array[redo_index] = [];
+	for (i=0;i<code.length;i++) {
+		redo_array[redo_index][i] = plain[ i ];
+	}
+  redo_array2[redo_index] = [];
+	for (i=0;i<26;i++) {
+		redo_array2[redo_index][i] = key_order[ i ];
+	}
+  redo_array3[redo_index] = [];
+	for (i=0;i<26;i++) {
+		redo_array3[redo_index][i] = [];
+        for (j=0;j<26;j++)
+            redo_array3[redo_index][i][j] = key_array[i][j];
+	}    
+    redo_index++;
+    undo_index--;
+	for (i=0;i<code.length;i++) {
+		plain[ i ] = undo_array[undo_index][i];
+	}
+    
+  document.getElementById('redo_button').disabled = false;
+  //reset_key();
+  for (i=0;i<26;i++){
+    key_array[i] = [];
+    for (j=0;j<26;j++)
+      key_array[i][j] = undo_array3[undo_index][i][j]
+  }
+  for (i=0;i<26;i++)
+    key_order[i] = undo_array2[undo_index][i];
+  xlate();
+  update_keyblock();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<code.length;i++) {
+		plain[ i ] = redo_array[redo_index][ i ];
+	}
+  //reset_key();
+  for (i=0;i<26;i++){
+    key_array[i] = [];
+    for (j=0;j<26;j++)
+      key_array[i][j] = redo_array3[redo_index][i][j]
+  }  
+  for (i=0;i<26;i++)
+    key_order[i] = redo_array2[redo_index][i];
+  xlate();
+  update_keyblock();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<code.length;i++) {
+		undo_array[undo_index][ i ] = plain[ i ];
+	}
+    undo_array2[undo_index] = [];
+	for (i=0;i<26;i++) {
+		undo_array2[undo_index][ i ] = key_order[ i ];
+	}
+    undo_array3[undo_index] = [];
+	for (i=0;i<26;i++) {
+		undo_array3[undo_index][i] = [];
+        for (j=0;j<26;j++)
+            undo_array3[undo_index][i][j] = key_array[i][j];
+	}    
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+function setup_code() {
+    var n,i,c;
+	data = document.getElementById('cipher_place').value;
+	if (data.length<2){
+		alert("No ciphertext entered!");
+        clear();
+		return;
+	}
+	data = data.toUpperCase();
+	// global replace of line feeds and carriage returns with blank
+	//code = data.replace(/[\n\r]/g,' ');
+    code = data.replace(/\s+/g, " "); // replace consecutive copies of white space by just 1 blank
+	solving_flag = 1;
+	document.getElementById('outputblock').style.border = "3px ridge black";
+    
+	//solving_flag=1;
+	old_xlation = ['-'];
+    plain = [];
+	for (i = 0;i<code.length;i++){
+		old_xlation[i]= '-';
+        c = code.charAt(i);
+        n = c_symbols.indexOf(c);
+        if (n>-1 && n<DASH)
+            plain[i] = '-'
+        else
+            plain[i] = c;
+    }
+        
+	document.body.style.cursor = 'crosshair';
+    undo_index = redo_index = 0;
+}
+
+function clear(){
+    var str;
+    str = 'Ciphertext: (Type or paste cipher into this box, then click the Initialize button)<BR>';
+    str += '<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=4 cols=90></TEXTAREA><BR>';
+    document.getElementById('outputblock').innerHTML = str;
+    document.getElementById('letterblock').style.display="none";
+    document.getElementById('keyblock').innerHTML = '';
+    document.getElementById('undo_redo').innerHTML = '';
+    str = '<input type = "button" value="Initialize"; onclick="initialize()" >';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >'
+    document.getElementById('initial').innerHTML = str;
+    undo_index = redo_index = 0;
+    solving_flag = 0;
+}
+
+function reset_key(){
+    var i,j;
+    for (i=0;i<26;i++){
+        key_array[i] = [];
+        for (j=0;j<26;j++)
+            key_array[i][j] = '-';
+    }
+    keyblock_setup();
+}
+
+function more_info(){
+  var s;
+  s = "Use the top of the key table (green letters) to set the key order. Drag a letter from its position on the top row and drop it into the desired spot in the top row.\n When you have the correct key order across the top of the key table, click on the 'decrypt' button below the key table."
+  alert(s)
+}
+
+function letterblock_setup(){
+	var s,i,c;
+    s = "Click on one of the blue symbols below , then click below a cipher letter in the box above or on a place in the Key Table below. ";
+    s += '<input type = button onclick=more_info(); value="More Info" title="Green letters draggable">';
+    document.getElementById('initial').innerHTML=s;
+    document.getElementById('letterblock').style.display="block";
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}
+	s=s+'<br>';
+	document.getElementById('letterblock').innerHTML=s;
+	last_cell='';
+    //s = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+    s='';
+    s += '<input type=button value = "undo" onclick="do_undo()">'
+    s += '<input type=button value = "redo" onclick="do_redo()" id="redo_button" disabled>';
+    s += '<br><input type = button value = "Enter crib" onclick="get_crib()">';
+    s += '<br><input type = button value = "<-crib" onclick = "crib_left()">';
+    s += '<input type = button value = "crib->" onclick = "crib_right()">';
+    document.getElementById('undo_redo').innerHTML=s;
+
+}
+
+function crib_right(){
+  var crib_pos;
+  if ( current_crib_pos == -2){
+    get_crib();
+    return;
+  }
+	update_undo();
+  document.getElementById('redo_button').disabled = true;
+  restore_current_work();
+	for(crib_pos = current_crib_pos+1;crib_pos<plain.length-crib_buffer.length+1;crib_pos++){
+	  if (check_crib_pos(crib_pos) ){
+	    xlate();
+	    update_keyblock();
+	    current_crib_pos = crib_pos; // save as global var
+	    return;
+	  }
+	}
+    xlate();
+    update_keyblock();
+    current_crib_pos = crib_pos; // save as global var  
+  
+}
+
+function crib_left(){
+  var crib_pos;
+  if ( current_crib_pos == -2){
+    get_crib();
+    return;
+  }
+	update_undo();
+  document.getElementById('redo_button').disabled = true;
+  restore_current_work();
+	for(crib_pos = current_crib_pos-1;crib_pos>0;crib_pos--){
+	  if (check_crib_pos(crib_pos) ){
+	    xlate();
+	    update_keyblock();
+	    current_crib_pos = crib_pos; // save as global var
+	    return
+	  }
+	}
+    xlate();
+    update_keyblock();
+    current_crib_pos = crib_pos; // save as global var
+  
+}
+
+function get_crib(){
+  var i,j,c,n,crib_pos,s;
+	var crib= prompt('Enter crib (can include spaces and punctuation)');
+	if (crib==' ' || crib==null)
+	  return;
+	crib = crib.toLowerCase();
+	save_current_work();
+	crib_buffer = [];
+	for (i=0;i<crib.length;i++)
+	  crib_buffer[i] = crib.charAt(i)
+	update_undo();
+  document.getElementById('redo_button').disabled = true;
+	for(crib_pos = 0;crib_pos<plain.length-crib.length+1;crib_pos++){
+	  if (check_crib_pos(crib_pos) ){
+	    xlate();
+	    update_keyblock();
+	    current_crib_pos = crib_pos; // save as global var
+	    return;
+	  }
+	}
+    xlate();
+    update_keyblock();
+    current_crib_pos = crib_pos; // save as global var
+    
+	//alert("Check done");
+}
+
+function check_crib_pos(pos){
+  var i,j,n,c;
+  var c_left,left_pos;
+  var n0,n1,n2,c1;
+  // is crib consistent with plaintext, spaces and punctuation already entered?
+  for (i=0;i<crib_buffer.length;i++){
+    if (plain[pos+i]!= '-' && plain[pos+i] != crib_buffer[i] )
+      return(false);// this position not possible
+    else if (plain[i+pos] == '-' && symbols.indexOf(crib_buffer[i]) == -1)
+      return(false); //plain dashes can only go to letters or dashes, not spaces or punctuation
+  }
+  // check for inconsistencies
+
+  // insert crib into plain array
+  for (i=0;i<crib_buffer.length;i++)
+    plain[pos+i] = crib_buffer[i];
+
+  c_left = '-';
+  left_pos = -1;
+  var  change_flag = true;
+  var ck_pos;
+  while( change_flag){
+  change_flag = false;
+	ck_pos=0;
+	while (ck_pos<code.length) {
+        c = code.charAt(ck_pos);
+        c1 = plain[ck_pos];
+        n1 = symbols.indexOf(c1);
+        if ( n1 != -1 ){
+            if ( n1<DASH && c_left != '-') {
+                n0 = symbols.indexOf(c_left);
+                if (key_array[n0][n1] == '-'){
+                    // check that code symbol c not already there
+                    i = key_array[n0].indexOf(c);
+                    if ( i != -1){
+                      restore_current_work();
+                      return(false);
+                    }
+                    else {
+                        key_array[n0][n1] = c;
+                        key_array[n1][n0] = c;
+                    }
+                }
+                else if ( key_array[n0][n1] != c){
+                      restore_current_work();
+                      return(false);
+                }
+            }
+            if ( n1 == DASH && c_left != '-' && left_pos >= 0){ //can you fill in the dash?
+              n0 = symbols.indexOf(c_left);
+              i = key_array[n0].indexOf(c);
+              if (i != -1){
+                c1 = symbols.charAt(i);
+                plain[ck_pos] = c1;
+              }
+            }
+            if ( n1<DASH && c_left == '-' && left_pos >=0){ // can you fill in the previous dash?
+              i = key_array[n1].indexOf(c);
+              if ( i != -1){
+                plain[left_pos] = symbols.charAt(i); // should loop again to show new letter
+                change_flag = true;
+              }
+            }
+            c_left = c1;
+            left_pos = ck_pos;
+        }
+        ck_pos++;
+	  }
+	}
+  return(true); // possible crib position
+}
+
+
+function save_current_work(){
+  var i,j,c,n;
+  
+  for (i=0;i<plain.length;i++)
+    temp_plain[i] = plain[i];
+  for (i=0;i<26;i++){
+    temp_key_array[i] = [];
+    for (j=0;j<26;j++)
+      temp_key_array[i][j] = key_array[i][j]
+  }
+}
+
+function restore_current_work(){
+  var i,j,c,n;
+  
+  for (i=0;i<plain.length;i++)
+    plain[i] = temp_plain[i];
+  for (i=0;i<26;i++){
+    key_array[i] = [];
+    for (j=0;j<26;j++)
+      key_array[i][j] = temp_key_array[i][j]
+  }
+}
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,c1,n,c;
+  var c_left,n0,n1,i,j,s,flag, left_pos;
+  var change_flag;
+  
+ change_flag = true;
+ while( change_flag){
+  change_flag = false;
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+
+	if (code.length<limit)
+		limit = code.length;
+    else {// break at white space
+        c = code.charAt(limit-1);
+        n = c_symbols.indexOf(c);
+        while ( n > -1 && n <DASH){
+            limit--;
+            c = code.charAt(limit-1);
+            n = c_symbols.indexOf(c);
+        }
+    }
+	pos=0;
+	cnt=0;
+	pl='';
+    c_left = '-';
+    left_pos = -1;
+	while (pos<code.length) {
+        c = code.charAt(pos);
+		    str = str+c;
+        c1 = plain[pos];
+        n1 = symbols.indexOf(c1);
+        if ( n1 != -1 ){
+            if ( n1<DASH && c_left != '-') {
+                n0 = symbols.indexOf(c_left);
+                if (key_array[n0][n1] == '-'){
+                    // check that code symbol c not already there
+                    i = key_array[n0].indexOf(c);
+                    if ( i != -1){
+                        s = "Cipher letter "+c+" is already in use! Change to new letter?";
+                        if(confirm(s)){
+                          key_array[n0][i] = '-';
+                          key_array[i][n0] = '-'
+                          key_array[n0][n1] = c;
+                          key_array[n1][n0] = c;
+                        }
+                        else {
+                          c1 = '-';
+                          plain[pos] = c1;
+                        }
+                    }
+                    else {
+                        key_array[n0][n1] = c;
+                        key_array[n1][n0] = c;
+                    }
+                }
+                else if ( key_array[n0][n1] != c){
+                    s="Key array inconsistent with new plaintext letter "+c+" Replace old letter with this one?"
+                    if ( confirm(s)){
+                        key_array[n0][n1] = c;
+                        key_array[n1][n0] = c;
+                    }
+                }
+            }
+            if ( n1 == DASH && c_left != '-' && left_pos >= 0){ //can you fill in the dash?
+              n0 = symbols.indexOf(c_left);
+              i = key_array[n0].indexOf(c);
+              if (i != -1){
+                c1 = symbols.charAt(i);
+                plain[pos] = c1;
+              }
+            }
+            if ( n1<DASH && c_left == '-' && left_pos >=0){ // can you fill in the previous dash?
+              i = key_array[n1].indexOf(c);
+              if ( i != -1){
+                plain[left_pos] = symbols.charAt(i); // should loop again to show new letter
+                change_flag = true;
+              }
+            }
+            c_left = c1;
+            left_pos = pos;
+        }
+        
+		if ( old_xlation[pos] != c1){
+			old_xlation[pos]=c1;
+			pl = pl+'<font color="red"><span class = "plain'+pos+'">'+c1+'</span></font>';
+		}
+		else
+			pl = pl+'<span class = "plain'+pos+'">'+c1+'</span>';
+		//pl = pl+c+'&nbsp;&nbsp;';
+        // update key array, check for consistency
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+			//str=str+'\n'+pl+'\n';
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			cnt=0;
+			if (pos+line_limit>code.length)
+				limit = code.length-pos;
+            else { // break line at word break
+                limit = line_limit;
+                c = code.charAt(pos+limit-1);
+                n = c_symbols.indexOf(c);
+                while ( n > -1 && n <DASH){
+                    limit--;
+                    c = code.charAt(pos+limit-1);
+                    n = c_symbols.indexOf(c);
+                }
+            }
+		}
+	}
+	//document.ciphertext.cipher_place.value=str;
+ } // end while change flag
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function outblock_setup(){
+    if (solving_flag == 0){
+        setup_code();
+    }
+    xlate();
+}
+
+function initialize(){
+reset_key(); // also does keyblock_setup
+letterblock_setup()
+outblock_setup()
+disk_setup();
+}
+
+function start_over(){
+  var i,c,n;
+  
+  reset_key();
+  for (i=0;i<plain.length;i++){
+    n = symbols.indexOf(plain[i]);
+    if ( n != -1)
+      plain[i] = '-';
+  }
+  xlate();
+  update_keyblock();
+}
+
+
+
+function disk_setup(){
+var str;
+
+str = '<br><INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >'
+str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+str += '<INPUT onclick=start_over(); type=button value="Start Over" >';
+str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+str += '<INPUT onclick=get_decrypt(); type=button value="Decrypt using current key order" >';
+
+document.getElementById('diskops').innerHTML=str;
+}
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	}
+	else {
+		try {
+			localStorage.setItem("condi_work.cipher", data); //saves to the database, �key�, �value�
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn�t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+	str = '';
+	for (i=0;i< code.length;i++) {
+		str += plain[ i ];
+	}
+	localStorage.setItem("condi_work.plain", str);
+	str = '';
+	for (i=0;i< 26;i++) {
+		str += symbols.charAt(key_order[ i ]);
+	}
+	localStorage.setItem("condi_work.key_order", str);
+	str = '';
+	for (i=0;i< 26;i++) {
+        for (j=0;j<26;j++)
+            str += key_array[i][j];
+	}
+	localStorage.setItem("condi_work.key_array", str);
+    
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k,temp;
+    
+	temp = localStorage.getItem("condi_work.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    clear();
+    document.getElementById('cipher_place').value = temp;
+    initialize();
+    s = localStorage.getItem("condi_work.plain");
+    for (i=0;i<code.length;i++)
+        plain[i] = s.charAt(i);
+    //reset_key();
+    s = localStorage.getItem("condi_work.key_array");
+    for (i=0;i<code.length;i++){
+        key_array[i] = [];
+        for (j=0;j<26;j++)
+            key_array[i][j] = s.charAt(26*i+j);
+    }    
+    xlate();
+    s = localStorage.getItem("condi_work.key_order");
+    for (i=0;i<26;i++)
+        key_order[i] = symbols.indexOf(s.charAt(i));
+    update_keyblock();
+}
+
+function clear_disk(){
+	localStorage.removeItem("condi_work.cipher");
+	localStorage.removeItem("condi_work.plain");
+	localStorage.removeItem("condi_work.key_order");
+    localStorage.removeItem("condi_work.key_array");
+	alert("work cleared from disk");
+}
+
+
+function selectmouse(e){
+  var p_letter,n,c,n1,c_old,c_letter;
+  var x,y,n0,n2,n3,i,j;
+  var row;
+  
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s;
+    return false;
+  }
+  else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
+	  dobj = fobj;
+	  x = fobj.className.slice(5);
+	  p_letter=symbols.charAt(cpos);
+      n = parseInt(x);
+      c = code.charAt(n);
+      n1 = c_symbols.indexOf(c);
+      c_old = plain[n];
+      if ( n1 > -1 && n1 < DASH) {
+            update_undo();
+            document.getElementById('redo_button').disabled = true;
+            if ( c_old != '-' && c_old!= p_letter) {// changing or erasing old letter
+              // to be on safe side, remove all interactions involving the old letter
+              // otherwise xlate() may put the old letter back again.
+              for (n0=0;n0<plain.length;n0++)
+                if(plain[n0] == c_old)
+                  plain[n0] = '-';
+              n1 = symbols.indexOf(c_old);
+              for (n0=0;n0<26;n0++){
+                key_array[n0][n1] = '-';
+                key_array[n1][n0] = '-';
+              }
+            }
+            plain[ n ] = p_letter;
+      }
+      //next 3 lines for debugging
+	  //s = "using letter "+p_letter+" You clicked on pos "+x+" , which is below the codepair\n";
+	  //s = s+code_array[ parseInt(x)];
+	  //document.debug.output_area.value= s;
+	  letter_selected=0;
+	  //reset letter block
+	  letterblock_setup();
+	  xlate();
+      update_keyblock();
+      return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+      update_undo();
+	  x = fobj.className.charAt(0);
+      y = fobj.className.charAt(1);
+	  c_letter = c_symbols.charAt(cpos);
+      n0 = symbols.indexOf(x);
+      n0 = key_order[n0];
+      n1 = symbols.indexOf(y);
+      n1 = key_order[n1];
+      // erase any old position
+      i = key_array[n0].indexOf(c_letter);
+      if ( i != -1){
+        key_array[n0][i] = '-';
+        key_array[i][n0] = '-';
+      }
+      key_array[n0][n1] = c_letter;
+      key_array[n1][n0] = c_letter;
+	  //document.debug.output_area.value= s;
+	  letter_selected=0;
+	  //reset letter block
+	  letterblock_setup();
+	  xlate();
+      update_keyblock();
+      return false;
+  }
+}
+document.onmousedown=selectmouse;
+function update_keyblock(){
+    var str,i,j,n;
+    var n0,n1;
+    
+    s='';
+	s = s+'&nbsp'+'&nbsp';
+	//letters across the top
+	for (i=0;i<26;i++) {
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background:silver;color:green;"  >';
+            s=s+'&nbsp<span width="75" height = "75" id = "label'+i+'" class="colz" draggable="true">';
+            s=s+symbols.charAt( key_order[i] )+'</span> </span>';
+	}
+	s=s+'<br>';
+	for (i=0;i<26;i++) {
+		cr = symbols.charAt(i); // just for cell labels. don't show on screen
+		//show letter on the side, same as letter across top
+        s = s+ symbols.charAt(key_order[i])+'&nbsp';
+		//s = s+cr+'&nbsp';
+		//row of cells
+		for (j=0;j<26;j++) {
+			cc=symbols.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+key_array[key_order[i]][key_order[j]]+'</span> </span>';
+		}
+		s=s+'&nbsp <br>';
+	}
+	s=s+'<br>';
+	document.getElementById('keyblock').innerHTML=s;
+    // add event listeners
+    for (j=0;j<26;j++) {
+        document.getElementById('label'+j).addEventListener('dragstart',function (event) {
+            // store the ID of the element, and collect it on the drop later on
+            event.dataTransfer.setData('Text', this.id);
+            // for debugging
+            //document.getElementById('log').textContent += this.id + '\n';
+        });
+        document.getElementById('label'+j).addEventListener('dragover',  function (event) {
+            var pos1,pos2;
+            // stops the browser from redirecting off to the text.
+            if (event.preventDefault) {
+                event.preventDefault();
+            }
+        });
+        
+        document.getElementById('label'+j).addEventListener('drop',  function (event) {
+            var pos1,pos2;
+            // stops the browser from redirecting off to the text.
+            if (event.preventDefault) {
+                event.preventDefault();
+            }
+
+             var s =event.dataTransfer.getData('Text');
+             pos1 = parseInt(s.slice(5)); // number after 'label'
+             pos2 = parseInt(this.id.slice(5)) // number after 'label'
+             if ( pos2 < pos1)
+                insert_left(pos1,pos2);
+             else if (pos1<pos2)
+                insert_right(pos2,pos1);
+             else // columns the same!
+                update_keyblock();
+             // for debugging
+            // document.getElementById('log').textContent += 'dropped '+s + ' at '+this.id+'\n';
+  
+             return false;
+        });
+    }
+}
+
+function insert_left(pos1,pos2){
+    var i,j,n;
+    
+    update_undo();
+    document.getElementById('redo_button').disabled = true;
+    n = key_order[pos1];
+    for (i=pos1;i>pos2;i--)
+        key_order[i] = key_order[i-1];
+    key_order[pos2] = n;
+    update_keyblock();
+}
+
+function insert_right(pos1,pos2){
+    var i,j,n;
+    
+    update_undo();
+    document.getElementById('redo_button').disabled = true;
+    n = key_order[pos2];
+    for (i=pos2;i<pos1;i++)
+        key_order[i] = key_order[i+1];
+    key_order[pos1] = n;
+    update_keyblock();
+
+}
+
+
+function keyblock_setup() {
+	var s,i,c;
+
+    for (i=0;i<26;i++)
+        key_order[i] = i;
+    update_keyblock();
+}
+
+function get_decrypt(){
+        var i,j,k, index,x;
+        var c1,c2,c3,c4;
+        var shift,st;
+        var c,n, first_crib_pos,n1,n2,str;
+
+        var inv = [];
+        var plain_text = [];
+        /* get plain text */
+        //get_next_key(); // entend key_word to l_array
+        for (j=0;j<26;j++)
+            inv[key_order[j]] = j;
+
+        shift = -1;
+        st = 0;
+        first_crib_pos = -1;
+        // find first plaintext letter, there must be at least 1 for this to work.
+        for (i=0;i<plain.length;i++) {
+            c = plain[i];
+            n = symbols.indexOf(c);
+            if ( n> -1 && n<26){
+                first_crib_pos = i;
+                break;
+            }
+        }
+        if ( first_crib_pos == -1){
+            alert("No plaintext starting letter available!");
+            return;
+        }
+        if (first_crib_pos != -1) { // fill in plaintext right-to-left from first crib position
+            st = first_crib_pos;
+            plain_text[st] = plain[st];
+            n = symbols.indexOf(plain_text[st]);
+            shift = inv[n]+1;
+            n = c_symbols.indexOf(code[st]);
+            n = inv[n];
+            for (j=st-1;j>=0;j--){
+                n2 = c_symbols.indexOf(code[j]);
+                if ( n2 == -1)
+                        plain_text[j] = code[j];
+                else {
+                    n1 = key_order[ (26+n-shift)%26 ];
+                    plain_text[j] = symbols.charAt(n1);
+                    shift = inv[n1]+1;
+                    n = inv[n2];
+                }
+            }
+            //shift = inv[plain_text[st-1]]+1;  // reset shift for left-to-right loop below
+            n = symbols.indexOf(plain_text[st]);
+            shift = inv[n]+1;
+        }
+        for (j=st+1;j<code.length;j++) { // fill in rest of plaintext left-to-right to end of cipher
+                n2 = c_symbols.indexOf(code[j]);
+                if ( n2 == -1)
+                        plain_text[j] = code[j];
+                else {
+                    n = inv[n2];
+                    n1 = key_order[ (26+n-shift)%26 ];
+                    plain_text[j] = symbols.charAt(n1);
+                    shift = inv[n1]+1;
+                }
+        }
+        str ="CONDI Key is: ";
+        for (i=0;i<26;i++)
+            str += c_symbols.charAt(key_order[i]);
+        str += "\nDecrypt is:\n";
+        for (i=0;i<plain_text.length;i++)
+            str += plain_text[i];
+        //alert(str);
+        display_message(str);
+}
+
+function display_message(message){
+	var s;
+	
+	s = '<span id="m_display">';
+	//s += message;
+    s += '<textarea id="display_area" cols=50 rows=20 ></textarea>';
+	s += '<br><br><center><input value="Close" id="hide_message8" type="button"></center>';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	//document.getElementById('m_display').style.visibility="visible";
+	document.getElementById('m_display').style.display="block";
+  
+    document.getElementById('display_area').value = message;
+    document.getElementById('hide_message8').addEventListener("click", hide_message);
+}
+
+function hide_message(){
+	//document.getElementById('m_display').style.visibility="hidden";
+	document.getElementById('m_display').style.display="none";
+}
+
+
+</script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:300px;
+	width:500px;
+	height:450px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;
+}
+</style>
+</head>
+<body bgcolor="Silver" >
+<center><span style="font-weight:bold;">CONDI Worksheet</span></center><br>
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:100px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, then click the Initialize button)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=4 cols=90>
+</TEXTAREA><BR>
+</div>
+<br>
+<div id="initial">
+<input type = "button" value="Initialize" onclick="initialize()" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >
+</div>
+
+<BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black;
+	margin-right:140px; padding:10px; display:none;">
+</div>
+<BR>
+<div id="undo_redo"
+style="font-family:monospace; font-size: 15px;
+	  padding:10px; float:right;">
+</div>
+
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
+	  padding:5px; float:left;">
+</div>
+
+<div id="swap"
+style="font-family:monospace; font-size: 15px;
+	  padding:5px; clear:left;">
+</div>
+
+
+<div id = "diskops" style="clear:left;" >
+</div>
+<div id = "cm_display" >
+</div>
+</body>
+</html>

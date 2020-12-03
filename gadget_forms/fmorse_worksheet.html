@@ -1,0 +1,1123 @@
+<!-- F Morse scratchpad in javascript -->
+
+<HTML>
+
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Frac Morse Worksheet</TITLE>
+<script type="text/javascript">
+var EMPTY = -1;
+var END_SYMBOL = 2;
+var ERROR_SYMBOL = '^';
+var free_index, start0,start1;
+var morse = [];
+var code_len, plain_len;
+var inverse_table = []; // calculate just once to spped things up
+/* codes: 0 = dot, 1 = dash ,2 = end of letter */
+
+
+var m_code= [ 'e',0,2,
+        't',1,2,
+        'i',0,0,2,
+        'a',0,1,2,
+        'n',1,0,2,
+        'm',1,1,2,
+        's',0,0,0,2,
+        'u',0,0,1,2,
+        'r',0,1,0,2,
+        'w',0,1,1,2,
+        'd',1,0,0,2,
+        'k',1,0,1,2,
+        'g',1,1,0,2,
+        'o',1,1,1,2,
+        'h',0,0,0,0,2,
+        'v',0,0,0,1,2,
+        'f',0,0,1,0,2,
+        'l',0,1,0,0,2,
+        'p',0,1,1,0,2,
+        'j',0,1,1,1,2,
+        'b',1,0,0,0,2,
+        'x',1,0,0,1,2,
+        'c',1,0,1,0,2,
+        'y',1,0,1,1,2,
+        'z',1,1,0,0,2,
+        'q',1,1,0,1,2,
+        '1',0,1,1,1,1,2,
+        '2',0,0,1,1,1,2,
+        '3',0,0,0,1,1,2,
+        '4',0,0,0,0,1,2,
+        '5',0,0,0,0,0,2,
+        '6',1,0,0,0,0,2,
+        '7',1,1,0,0,0,2,
+        '8',1,1,1,0,0,2,
+        '9',1,1,1,1,0,2,
+        '0',1,1,1,1,1,2,
+        '.',1,0,1,0,1,0,2,
+        ',',1,1,0,0,1,1,2,
+        '?',0,1,0,1,0,1,2,
+        ':',1,1,1,0,0,0,2,
+        ';',1,0,1,0,1,0,2,
+        '-',1,0,0,0,0,1,2,
+        '/',1,0,0,1,0,2,
+        '=',1,0,0,0,1,2,
+         -1 ];
+
+
+var morse_order = ['000','001','002','010','011','012','020','021','022',
+'100','101','102','110','111','112','120','121','122',
+'200','201','202','210','211','212','220','221'];
+         
+         
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+	for (i=0;i<26;i++) {
+		redo_array[redo_index][i] = morse_key[i];
+	}
+    redo_index++;
+    undo_index--;
+	for (i=0;i<26;i++) {
+		morse_key[ i ] = undo_array[undo_index][i];
+	}
+    document.getElementById('redo_button').disabled = false;
+    restore_keyblock();
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<26;i++) {
+		morse_key[ i ] = redo_array[redo_index][i];
+	}
+    restore_keyblock();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<26;i++)  {
+		undo_array[undo_index][i] = morse_key[ i ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,crib_pos,cribtext;
+var symbols="abcdefghijklmnopqrstuvwxyz?";
+var digits="0123456789";
+//var wdigits=".123456789"; // put in dot for (index = -1) +1, =0, slot to show nothing entered yet
+var wdigits="?.-x"; // put in ? for (index = -1) +1, =0, slot to show nothing entered yet
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var line_limit;
+var last_cell;
+var old_xlation;
+
+var  crib, crib_triplet_index, mcode_crib,crib_pattern, crib_right_remainder;
+var crib_symbols = 'abcdefghijklmnopqrstuvwxyz ';
+var crib_entered = 0;
+
+//try associative array for key
+var morse_key = new Array();
+var columns_selected = new Array();
+var inverse_key = [];
+var work_buffer=[];
+var buf_len;
+var code_array=[];
+
+function initialize_morse_code(){
+	var cn,nindex,i,j,k,n;
+	var c;
+	
+	for (i=0;i<100;i++){
+		morse[i] = {};
+		morse[i].nxt0 = -1;
+		morse[i].nxt1 = -1;
+		morse[i].letter = -1;
+	}
+	start0 = 0;
+	start1 = 1;
+	free_index = 2;
+    j = 0;
+    while( (c = m_code[j++]) != -1 ) {
+//                printf("%c",c);
+//				li += c;
+            cn = m_code[j++];
+            if ( cn != 0)
+                index = start1;
+            else
+                index = start0;
+            while( (cn = m_code[j++]) != 2 ) {
+                if ( cn != 0) { /* dash next */
+                    nindex = morse[index].nxt1;
+                    if ( nindex == -1) {
+                        nindex = free_index++;
+                        morse[index].nxt1 = nindex;
+                    }
+                }
+                else        { /* dot next */
+                    nindex = morse[index].nxt0;
+                    if ( nindex == -1) {
+                        nindex = free_index++;
+                        morse[index].nxt0 = nindex;
+                    }
+                }
+                index = nindex;
+            } /* end while */
+            /* end of letter */
+            morse[index].letter = c;
+    } /* end while, get next letter */
+	// set up inverse table to speed things up
+	n=0;
+	for (i=0;i<3;i++) for (j=0;j<3;j++) for (k=0;k<3;k++)
+		inverse_table[n++] = [i,j,k];
+	//postMessage("00~morse code initialized");
+}
+
+function tsearch(ndex) {
+    var c;
+    var index,nindex,x;
+	
+
+    x = ndex;
+    c = work_buffer[x++];
+    if ( c== END_SYMBOL) { /* end of word */
+            return(' ');
+    }
+    if ( c == EMPTY)
+        //return(ERROR_SYMBOL);
+        return('?');
+    if ( c != 0 )
+            index = start1;
+    else
+            index = start0;
+
+    while( (c=work_buffer[x++])!= END_SYMBOL && x< code_len) {
+            if ( c == EMPTY)
+                //return(ERROR_SYMBOL);
+                return('?');
+            if (c != 0) {
+                nindex = morse[index].nxt1;
+                if ( nindex == -1) { /* no such letter*/
+                        return(ERROR_SYMBOL);
+                }
+            }
+            else {
+                nindex = morse[index].nxt0;
+                if ( nindex == -1) { /* no such letter*/
+                        return(ERROR_SYMBOL);
+                }}
+            index = nindex;
+    } /* end while */
+    if ( morse[index].letter == -1 ) /* no corresponding letter*/
+            return(ERROR_SYMBOL);
+    return(morse[index].letter);
+} /* end tsearch */
+
+function get_decrypt(){
+       var i,j,k, index,x,y,n,m,z;
+       var c1,c2,c3,c4;
+       var le,pos,offset;
+       var inverse_key={};
+
+       var work_array = [];
+       var plain_text=[];
+       var top_work=[];
+       var bot_work = []; // keep track of where plaintext letters appear below cipher symbols
+
+    
+    le = buf_len;
+    index = pos = 0
+    for (i=0;i<le;i++){
+        c = code_array[i];
+        c = c.toLowerCase();
+        x = morse_key.indexOf(c)
+        if ( x == -1) {
+            work_array[index]= -1;
+            work_array[index+1] = -1;
+            work_array[index+2] = -1;
+        }
+        else {
+            n = Math.floor(x/9)
+            m = x % 9
+            work_array[index]=n;
+            work_array[index+1]=Math.floor(m/3);
+            work_array[index+2] = m % 3;
+        }
+
+        index += 3;
+    }
+    work_buffer = work_array.slice(0); // make copy so extending work_buffer does not change work_array
+    code_len = work_array.length;
+    if (work_buffer[code_len-1] != END_SYMBOL)
+      	work_buffer[code_len++] = END_SYMBOL;    
+    x = plain_len = 0;
+    while( x<code_len) {
+            if ( work_buffer[x] == END_SYMBOL) {
+                    plain_text[plain_len++] = ' ';
+                    bot_work[x] = '-';
+                    x++;
+                    if ( x>= code_len)
+                            break;
+            }
+            plain_text[ plain_len++ ] = tsearch(x);
+            bot_work[x] = '-';
+            while( work_buffer[x++] != END_SYMBOL && x <code_len){
+                bot_work[x] = '-';
+            }
+            bot_work[x-1] = plain_text[plain_len-1];
+    } // end while
+    if ( code_len > work_array.length)
+        bot_work[code_len-2] = bot_work[code_len-1];
+    for (i=0;i<work_array.length;i++)
+        top_work[i] = wdigits.charAt(work_array[i]+1);
+    return([plain_text,top_work,bot_work]);
+}
+
+
+function reset_key() {
+	for (i=0;i<26;i++){
+		morse_key[i] = '?';
+	}
+    undo_index = redo_index = 0;
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box) <BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;
+    
+}
+
+function setup_code() {
+    var data;
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+	code = '';
+    buf_len = 0;
+    code_array = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+            code += c;
+            code_array[buf_len++]=c
+		}
+	}
+	solving_flag=1;
+	old_xlation = ['-'];
+	for (i = 0;i<3*code_array.length;i++)
+		old_xlation[i]= '-';
+    undo_index = redo_index = 0;
+}
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_chars;
+    var plaintext,top_work,bot_work,mid_work,result,w1,w2,w3;
+    var flag,i;
+  var p_index;
+    
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;
+	}
+    result = get_decrypt();
+    plaintext = result[0];
+    top_work = result[1];
+    bot_work = result[2]; // for keeping track of which plaintext letters are new.
+    flag = document.getElementById('show_work').checked;
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+	numb_chars=code_array.length;
+	if (numb_chars<limit)
+		limit = numb_chars;
+	pos=0;
+	cnt=0;
+	pl='';
+	p_index = 0;
+    w1='';
+	while (pos<numb_chars ) {
+		str = str+'&nbsp;'+code_array[pos]+'&nbsp;';
+        for (i=0;i<3;i++){
+            w1 += top_work[3*pos+i];
+            if (top_work[3*pos+i] == 'x' || 3*pos+i == top_work.length-1){
+              if ( plaintext[p_index] == ' '){
+                pl += '&nbsp;';
+                p_index++;
+              }
+              else if (old_xlation[3*pos+i] != bot_work[3*pos+i]){
+                old_xlation[3*pos+i] = bot_work[3*pos+i];
+                pl += '<font color="red">'+plaintext[p_index++]+'</font>';
+              }
+              else
+                pl += plaintext[p_index++]
+            }
+            else
+              pl += '&nbsp;';
+        }
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+            str += '<br>';
+            if (flag)
+                str += w1+'<br>';
+            str += '<font color="blue">'+pl+'</font><br>'
+    		pl='';
+            w1='';
+			cnt=0;
+			if (pos+line_limit>numb_chars)
+				limit = numb_chars-pos;;
+		}
+	}
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+function selectmouse(e){
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s;
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+	  letter=symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '-' ) {
+        for (i=0;i<26;i++){
+                c1 = parseInt(cell,10);
+				if (morse_key[i]==letter && c1 != i){
+		  			//delete letter at old location
+		  			morse_key[i] = '?';
+                    c = '';
+                    if (i<10) c += '0'
+                    c += i;
+					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+					s+='?</span>';
+					document.getElementById(c+'keymatrix').innerHTML= s;
+                    break;
+				}
+        }
+         
+  	}
+	  morse_key[ parseInt(cell,10)] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s;
+      return false;
+  }
+
+	  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}
+	s=s+'<br>';
+	document.getElementById('letterblock').innerHTML=s;
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+	var cord = ['.','-','x'];
+    
+	s='';
+	//two columns of blank place holders
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<26;i++) {
+		c = '';
+        if (i<10)
+            c += '0';
+		c += i;;
+		s = s+'<span width="35" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+		s=s+'?'+'</span> </span>';
+	}
+	s=s+'<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown; border-top: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        if ( ((i+1)%9) == 0) n = (n+1)%3;
+	}
+    s += '<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        if ( ((i+1)%3) == 0) n = (n+1)%3;
+	}
+    s += '<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        n = (n+1)%3;
+	}
+    s += '<br>';
+    
+	document.getElementById('keyblock').innerHTML=s;
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+    crib_entered = 0;
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+    xlate();
+}
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+	}
+}
+
+
+function restore_keyblock() {
+    var s,i,c;
+	var cord = ['.','-','x'];
+    
+	s='';
+	//two columns of blank place holders
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<26;i++) {
+		c = '';
+        if (i<10)
+            c += '0';
+		c += i;
+    	v = morse_key[i];
+		s = s+'<span width="35" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+		s=s+v+'</span> </span>';
+	}
+	s=s+'<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown; border-top: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        if ( ((i+1)%9) == 0) n = (n+1)%3;
+	}
+    s += '<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        if ( ((i+1)%3) == 0) n = (n+1)%3;
+	}
+    s += '<br>';
+    n = 0;
+	for (i=0;i<26;i++) {
+		s = s+'<span width="35" height="75" style="border: 2px solid brown;background: white;"  >';
+		s=s+'&nbsp<span width="35" height = "75" style="color:black">';
+		s=s+cord[n]+'</span> </span>';
+        n = (n+1)%3;
+	}
+    s += '<br>';
+    
+	document.getElementById('keyblock').innerHTML=s;
+
+}
+	
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" > &nbsp; &nbsp; &nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+    str += '<br><br><INPUT onclick=drag_crib(); type=button value="Enter a crib" >';
+    str += '<INPUT onclick=drag_left(); type=button value="<- (crib left)" ><INPUT onclick=drag_right(); type=button value="(crib right) ->" >';
+    str += '<br><br><INPUT onclick=display_plain(); type=button value="Get plaintext using current key" >';
+    str += '<br><br>Cipher letters per line: 30 <input type="radio" name="r_buttons" id = "button30" checked onclick ="set_30()">&nbsp;&nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';    
+    str += '40 <input type="radio" name="r_buttons" id = "button40" onclick ="set_40()">';
+
+	document.getElementById('button_actions').innerHTML= str;
+}
+
+function checkEnter(e){ //e is event object passed from function invocation by entering a new key_len
+	var characterCode //literal character code will be stored in this variable
+
+	//next 2 lines for debuging
+	//s = "you pressed a key";
+	//document.debug.output_area.value= s;
+
+	if(e && e.which){ //if which property of event object is supported (NN4)
+		e = e
+		characterCode = e.which //character code is contained in NN4's which property
+	}
+	else{
+		e = event
+		characterCode = e.keyCode //character code is contained in IE's keyCode property
+	}
+	
+	if(characterCode == 13){ //reset key_len
+		period = parseInt(document.ciphertext.period_entry.value,10);
+		//s = "you pressed enter for key_len"+key_len;
+		//document.debug.output_area.value= s;
+		setup_display();
+		return false
+	}
+	else{
+		return true
+	}
+
+//return true
+}
+
+function set_30(){
+line_limit = 30;
+xlate();
+}
+
+function set_40(){
+line_limit = 40;
+xlate();
+}
+
+function setup_display(){
+	var s;
+	
+    s = '';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '</span><input type="checkbox" id = "show_work" onclick="xlate()" checked > Show Morse code';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+/*
+    s += 'Cipher letters per line: 30 <input type="radio" name="r_buttons" id = "button30" checked onclick ="set_30()">&nbsp;&nbsp;';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';    
+    s += '40 <input type="radio" name="r_buttons" id = "button40" onclick ="set_40()">';
+*/
+	document.getElementById('key_lenblock').innerHTML=s;
+	document.getElementById('caption1').style.display="block";
+	document.getElementById('caption2').style.display="block";
+	document.getElementById('keyblock').style.display="block";
+	document.getElementById('letterblock').style.display="block";
+    document.getElementById('button_actions').style.display="block";
+    initialize_morse_code()
+    if (screen.width < 1050){
+        line_limit = 30;
+        document.getElementById('button30').checked = true;
+    }
+    else {
+        line_limit = 40;
+        document.getElementById('button40').checked = true;
+    }
+    
+    //xlate();
+	
+}
+
+function display_message(message){
+	var s;
+	
+	s = '<span id="m_display">';
+	//s += message;
+    s += '<textarea id="display_area" cols=50 rows=20 ></textarea>';
+	s += '<br><br><center><input value="Close" id="hide_message8" type="button"></center>';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('m_display').style.visibility="visible";
+    document.getElementById('display_area').value = message;
+    document.getElementById('hide_message8').addEventListener("click", hide_message);
+}
+
+function hide_message(){
+	document.getElementById('m_display').style.visibility="hidden";
+}
+
+function display_plain(){
+    var result, plaintext,mes;
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;
+	}
+    result = get_decrypt();
+    plaintext = result[0];
+    mes = plaintext.join('');
+    display_message(mes);
+
+}
+
+function get_crib_patterns(first_pos){
+          var j,k,index,x,y,i,n,cnt,full_len;
+        var c,c1,c2,c3,c4;
+
+        var flag;
+    // divide crib morse starting at beginning of cipher letter
+    crib_pattern = [];
+    cnt = 0;
+    if ( first_pos == 0){
+      full_len = 3*Math.floor(mcode_crib.length/3)
+      for (i=0;i<full_len;i = i+3){
+        c1 = mcode_crib[i];
+        c2 = mcode_crib[i+1];
+        c3 = mcode_crib[i+2];
+        c = ''+c1+c2+c3; // 3-digit string
+        n = morse_order.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+        crib_right_remainder = mcode_crib.length - full_len;
+      }
+    }
+    else if (first_pos == 2){
+      full_len = 3*Math.floor( (mcode_crib.length-2)/3)
+      for (i=2;i<full_len;i = i+3){
+        c1 = mcode_crib[i];
+        c2 = mcode_crib[i+1];
+        c3 = mcode_crib[i+2];
+        c = ''+c1+c2+c3; // 3-digit string
+        n = morse_order.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+        crib_right_remainder = mcode_crib.length - full_len-2;
+      }
+    }
+    else{
+      full_len = 3*Math.floor( (mcode_crib.length-1)/3)
+      for (i=1;i<full_len;i = i+3){
+        c1 = mcode_crib[i];
+        c2 = mcode_crib[i+1];
+        c3 = mcode_crib[i+2];
+        c = ''+c1+c2+c3; // 3-digit string
+        n = morse_order.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+        crib_right_remainder = mcode_crib.length - full_len-1;
+      }
+    }
+};
+
+function test_pos(start_pos){
+var i,j,k,n,c,s,s1,n1,le;
+var overflow_char;
+var morse_digits = ['0','1','2'];
+
+    for (i=0;i<crib_pattern.length-1;i++)
+        for (j=i+1;j<crib_pattern.length;j++)
+            if ( (crib_pattern[i] == crib_pattern[j]) != (code[i+start_pos] == code[j+start_pos]))
+                return(false);
+    // check for partial code at beginning of morse crib, which is end of ciphertext letter preceeding the crib pattern
+    if ( crib_triplet_index>0 ){ // 1 ot 2 bits of crib in front of start position.
+        if (start_pos <=0 ) return(false);
+        overflow_char = code[start_pos-1];
+        s = code.slice(start_pos,start_pos+crib_pattern.length);
+        n = s.indexOf(overflow_char);
+        if ( n!= -1){ // overflow char appears within crib, so is already filled in
+            n1 = symbols.indexOf( crib_pattern[n]);
+            s1 = morse_order[ n1 ]; // 3-char digit string
+            if (crib_triplet_index == 1 && s1.charAt(2) != morse_digits[ mcode_crib[0] ] ) // overflow bit does not match interior letter of crib
+                return(false);
+            if (crib_triplet_index == 2 && (s1.charAt(1) != morse_digits[ mcode_crib[0] ] || s1.charAt(2) != morse_digits[ mcode_crib[1] ] ))
+                // overflow bits do not match interior letter of crib
+                return(false);            
+        }
+    }
+    // check for partial code at end of morse crib, which is beginning of cipeurtext letter after the crib pattern.
+    if ( crib_right_remainder > 0 && start_pos+crib_pattern.length < code.length){ // 1 or 2 bits after end of crib_pattern
+        overflow_char = code[start_pos+crib_pattern.length];
+        s = code.slice(start_pos,start_pos+crib_pattern.length);
+        n = s.indexOf(overflow_char);
+        if ( n!= -1){ // overflow char appears within crib, so is already filled in
+            n1 = symbols.indexOf( crib_pattern[n]);
+            s1 = morse_order[ n1 ]; // 3-char digit string
+            le = mcode_crib.length;
+            if (crib_right_remainder == 1 && s1.charAt(0) != morse_digits[ mcode_crib[le-1] ] ) // overflow bit does not match interior letter of crib
+                return(false);
+            if (crib_right_remainder == 2 && (s1.charAt(0) != morse_digits[ mcode_crib[le-2] ] || s1.charAt(1) != morse_digits[ mcode_crib[le-1] ] ))
+                // overflow bits do not match interior letter of crib
+                return(false);          
+        }
+        
+    }
+    return(true);
+        
+} /* end test_pos */
+
+
+function drag_crib(){
+    var i,j,k,c,n, m_cnt,cnt,x,short_len;
+	var s= prompt('Enter crib (can include blanks)');
+	if (s ==' ' || s == null)
+		return;
+	if (crib_entered){
+		ck=confirm('Dragging will reset the key table. Proceed?');
+		if (ck != true)
+			return;
+	}
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;//odd number of digits!
+	}
+    s = s.toLowerCase();
+    //update_undo();
+	crib = [];
+    mcode_crib = [];
+	cnt = 0;
+	m_cnt = 0;
+	for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		n = crib_symbols.indexOf(c);
+		if ( n >-1) {
+		  crib[cnt++]=c;
+		  // get morse code for c
+		  if ( c==' '){
+		    mcode_crib[m_cnt++] = END_SYMBOL;
+		    if ( i==0) mcode_crib[m_cnt++] = END_SYMBOL;
+		  }
+		  else {
+            n = m_code.indexOf(c)+1;
+            x = m_code[n]
+		    while(x!= END_SYMBOL){
+		      mcode_crib[m_cnt++] = x;
+              x = m_code[++n];
+            }
+		    mcode_crib[m_cnt++] = END_SYMBOL;
+		  }
+		}
+	}
+    if (mcode_crib.length < 5){
+        alert("Crib too short!");
+        return;
+    }
+    crib_len = cnt;
+    crib_triplet_index = 0;
+	crib_pos=0;
+	not_found=1;
+    short_len = Math.floor( (mcode_crib.length-2)/3);
+	while(crib_pos< code_array.length-short_len+1) {
+        get_crib_patterns(crib_triplet_index);
+		if ( test_pos(crib_pos) ) {
+			not_found=0;
+			for (i=0;i<26;i++)
+			  morse_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  morse_key[n] = code[i+crib_pos].toLowerCase();
+			}  
+            restore_keyblock();
+			break; // OK!
+		}
+        if (crib_triplet_index == 0){
+            crib_pos++;
+            crib_triplet_index = 2;
+        }
+        else 
+            crib_triplet_index --
+	}
+	if ( not_found ){
+		for (i=0;i<26;i++)
+		  morse_key[i] = '?';
+        restore_keyblock();
+	}
+	//fill in plaintext
+	xlate();
+	crib_entered=1;	
+
+}
+
+function drag_left(){
+//alert("drag left");
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}	
+	not_found=1;
+    var short_len = Math.floor( (mcode_crib.length-2)/3);
+    if ( crib_triplet_index == 2){
+        crib_pos--;
+        crib_triplet_index = 0;
+    }
+    else
+        crib_triplet_index++;
+	if (crib_pos<0 || crib_pos>code_array.length-short_len){
+		crib_pos= code_array.length-short_len;
+        crib_triplet_index = 2;
+    }
+	while(crib_pos>=0) {
+        get_crib_patterns(crib_triplet_index);
+		if ( test_pos(crib_pos) ) {
+			not_found=0;
+			for (i=0;i<26;i++)
+			  morse_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  morse_key[n] = code[i+crib_pos].toLowerCase();
+			}  
+            restore_keyblock();
+			break; // OK!
+		}
+        if ( crib_triplet_index == 2){
+            crib_pos--;
+            crib_triplet_index = 0;
+        }
+        else
+            crib_triplet_index++;
+	}
+
+	if ( not_found ){
+		for (i=0;i<26;i++)
+		  morse_key[i] = '?';
+        restore_keyblock();
+	}
+	//fill in plaintext
+	xlate();
+
+}
+
+function drag_right(){
+//alert("drag right");
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}	
+	not_found=1;
+    var short_len = Math.floor( (mcode_crib.length-2)/3);
+        if (crib_triplet_index == 0){
+            crib_pos++;
+            crib_triplet_index = 2;
+        }
+        else 
+            crib_triplet_index --
+	if (crib_pos>code_array.length-short_len || crib_pos<0){
+		crib_pos=0;
+        crib_triplet_index = 0;
+    }
+	while(crib_pos < code_array.length-short_len+1) {
+        get_crib_patterns(crib_triplet_index);
+		if ( test_pos(crib_pos) ) {
+			not_found=0;
+			for (i=0;i<26;i++)
+			  morse_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  morse_key[n] = code[i+crib_pos].toLowerCase();
+			}  
+            restore_keyblock();
+			break; // OK!
+		}
+        if (crib_triplet_index == 0){
+            crib_pos++;
+            crib_triplet_index = 2;
+        }
+        else 
+            crib_triplet_index --
+	}
+	if ( not_found ){
+		for (i=0;i<26;i++)
+		  morse_key[i] = '?';
+        restore_keyblock();
+	}
+	//fill in plaintext
+	xlate();
+
+}
+
+</script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:100px;
+	width:500px;
+	height:450px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;
+}
+</style>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Fractionated Morse Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Paste ciphertext in box below.
+<br><br>
+Ciphertext: <BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+
+<!-- place to enter key_len -->
+
+<span id="key_lenblock">
+<br>
+</span>
+</form>
+
+<div id="caption1" >
+Click on one of the blue symbols below , then click on a cell in top row of key table.<BR>
+</div>
+
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; width:850px;
+ padding:10px;">
+</div>
+<BR>
+<div id="caption2" >
+Key Table:<br>
+</div>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px; ">
+</div>
+
+
+<div style = "float:left; font-family:monospace; font-size: 15px; margin:5px; width: 500px; border:2px solid black; padding:10px; background:yellow;">
+E&nbsp;.&nbsp;&nbsp;&nbsp;S&nbsp;...&nbsp;&nbsp;H&nbsp;....&nbsp;&nbsp;B&nbsp;-...&nbsp;&nbsp;1&nbsp;.----<br><br>
+T&nbsp;-&nbsp;&nbsp;&nbsp;U&nbsp;..-&nbsp;&nbsp;V&nbsp;...-&nbsp;&nbsp;X&nbsp;-..-&nbsp;&nbsp;2&nbsp;..---<br><br>
+I&nbsp;..&nbsp;&nbsp;R&nbsp;.-.&nbsp;&nbsp;F&nbsp;..-.&nbsp;&nbsp;C&nbsp;-.-.&nbsp;&nbsp;3&nbsp;...--<br><br>
+A&nbsp;.-&nbsp;&nbsp;W&nbsp;.--&nbsp;&nbsp;L&nbsp;.-..&nbsp;&nbsp;Y&nbsp;-.--&nbsp;&nbsp;4&nbsp;....-<br><br>
+N&nbsp;-.&nbsp;&nbsp;D&nbsp;-..&nbsp;&nbsp;P&nbsp;.--.&nbsp;&nbsp;Z&nbsp;--..&nbsp;&nbsp;5&nbsp;.....<br><br>
+M&nbsp;--&nbsp;&nbsp;K&nbsp;-.-&nbsp;&nbsp;J&nbsp;.---&nbsp;&nbsp;Q&nbsp;--.-&nbsp;&nbsp;6&nbsp;-....<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;G&nbsp;--.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7&nbsp;--...<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;O&nbsp;---&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8&nbsp;---..&nbsp;9&nbsp;----.&nbsp;0&nbsp;-----
+</div>
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; padding:10px;">
+</div>
+
+<div id = "cm_display" >
+</div>
+
+
+<script type="text/javascript">
+reset_key();
+letterblock_setup();
+keyblock_setup();
+set_original_buttons();
+setup_display();
+</script>
+
+
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>

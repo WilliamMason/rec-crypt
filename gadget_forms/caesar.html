@@ -1,0 +1,57 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Get Caesar Shifts</title>
+<script type="text/javascript">
+function do_calc(){
+	var str, alpha,caesar_shift,out_str,c,n;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	//caesar_shift = 5;
+	caesar_shift = parseInt(document.getElementById('shift_amount').value);
+	out_str="";
+	
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			out_str += alpha.charAt( (n+caesar_shift)%26 );
+		else
+			out_str += c;
+	}
+	out_str += " (shift of "+caesar_shift+")\n\nall shifts...\n";
+	for (var j = 0;j<26;j++) {
+		for (var i=0;i<str.length;i++){
+			c = str.charAt(i);
+			n = alpha.indexOf(c);
+			if ( n>=0)
+				out_str += alpha.charAt( (n+j)%26 );
+			else
+				out_str += c;
+		}
+		out_str += "\n";
+	}
+	
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Caesar Shift Calculator </h3> <br>
+Directions: Type or paste string into Input box. Set size of shift. Click "Get Caesar Shift" button. <br><br>
+Input:<br>
+<textarea id="input_area" rows = 3 cols=80 >
+</textarea><br>
+<input type="button" value="Get Caesar Shift" onclick=do_calc();>
+&nbsp  &nbsp &nbsp Size of shift =>
+<input type = text id="shift_amount" value = "5" size = 3 >
+<br><br>
+Caesar-shifted Output:<br>
+<textarea id="output_area" rows=5 cols=80>
+</textarea>
+
+
+</body>
+</html>

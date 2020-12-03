@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!-- Amsco interactive, try similar scheme to mysz5 -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<TITLE>Amsco Transposition Worksheet</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+<script src="amsco_main.js"></script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:100px;
+	width:500px;
+	height:450px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+#c_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:300px;
+	width:400px;
+	height:200px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+#letter_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:10px;
+	width:200px;
+	height:580px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+#direction_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:10px;
+	width:500px;
+	height:200px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+
+.colx {
+    padding:0px;
+
+    overflow-x: hidden;
+    overflow-y: scroll;
+
+    margin-top:10px;
+    border:0px;
+    line-height:1;
+	background: #EEEEEE;    
+
+ }
+ 
+ .coly {
+    padding:0px;
+
+    overflow-x: hidden;
+    overflow-y: hidden;
+
+    margin-top:10px;
+    border:0px;
+    line-height:1;
+	background: #EEEEDD;    
+
+ }
+ .colz {  /* column labels */
+    padding:2px;
+
+    overflow-x: hidden;
+    overflow-y: hidden;
+    margin:0px;
+    border:1px ridge black;
+    line-height:1;
+	background: #EEEEEE;    
+    font-family:monospace;
+    font-size:15px;
+
+ }
+.black_overlay{
+	display: none;
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	z-index:1001;
+	-moz-opacity: 0.7;
+	opacity:.70;  /* the higher the more opaque */
+	filter: alpha(opacity=70);
+}
+.white_content {
+	display: none;
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 25%;
+	padding: 16px;
+    background: #EEEEEE;
+    color: #000;
+    border:10px ridge black;
+	z-index:1002;
+	overflow: auto;
+}
+
+</style>
+
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Amsco Transposition Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock" 
+style="overflow:auto; font-family:monospace; font-size: 15px; height:400px; 
+	margin-right:10px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, enter the key length, click Initialize button)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+<!-- place to enter key_len -->
+<span id="key_lenblock">
+<br>
+<span style="font-weight:bold;">Enter key length=></span>
+<input type = text name=key_len_entry  size = 3 id="checkEnter2">
+<input type = button value="Initialize" id="do_setup1">
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+<INPUT id="get_from_disk1" type=button value="retrieve work from disk" >
+
+</span>
+</form>
+<div id = "cm_display" >
+</div>	
+<div id="light" class="white_content">
+</div>
+<div id="fade" class="black_overlay"></div>
+
+<!-- mark off space for swap -->
+
+<div id="swapblock">
+
+</div>
+<div id="decrypt">
+</div>
+
+
+
+<!------------ for debugging
+<pre id="log">
+</pre>
+--->
+
+</BODY>
+</HTML>
