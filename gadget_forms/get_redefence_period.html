@@ -1,0 +1,384 @@
+<html>
+<head>
+<title>Redefence period</title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+
+<script >
+
+
+var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";	
+var buf_len;
+var buffer = [];
+
+var redefence_calcs = function(){
+//T1 has compressed binary trigraph values
+// had to replace \ by \\
+T1 ="sT1@>@7YiAITV3i?_^E>Yi@A4RpdMJ"
+T1+="N57Xht@p@2`OYkAiWW75EHFQQphpi4"
+T1+="W71r`O1[AIe_GeKjNpBpepI4RpTMJ>"
+T1+="44rKPQ2sPg\\hx@4Xq<RS;q@rPq41s2"
+T1+="6x4p2p@4111A44q18>x41@@@4Qh1A6"
+T1+="65q`4v4t@pHXtX[n>4s1p4441:pP^j"
+T1+="j>q4r8q1pPphR^Ox1Pu@41118RR3xA"
+T1+="454TA8N@4QA18PU1v1p@s162tjRW31"
+T1+="wAT64hO_n=q1r2p@q8@_Hi2w@4991s"
+T1+="4A@@P``Yx@4111A4q4@H4q:av@vPQy"
+T1+="iUW3EAHFB>YiA^b[KTCH6DFQ9plc_C"
+T1+="a:ZnPsETV1lGkNEniiAieV7Q8p8@>@"
+T1+="kIslOjNe>iiAmV^Wp4:;@6YI@iRV31"
+T1+="1q@6Xiq4qP18>4w41:pPWih2A444q8"
+T1+="q1pPpHPRC1wAPs@p@4111Hc_C1wAp4"
+T1+="44A8N@PQA1r1v1t4p6:thUS31wAT64"
+T1+="X8:Zr1p1p24t^hhx@p8u4A@@p2pPx@"
+T1+="4p1114s8p@qI~P~TA8ND4YqNbSKp@@"
+T1+="rQp14q2P1p<t4r4p2s1pA44@p8p<@x"
+T1+="AD@@fYiAig_G1p@uiSWC1r`4HXu?V^"
+T1+="A4AqA4V5TCJNTolh6hTV3UAH2pohkD"
+T1+="w@5XIpoU^7UAL>DDUY583:;41`Dto5"
+T1+="\\FTEJND]Yk1p1DpTAH2@niiA@rTp2:"
+T1+="v1r@@y8~~w@~~~y4@Pt4A@@t@2~q2y"
+T1+="4w14p4qd:x4p@p@p1w@~w`OlnE6A11"
+T1+="I4VS5A:2Pomh6@p6q18q1pPpo2QOt1"
+T1+="rAT44t4111l6^;pAdF2sA454TApL@1"
+T1+="QapT1]1v1v62tlVRSxAT2ph=?^1q1r"
+T1+="2p@q<@VXh@w@p81q44p4A@2pS`i4w@"
+T1+="4111I4P74AHFpQXIv@uCPQtPomkGw@"
+T1+="4Yqng_O3p@rQul?on5s@4T6q2q4rA4"
+T1+="44`On>5w41@@@41q1625T?N>4s1p4t"
+T1+="@p88x@VPh@mWV3UEJNTglj2iWW3UCJ"
+T1+=">DOTiD4pR;t1PqoU^7UCN>DnmiDZSZ"
+T1+="CT3nN4so7\\G]OONEomkEs41q@VQi@s"
+T1+="d?O>5slR^31w@P2ph9?^r1r2p@q8pQ"
+T1+="88x@48qA444pA@qWXkp1444s@4111I"
+T1+="4V74@84pFPiy4sPQ}4x2P1~~u4~~~x"
+T1+="hOnnE6@h@ApR1T1:4Pooj>i1V3U3H>"
+T1+="p1p`pm397x1PqP1p8p411pnW_KU3nN"
+T1+="6sA4444Aq@>QiHn;=3t4x22tlW_C5p"
+T1+="@@q1qATVphOon5q1r2p@q8@ghiOs@p"
+T1+="H2@49p1A4T44A@@1PhkpA4u@4A11A4"
+T1+="V7DIHF`_kit41@uKPS3tomkGr44AH@"
+T1+="@4Y9png[?5ABrPq41p3l?oN5s4pRp4"
+T1+="A2@p411pI4TDX=N>D4@p1s4A@@`nik"
+T1+="EE6^5lpj:tAp4q1q`6XXt`12p@FQi@"
+T1+="D4R14AHqPQ8p@pV24A82p5phtP18uW"
+T1+="P4pPADLD411pnW[CQ1@4@5PHpLpP2T"
+T1+="CHND5QI1~s2u`3R1x1p2pPK:>5q1yN"
+T1+="8hy4p1u@@qGhhy4q1p4~~r6Xhx@4Y8"
+T1+="pnWSKq@rPq4q2P1p8t4r4p2q411pA4"
+T1+="4@P8Z>x4A@@@6Yh1A6V5q@w4t`4HXw"
+T1+="8}6Xi@~p1~~~~}8PSAP18>DpPqAp6p"
+T1+="X9;Vq11r2s81z4PFYj4hpV34A@pP2p"
+T1+="Pr8t@4pY1Ar4A:Ft1s1~~~w8~~~~}0"
+
+var bt = [];
+
+var max_score;
+var l_alpha = "abcdefghijklmnopqrstuvwxyz";
+var plain_text = new Array();
+var key=[];
+var inverse_key = [];
+var period;
+//var max_period = 15;
+var max_period = 8;
+var work_array=[];
+var start_row;
+
+function construct_bt_table(){
+    var i,n,index,c,ze,x,j,mask;
+    // read T and put it into the working binary trigraph table: bt
+    n = 26*26*26
+    i = index = 0;
+
+    ze = '0'.charCodeAt(0);
+    while (i < n){
+        c = T1.charCodeAt(index);
+        index +=1
+        //x = ord(c)-ord('0')
+        x = c-ze;
+        if (x > 63){
+            x -= 63;
+            //for j in range(6*x):
+            for (j=0;j<6*x;j++){
+                bt[i] = 0;
+                i += 1;
+            }
+        }
+        else{
+            mask = 1;
+            while (mask < 64){
+                if (mask & x ){
+                    bt[i] = 1;
+                }
+                else bt[i] = 0;
+                i += 1;
+                mask += mask;
+                if (i >= n)  break;
+            }
+        }
+    }
+}
+
+construct_bt_table();
+//alert("table constructed");
+
+function get_trial_decrypt(period){
+        var i,j,index;
+        var offset,count,k;
+        var inverse_count;
+        var le,ext_key;
+        var s;
+        
+        // convert redefence key to equivalent myskowski key.
+        le = 2*period-2;        
+        ext_key = key.slice(0,period); // use slice so we get a copy, not just a pointer to the key.
+        index = period;
+        for (j= period-2;j> 0;j--)
+            ext_key[index++]= key[j];
+        index = 0;
+        my_key = [];
+        for (j=start_row;j<le;j++)
+            my_key[index++] = ext_key[j];
+        for (j=0;j<start_row;j++)
+            my_key[index++] = ext_key[j];
+        //my_key = ext_key.slice(start_row,le)+ext_key.slice(0,start_row);
+		/* for speed, set up inverse key */
+        inverse_count = [];
+        for (j=0;j<le;j++)
+            inverse_key[j] = [];
+
+		for (j=0;j<le;j++) {// highest possible key entry is key_len-1
+			inverse_count[j] = 0;
+			for (k=0;k<le;k++)
+				if ( my_key[k] == j)
+					inverse_key[j][inverse_count[j]++] = k;
+		}
+        count = 0;
+        for (k=0;k< le;k++) {
+	        if (inverse_count[k]==0) continue;
+			index = offset = 0;
+			while ( inverse_key[k][index]+offset < buf_len) {
+				plain_text[inverse_key[k][index]+offset] = buffer[count++];
+				if ( ++index >= inverse_count[k]){
+						index = 0;
+						offset += le;
+				}
+			} /* end while*/
+        } /* next k */
+    }
+        function get_score(period){
+            var score,i,n;
+        
+            get_trial_decrypt(period);
+            // get tri score
+            score = 0.0;
+            for (i=0;i<buffer.length-2;i++){
+                n = plain_text[i]+26*plain_text[i+1]+26*26*plain_text[i+2];
+                score += bt[n];
+            }
+            return(score);
+        }    
+
+    var do_redefence_calc = function(code){ // return this function which can use the pseudo-global variables
+        var str, alpha,out_str,c,n,i,ct,sum,c1,c2,j,k,flag;
+        //var code_len,code;
+        var code_len;
+        var period, best_score, best_line,result,best_period;
+        var n1,n2,v1,v2, local_best_score, local_count, reps;
+        var numb_decrypts,fudge_factor,numb_accepted;
+        var op_choice;
+        
+        var max_local_count = 500;        
+        //numb_decrypts = parseInt(document.getElementById('numb_decrypts').value );
+        numb_decrypts = 10000;
+        max_period = parseInt(document.getElementById('max_period').value );
+        //fudge_factor = parseFloat(document.getElementById('fudge').value );
+        fudge_factor = 0.4;
+
+        max_score = 0;
+        key = [];
+        var cycle_limit = 30;	
+        var begin_level = 1.0
+        var noise_step = 1.5;
+        var noise_level = begin_level;
+        var cycle_numb = 0;        
+       for (period = 2; period <= max_period; period++){
+        for (i=0;i<period;i++) {
+            key[i] = i;
+        }        
+        // random start;
+        for (i=period-1;i>0;i--) {
+            j = Math.floor( Math.random()*i);
+            c = key[j];
+            key[j]=key[i];
+            key[i] = c;
+        }
+        
+        start_row = Math.floor(Math.random()*period);
+        local_best_score = 0;    
+        //loal_count = 0;
+        numb_accepted = 0;        
+        for (i=0;i<numb_decrypts;i++){
+            op_choice = Math.floor(Math.random()*100);
+            if ( op_choice <50 ){
+                n1 = Math.floor(Math.random()*period);
+                n2 = Math.floor(Math.random()*period);
+                v1 = key[n1];
+                v2 = key[n2];
+                key[n1]=v2;
+                key[n2]=v1;
+            }
+            else {
+                n1 = start_row;
+                start_row = Math.floor(Math.random()*period);
+            }
+        /*
+            n1 = Math.floor(Math.random()*period);
+            v1 = key[n1];
+            key[n1]= Math.floor(Math.random()*26);   
+        */
+            score = get_score(period);
+            if (score>max_score){
+                max_score = score;
+                /*
+                out_str = '';
+                x = score.toFixed(2);
+                //out_str += x+'~';
+                for (j=0;j<buf_len;j++)
+                    out_str += l_alpha.charAt(plain_text[j]);
+                out_str += "\nscore: "+score.toFixed(2);
+                k = 100*score/(buffer.length-2);
+                out_str += ", normalized score: "+k.toFixed(2);
+                n = (k-15)/(91-15); // std english bstd score = 91, random english bstd score = 15
+                out_str += ", doppleschach score: "+n.toFixed(2);
+                out_str += "\n% accept: "+ (100.0*numb_accepted/(i+1)).toFixed(2);                
+                out_str += '\nperiod: '+period;
+                out_str += '\nkey: ';
+                for (j=0;j<period;j++)
+                    //out_str += l_alpha.charAt( key[j] );
+                    out_str += key[j] +' ';
+                out_str += '\nstarting position: '+start_row;
+                */
+                //out_str += "\nAutokey type: "+ auto_types[num_type];
+                //document.getElementById('output_area').value = out_str;	
+                //postMessage(out_str);
+                k = 2*period-2;
+                out_str = 'best number of redefence rails: '+period+" ( or "+k+" myszkowski columns )";
+            }
+            if (score > local_best_score-fudge_factor*buffer.length/(noise_level)) {	
+                if (score != local_best_score)
+                    numb_accepted++;				
+            
+                local_best_score = score;
+            }
+            else {
+                if ( op_choice < 50){
+                    key[n1]=v1;
+                    key[n2]=v2;
+                }
+                else start_row = n1;
+            }
+            noise_level += noise_step;	
+            if ( ++cycle_numb >= cycle_limit) {
+                noise_level = begin_level;
+                cycle_numb = 0;
+            }
+            
+        } // next i   
+       } // next period, next_type
+        
+       
+        //test_values[test_index] = best_score;
+        document.getElementById('output_area').value = out_str;
+        //return(max_score); // in ID test , return max doppleschach scre
+
+    } // end do_redefence_calc function
+    return (do_redefence_calc); // return this function which can access pseudo_global variables
+} // end redefence_calcs closure function
+
+
+function do_check(){
+	var s,s1,n,c,str;
+
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	str = s.toUpperCase();
+    buffer = [];
+	buf_len = 0;
+	for ( i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			buffer[buf_len++] = n;
+			//plain_text[buf_len++] = n;
+	}
+    
+}
+
+
+
+
+function do_solve(){
+	var str,max_trials,s,n;
+	var  out_str,c,v,score,i,j;
+	var n1,n2,v1,v2,max_score;
+	var x,y,n3,n4;
+    var indx,state,k;
+    
+
+    if (do_check() == false){ // converts code to numbers in buffer
+        return;
+    }
+    do_redefence_calc = redefence_calcs(); // returns a function and initializes scoring table
+    do_redefence_calc(buffer);
+    
+}
+
+
+function do_clear(){
+	document.getElementById('output_area').value = '';
+	document.getElementById('input_area').value = '';
+}
+
+onload = function() {
+    document.getElementById('do_solve1').addEventListener("click",do_solve);    
+
+}    
+
+
+</script>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Best redefence period</h3> (scoring by binary trigraphs)<br><br>
+Directions: Paste cipher into ciphertext box. Click the Get period button.<br><br>
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Best period:<br>
+<textarea id="output_area" cols=80 rows = 6>
+</textarea>
+<br>
+<br>
+<!---------------
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+---------------->
+
+<INPUT id="do_solve1" type=button value="Get period." >
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;
+Max Period: <input type="text" id="max_period"  size=3 value = "7" >
+
+
+
+<!-------
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>

@@ -1,0 +1,1038 @@
+<!-- Nihilist scratchpad with column swapping, in javascript -->
+<!-- add  undo and redo --->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+
+<TITLE>Nihilist Sub Worksheet</TITLE>
+<script type="text/javascript">
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+var undo_array2 = [];
+var redo_array2 = [];
+
+var undo_array3 = [];
+var redo_array3 = [];
+
+var undo_array4 = [];
+var redo_array4 = [];
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+    redo_array2[redo_index] = [];
+    redo_array3[redo_index] = [];    
+    redo_array4[redo_index] = [];    
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		redo_array[redo_index][digits.charAt(i)+digits.charAt(j)] = nil_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+    for (i=0;i<period;i++){
+        if (i<10)
+            j = '0'+i;
+        else
+            j = ''+i;
+        redo_array2[redo_index][j] = per_key[j];
+    }
+    for (i=0;i<period;i++){
+        j = symbols.charAt(i)
+        redo_array3[redo_index][j] = row_coord[j];
+        redo_array4[redo_index][j] = col_coord[j];
+    }    
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		nil_key[ digits.charAt(i)+digits.charAt(j) ] = undo_array[undo_index][digits.charAt(i)+digits.charAt(j)];
+	}
+    for (i=0;i<period;i++){
+        if (i<10)
+            j = '0'+i;
+        else
+            j = ''+i;
+        per_key[j] = undo_array2[undo_index][j];
+    }    
+    for (i=0;i<period;i++){
+        j = symbols.charAt(i);
+        row_coord[j] = undo_array3[undo_index][j];
+        col_coord[j] = undo_array4[undo_index][j];
+    }    
+    
+    document.getElementById('redo_button').disabled = false;
+    restore_keyblock(0);
+    restore_perblock();
+    restore_numblock();
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		nil_key[ digits.charAt(i)+digits.charAt(j) ] = redo_array[redo_index][digits.charAt(i)+digits.charAt(j)];
+	}
+    for (i=0;i<period;i++){
+        if (i<10)
+            j = '0'+i;
+        else
+            j = ''+i;
+        per_key[j] = redo_array2[redo_index][j];
+    }    
+    for (i=0;i<period;i++){
+        j = symbols.charAt(i);
+        row_coord[j] = redo_array3[redo_index][j];
+        col_coord[j] = redo_array4[redo_index][j];
+    }        
+    restore_keyblock(0);
+    restore_perblock();
+    restore_numblock();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+    undo_array2[undo_index] = [];
+    undo_array3[undo_index] = [];
+    undo_array4[undo_index] = [];
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		undo_array[undo_index][digits.charAt(i)+digits.charAt(j)] = nil_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+    for (i=0;i<period;i++){
+        if (i<10)
+            j = '0'+i;
+        else
+            j = ''+i;
+        undo_array2[undo_index][j] = per_key[j];
+    }    
+    for (i=0;i<period;i++){
+        j = symbols.charAt(i);
+        undo_array3[undo_index][j] = row_coord[j];
+        undo_array4[undo_index][j] = col_coord[j];
+    }    
+    
+    undo_index++;
+    redo_index = 0;
+}
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var data; // ciphertext originally entered
+
+var code,crib_pos,cribtext;
+var symbols="abcdefghiklmnopqrstuvwxyz-12345"; // no j
+var digits="0123456789";
+
+var letters="ABCDEFGHIKLMNOPQRSTUVWXYZ-"; // no J
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var line_limit;
+var last_cell;
+var old_xlation;
+
+//try associative array for key
+var nil_key = new Array();
+
+var per_key = [];
+/* per_key is indexed by 2-digits pairs: 00 01 02 03, etc. These pairs serve as labels for the cells in the periodic key display.
+The values of per_key are letters, not digit pairs. To decode partially filed in keys with no coordinates entered, steps are:
+(1) If the corresponding periodic key cell is '-', then the plaintext entry is '-'
+(2) If the per_key cell contains a letter, but that letters does not appear in the keysquare then plaintext entry is '-'
+(3) If the per_key letter does appear in the key square, then its coorindates appear in the display and:
+    if subtraction of per_key coordinates from ciphertext coordinates is within the key square then the plaintext is the value of that keysquare entry (which may be '-'). If the value is not within the key square, then the plaintext is a '?' symbol.
+*/
+
+var row_coord = [];
+var col_coord = [];
+
+var period,buf_len;
+var code_array=[];
+
+function get_decrypt(){
+       var i,j,k, index,x,y;
+       var c1,c2,c3,c4;
+       var n1,n2,n3,n4;
+       var plain_text=[];
+       var top_work=[]; // period coord
+       var bot_work = []; // plain coord
+       var p_count,c,n,i1,i2;
+       var s,cc,cr,lab,v;
+       var tw,bw;
+
+    p_count = 0;
+    for (x=0;x<buf_len;x++) {
+        c3 = code_array[x];
+        n3 = parseInt(c3);
+        // is periodic coordintate filled in?
+        tw = '..'; //assume not filled in
+        bw = '..';
+        if( row_coord[ symbols.charAt(p_count)] != '-' && col_coord[ symbols.charAt(p_count)] != '-' )
+            tw = row_coord[ symbols.charAt(p_count)]+ col_coord[ symbols.charAt(p_count)];
+        if ( p_count<10)
+            c = '0'+p_count;
+        else
+            c = ''+p_count;
+        if ( tw != '..'){
+            top_work[x] = tw;        
+            n1 = parseInt(row_coord[ symbols.charAt(p_count)]);
+            n1--;
+            n2 = parseInt(col_coord[ symbols.charAt(p_count)]);
+            n2--;
+            c1 = ''+n1+n2;
+            if (nil_key[c1] != '-'){
+                per_key[c] = nil_key[c1];
+                s='<span width="75" height = "75" id ="'+c+'permatrix" class="'+c+'perblock" style="color:blue">';
+                s=s+per_key[c]+'</span> ';
+                document.getElementById(c+'permatrix').innerHTML=s;	
+            }
+            else if (per_key[c] != '-'){
+                nil_key[c1] = per_key[c];
+                restore_keyblock(0);
+            }
+            n4 = parseInt(tw);
+            n1 = (100+n3-n4)%100;
+            n3 = Math.floor(n1/10);
+            n4 = n1%10;
+            
+            if ( n3<1 || n3>5 || n4<1 || n4>5) {
+                plain_text[x] = '?';
+            }
+            else {
+                c1 = digits.charAt(n3-1);
+                c2 = digits.charAt(n4-1)
+                plain_text[x] = nil_key[c1+c2];
+            }
+            if ( n3>9) n3 = 0; // should never happen
+            bw = ''+n3+n4;
+            bot_work[x] = bw;
+            if (++p_count == period) p_count = 0;
+            continue;            
+        }
+        else if (col_coord[ symbols.charAt(p_count)] != '-' && per_key[c] == '-'){
+            tw = '.'+ col_coord[ symbols.charAt(p_count)];
+            top_work[x] = tw;        
+            n1 = n3%10;
+            n2 = parseInt(col_coord[ symbols.charAt(p_count)]);
+            v = (10+n1-n2)%10;
+            bw = '.'+v;
+            bot_work[x] = bw;
+            if ( v<1 || v>5)
+                plain_text[x] = '?';
+            else
+                plain_text[x] = '-';
+            if (++p_count == period) p_count = 0;
+            continue;                           
+        }
+        else if (row_coord[ symbols.charAt(p_count)] != '-' && per_key[c] == '-'){
+            tw = ''+ row_coord[ symbols.charAt(p_count)]+'.';
+            top_work[x] = tw;        
+            n1 = Math.floor(n3/10);
+            if ( (n3%10) == 0)
+                n1--;
+            n2 = parseInt(row_coord[ symbols.charAt(p_count)]);
+            v = (10+n1-n2)%10;
+            bw = ''+v+'.';
+            bot_work[x] = bw;
+            if ( v<1 || v>5)
+                plain_text[x] = '?';
+            else
+                plain_text[x] = '-';
+            if (++p_count == period) p_count = 0;
+            continue;                           
+        }        
+        c4 = per_key[c];
+        //if (++p_count == period) p_count = 0;
+        if (c4 == '-') {
+            top_work[x] = tw;
+            bot_work[x] = bw;
+            plain_text[x] = '-';
+            if (++p_count == period) p_count = 0;
+            continue;
+        }
+
+        n = 0; //flag
+        for (i=0;i<5;i++){
+            c1 = digits.charAt(i);
+            for (j=0;j<5;j++){
+                c2 = digits.charAt(j);
+                if (nil_key[c1+c2] == c4){
+                    n4 = 10*(i+1)+j+1;
+                    // show in period key coordinates
+
+                    cr = 't';
+                    cc = symbols.charAt(p_count);  
+                    lab = cr+cc+'label';
+                    k = i+1;
+                    v = ''+k;
+                    s= '<span width="75" height = "75" id ="'+lab+'" class ="'+lab+'" style="color:blue">';
+                    s=s+v+'</span>';
+                    document.getElementById(lab).innerHTML= s;
+                    row_coord[p_count] = v;
+                    cr = 'b';
+                    lab = cr+cc+'label';
+                    k = j+1;
+                    v = ''+k;
+                    s= '<span width="75" height = "75" id ="'+lab+'" class ="'+lab+'" style="color:blue">';
+                    s=s+v+'</span>';
+                    document.getElementById(lab).innerHTML= s;
+                    col_coord[p_count] = v;
+
+                    n = 1;
+                    break;
+                }
+            }
+            if ( n==1) break;
+        }
+        if (n==0){ // period key not in keysquare
+            plain_text[x] = '-';
+            top_work[x] = tw;
+            bot_work[x] = bw;
+            if (++p_count == period) p_count = 0;
+            continue;
+        }
+        top_work[x] = ''+n4;
+        n1 = (100+n3-n4)%100;
+        n3 = Math.floor(n1/10);
+        n4 = n1%10;
+        
+        if ( n3<1 || n3>5 || n4<1 || n4>5) {
+            plain_text[x] = '?';
+        }
+        else {
+            c1 = digits.charAt(n3-1);
+            c2 = digits.charAt(n4-1)
+            plain_text[x] = nil_key[c1+c2];
+        }
+        if ( n3>9) n3 = 0;
+        bw = ''+n3+n4;
+        bot_work[x] = bw;        
+        if (++p_count == period) p_count = 0;
+    } /* next x */
+    return([plain_text,top_work,bot_work]);
+}
+
+
+function reset_key() {
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		nil_key[ digits.charAt(i)+digits.charAt(j) ] = '-';
+	}
+    undo_index = redo_index = 0;
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box, then enter period)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;	
+    s= '<br><span style="font-weight:bold;">Enter period=></span>';
+    s += '<input type = text name=period_entry  size = 3 onKeyPress="checkEnter(event)">';
+	document.getElementById('key_lenblock').innerHTML=s;	
+	document.getElementById('caption1').style.display="none";
+	document.getElementById('caption2').style.display="none";
+	document.getElementById('keyblock').style.display="none";
+	document.getElementById('caption3').style.display="none";
+	document.getElementById('perblock').style.display="none";    
+	document.getElementById('caption4').style.display="none";
+	document.getElementById('numblock').style.display="none";        
+	document.getElementById('letterblock').style.display="none";
+    document.getElementById('button_actions').style.display="none";
+    
+}
+
+
+function setup_code() {
+    //var data; // make global
+    var c,c1,state,n;
+	data = document.ciphertext.cipher_place.value; // now global
+	data = data.toUpperCase();
+    data = data.replace(/Ø/g,'0');
+	code = '';
+    buf_len = 0;
+    code_array = [];
+    state = 0;
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+        n = digits.indexOf(c);
+        if ( n==-1) continue;
+        if (state == 0){
+            c1 = c;
+            state = 1;
+        }
+        else {
+            //code += c;
+            code_array[buf_len++]=c1+c;
+            state = 0;
+		}
+	}
+    if (code_array.length == 0){
+        alert("No ciphertext found!");
+        return;
+    }
+    if (state == 1){
+        alert("Ciphertext has odd number of digits!");
+        return;
+    }
+	solving_flag=1;
+	old_xlation = ['-'];
+	for (i = 0;i<code_array.length;i++)
+		old_xlation[i]= '-';
+    line_limit = period*Math.floor( 35/(period));
+    undo_index = redo_index = 0;
+    for (i=0;i<period;i++){
+        if (i<10)
+            c = '0'+i;
+        else
+            c = ''+i;
+        per_key[c] = '-';
+    }
+}	
+
+
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_chars;
+    var plaintext,top_work,bot_work,result,w1,w2;
+    var flag,flag2;
+    var i,j,n,c;
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) {
+            input_ok();
+            return;
+        }
+	}
+    result = get_decrypt();
+    plaintext = result[0];
+    top_work = result[1];
+    bot_work = result[2];
+    flag = document.getElementById('show_work').checked;
+    flag2 = document.getElementById('show_work2').checked;
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+	numb_chars=code_array.length;
+	if (numb_chars<limit)
+		limit = numb_chars;
+	pos=0;
+	cnt=0;
+	pl='';
+    w1='';
+    w2 = '';
+	while (pos<numb_chars ) {
+		str = str+code_array[pos]+'&nbsp;'
+
+		//ce=code_array[pos];
+        c = plaintext[pos];
+		if ( /*ce[0]==last_cell || ce[1] == last_cell ||*/ old_xlation[pos] != c){
+			old_xlation[pos]=c;
+			c = '<font color="red">'+c+'</font>';
+		}
+		pl = pl+c+'&nbsp;&nbsp;';
+        w1 += top_work[pos]+'&nbsp;';
+        w2 += bot_work[pos]+'&nbsp;';
+		pos++;
+		cnt++;
+        if ( (cnt%period)==0){
+            str += '&nbsp;';
+            pl += '&nbsp;';
+            w1 += '&nbsp;';
+            w2 += '&nbsp';
+        }
+		if (cnt>=limit) {
+            str += '<br>';
+            if (flag)
+                str += w1+'<br>';       
+            if (flag2)
+                str += w2+'<br>';                       
+			//str = str+'<br><font color="blue">'+pl+'</font><br>'
+            str += '<font color="blue">'+pl+'</font><br>'
+    		pl='';
+            w1='';
+            w2='';
+			cnt=0;
+			if (pos+line_limit>numb_chars)
+				limit = numb_chars-pos;;
+		}
+	}
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function selectmouse(e)
+{
+    var i,j,n,c,s,cc,cr;
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));  
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+      if (cpos>25){
+        alert("Digits only allowed in coordinate block!");
+        return(false);
+      }
+	  letter=symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true; 
+      if ( letter == '-' && nil_key[cell] != '-'){ 
+        // make sure that period key and coordinates do not overturn this undo
+        for (i=0;i<period;i++){
+            if ( i<10)
+                j = '0'+i
+            else
+                j = ''+i;
+            cr = 't'+symbols.charAt(i);
+            cc = 'b'+symbols.charAt(i);
+            if ( per_key[j] == nil_key[cell] && row_coord[ cr] != '-' && col_coord[ cc] != '-'){
+                // undo the period key entry
+                per_key[j] = '-';
+                s='<span width="75" height = "75" id ="'+j+'permatrix" class="'+j+'perblock" style="color:blue">';
+                s=s+per_key[j]+'</span> ';
+                document.getElementById(j+'permatrix').innerHTML=s;
+            }
+        }
+      }
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '-' ) {
+		  for (i=0;i<5;i++){
+			  c1 = digits.charAt(i);
+			  for (j=0;j<5;j++) {
+				  c2 = digits.charAt(j);
+				  if (nil_key[c1+c2]==letter && c1+c2 != cell){
+		  			//delete letter at old location
+		  			c = c1+c2;
+		  			nil_key[c] = '-';
+					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+					s+='-</span>';
+					document.getElementById(c+'keymatrix').innerHTML= s;
+				}
+			}
+		}
+	}						  
+	  nil_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+  }
+  else if (fobj.className.slice(2)=="perblock" && letter_selected) {
+	  dobj = fobj;
+      if (cpos>25){
+        alert("Digits only allowed in coordinate block!");
+        return(false);
+      }  
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;  
+      
+	  letter=symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+      // dupicate letters OK!
+	  per_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+      
+  }
+  else if (fobj.className.slice(2)=="label" && letter_selected) {
+	  dobj = fobj;
+      if (cpos < 25){
+        alert("Only digits allowed in coordinate block!");
+        return(false);
+      }
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;       
+      
+      letter = symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+      document.getElementById(dobj.id).innerHTML= s;
+      cr = dobj.className[0];
+      cc = dobj.className[1];
+      if (cr == 't')
+        row_coord[cc] = letter;
+      else
+        col_coord[cc] = letter;
+      //lab = 'label'+cr+cc;      
+	  cell=dobj.className.slice(0,2);
+      // dupicate letters OK!
+	  per_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+      
+  }  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}	
+	s=s+'<br>';	
+	document.getElementById('letterblock').innerHTML=s;	
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c,j;
+	
+	s='';
+    // column numbers
+    s += '&nbsp;&nbsp;';
+    for (i=0;i<5;i++){
+        c = digits.charAt(i+1);
+		s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silved;"  >';
+		s=s+'&nbsp<span width="75" height = "75" style="color:black">';
+		s=s+c+'</span> </span>';
+    }
+	//two columns of blank place holders
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp;&nbsp;<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+        s += digits.charAt(i+1)+'&nbsp;';    
+		cr = digits.charAt(i);		
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'-'+'</span> </span>';
+		}
+		s=s+'&nbsp; <br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+function perblock_setup(){
+	var s,i,c,j;
+    s='';
+    //s += '&nbsp;&nbsp;';    
+	for (j=0;j<period;j++) {
+		if ( j<10) c = '0'+j;
+        else c = ''+j;
+		//c = cr+cc;
+		s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'permatrix" class="'+c+'perblock" style="color:blue">';
+		s=s+'-'+'</span> </span>';
+	}
+	s=s+'<br>';	
+	document.getElementById('perblock').innerHTML=s;	
+    
+}
+
+function numblock_setup(){
+  var i,j,k,s;
+  var col,row,cr,c;
+  var pos1,pos2;
+  
+  s='';
+  cr = 't';
+  for (col = 0;col<period;col++){
+      cc = symbols.charAt(col); // label for column;
+        s += '<span width="75" height="75" style="border: 2px solid black;background:white;color:blue;"  >';
+        s=s+'&nbsp<span width="75" height = "75" id = "'+cr+cc+'label" class = "'+cr+cc+'label" >';
+        s=s+'-'+'</span> </span>';
+        row_coord[cc] = '-';
+  }
+  s += '&nbsp Row<br>';
+  cr = 'b';
+  for (col = 0;col<period;col++){
+      cc = symbols.charAt(col); // label for column;
+		s += '<span width="75" height="75" style="border: 2px solid black;background:white;color:blue;"  >';
+        s=s+'&nbsp<span width="75" height = "75" id = "'+cr+cc+'label" class = "'+cr+cc+'label" >';
+        s=s+'-'+'</span> </span>';
+        col_coord[cc] = '-';
+  }
+  s += '&nbsp Col<br>';
+  document.getElementById('numblock').innerHTML=s;
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+	reset_key();
+	letterblock_setup();
+	keyblock_setup();
+    perblock_setup();
+    numblock_setup();
+    xlate();
+}	
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+	}	
+}	
+
+function new_period(){
+
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value= data;
+		solving_flag=0;
+
+}
+
+function redirect() {
+	window.location="low_res.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+}
+
+function restore_numblock(){
+  var i,j,k,s,v;
+  var col,row,cr,c;
+  var pos1,pos2;
+  
+  s='';
+  cr = 't';
+  for (col = 0;col<period;col++){
+      cc = symbols.charAt(col); // label for column;
+      v=row_coord[cc];
+        s += '<span width="75" height="75" style="border: 2px solid black;background:white;color:blue;"  >';
+        s=s+'&nbsp<span width="75" height = "75" id = "'+cr+cc+'label" class = "'+cr+cc+'label" >';
+        s=s+v+'</span> </span>';
+        
+  }
+  s += '&nbsp Row<br>';
+  cr = 'b';
+  for (col = 0;col<period;col++){
+      cc = symbols.charAt(col); // label for column;
+      v=col_coord[cc];
+		s += '<span width="75" height="75" style="border: 2px solid black;background:white;color:blue;"  >';
+        s=s+'&nbsp<span width="75" height = "75" id = "'+cr+cc+'label" class = "'+cr+cc+'label" >';
+        s=s+v+'</span> </span>';
+        
+  }
+  s += '&nbsp Col<br>';
+  document.getElementById('numblock').innerHTML=s;
+
+}
+
+function restore_perblock(){
+	var s,i,c,j,v;
+    s='';
+    //s += '&nbsp;&nbsp;';    
+	for (j=0;j<period;j++) {
+		if ( j<10) c = '0'+j;
+        else c = ''+j;
+        v = per_key[c];
+		//c = cr+cc;
+		s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'permatrix" class="'+c+'perblock" style="color:blue">';
+		s=s+v+'</span> </span>';
+	}
+	s=s+'<br>';	
+	document.getElementById('perblock').innerHTML=s;	
+    
+}
+
+
+function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
+	var s,i,c;
+	
+	s='';
+    // column numbers
+    s += '&nbsp;&nbsp;';
+    for (i=0;i<5;i++){
+        c = digits.charAt(i+1);
+		s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silved;"  >';
+		s=s+'&nbsp<span width="75" height = "75" style="color:black">';
+		s=s+c+'</span> </span>';
+    }
+    
+	//two columns of blank place holders
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+        // row label
+        s += digits.charAt(i+1)+'&nbsp;';
+		cr = digits.charAt(i);
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			v = nil_key[c];
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s += v+'</span> </span>';
+		}
+		
+		s=s+'&nbsp; <br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+	
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" >';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+    str += '<br><br><br>';
+    str += '<INPUT onclick=new_period(); type=button value="change period" >';
+	document.getElementById('button_actions').innerHTML= str;	
+}
+
+function restore_original() {
+	set_original_buttons();
+	restore_keyblock(0);
+}
+
+function checkEnter(e){ //e is event object passed from function invocation by entering a new key_len
+	var characterCode //literal character code will be stored in this variable
+
+	//next 2 lines for debuging
+	//s = "you pressed a key";
+	//document.debug.output_area.value= s; 	
+
+	if(e && e.which){ //if which property of event object is supported (NN4)
+		e = e
+		characterCode = e.which //character code is contained in NN4's which property
+	}
+	else{
+		e = event
+		characterCode = e.keyCode //character code is contained in IE's keyCode property
+	}
+	
+	if(characterCode == 13){ //reset key_len
+		period = parseInt(document.ciphertext.period_entry.value);		
+		//s = "you pressed enter for key_len"+key_len;
+		//document.debug.output_area.value= s;
+        setup_display();
+		return false
+	}
+	else{
+		return true
+	}
+
+}
+
+function setup_display(){
+	var s;
+	
+	s = '<br>Period: '+period +'<span style="font-family:monospace;">';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '</span><input type="checkbox" id = "show_work" onclick="xlate()" checked > Show period key coordinates';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '</span><input type="checkbox" id = "show_work2" onclick="xlate()" > Show plain key coordinates';
+
+    perblock_setup();
+    numblock_setup();
+	document.getElementById('key_lenblock').innerHTML=s;
+	document.getElementById('caption1').style.display="block";
+	document.getElementById('caption2').style.display="block";
+	document.getElementById('keyblock').style.display="block";
+	document.getElementById('caption3').style.display="block";
+	document.getElementById('perblock').style.display="block"; 
+	document.getElementById('caption4').style.display="block";
+	document.getElementById('numblock').style.display="block";        
+	document.getElementById('letterblock').style.display="block";
+    document.getElementById('button_actions').style.display="block";
+    xlate();
+	
+}	
+
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Nihilist Substitution Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:60px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, then enter period)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90>
+</TEXTAREA><BR>
+</div>
+
+<!-- place to enter key_len -->
+<span id="key_lenblock">
+<br>
+<span style="font-weight:bold;">Enter period=></span>
+<input type = text name=period_entry  size = 3 onKeyPress="checkEnter(event)">
+</span>
+</form>
+<div id="caption1" style="display:none;">
+Click on one of the blue letters below , then click on a key table cell or a period key cell. Or click on a digit, then click on a period key coordinates cell.<BR>
+</div>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px; display:none;">
+</div>
+<BR>
+<div id="caption2" style="display:none;">
+Key Table:<br>
+</div>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px; display:none;">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px; display:none;">
+</div>
+
+<span id="caption3" style="clear:left; display:none;">
+Period key:
+</span>
+
+<!-- mark off space for per block -->
+<span id="perblock" class="per_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px; display:none;">
+</span>
+<span id="caption4" style="float:left; margin-top:-10px; display:none;">
+Period key coordinates:
+</span>
+
+<!-- mark off space for num block -->
+
+<span id="numblock" class="num_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left; margin-left:-100px;
+	  padding:10px; display:none;">
+</span>
+<br><br>
+<script type="text/javascript">
+screen_check();
+reset_key();
+letterblock_setup();
+keyblock_setup();
+set_original_buttons();
+</script>
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>

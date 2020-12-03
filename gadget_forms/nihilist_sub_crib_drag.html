@@ -1,0 +1,293 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Nihilist sub. crib drag</title>
+<script type="text/javascript">
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var upper6x6 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+var digits="0123456789";
+var buffer = [];
+var buf_len, crib_len;
+var crib = [];
+var min_per,max_per, period;
+var known_key_flag, key_value;
+
+
+function setup_cipher() {
+	var i,j,state,cnt,c, data,n1,n;
+    var str,code_len;
+    
+  str = document.getElementById('cipher_area').value;
+  str = str.toUpperCase();
+  str = str.replace(/Ø/g,'0');
+  code_len = 0;
+  state = 0;
+	for (i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = digits.indexOf(c);
+		if ( n>=0) {
+            if (state == 0) {
+                n1 = n;
+                state = 1;
+            }
+            else {
+                j = 10*n1+n;
+                //if (j<11)
+                //  j += 100;
+                buffer[code_len++] = j;
+                state = 0;
+            }
+        }
+	}
+    if ( state == 1){
+        alert("Odd number of digits in cipher!");
+        return(false);
+    }
+    if ( buffer.length == 0){
+        alert("No cipher digits entered!");
+        return(false);
+    }
+    return(true);
+}
+
+function do_calc(){
+	var str, alpha,out_str,c,n,cnt,i,j;
+    var start_pos, numb_symbols,flag;
+    var key_count,n1,n2,index,pos,j1,j2,last;
+
+    if(setup_cipher() == false) return;
+    if (document.getElementById('option6').checked){
+        alpha="abcdefghijklmnopqrstuvwxyz1234567890";
+        numb_symbols = 36;
+        side_len = 6;
+    }
+    else {
+        alpha="abcdefghijklmnopqrstuvwxyz";
+        numb_symbols = 26;
+        side_len = 5;
+    }
+	out_str="positions start at 0\n";
+	
+	str = document.getElementById('crib_area').value;
+	str = str.toLowerCase();
+    crib_len = 0;
+    crib = [];
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+        if (c=='j' && side_len == 5)
+            c = 'i';
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			crib[crib_len++] = n;
+	}
+    min_per = parseInt(document.getElementById('min_per').value);
+    max_per = parseInt(document.getElementById('max_per').value);
+    for (period = min_per; period <= max_per; period++) {
+        // get known key indices
+        known_key_flag = [];
+        key_value = [];
+        for (i=0;i<period;i++)
+          known_key_flag[i] = key_value[i] = 0;
+        for (index = 0;index<period;index++){
+          key_count = 0;
+          for (n1 = 1;n1<side_len+1;n1++)
+            for (n2 = 1;n2<side_len+1;n2++){
+              n = 10*n1+n2;
+              pos = index;
+              flag = true;
+              while(pos< buffer.length){
+                //i = buffer[pos];
+                //i -= n;
+                i = (100+buffer[pos] - n)%100;
+                j1 = Math.floor(i/10);
+                j2 = i % 10 ;
+                if ( j1<1 || j1>side_len || j2<1 || j2>side_len){
+                  flag = false;
+                  break;
+                }
+                pos += period;
+              }
+              if (flag){
+                key_count++;
+                key_value[index] = n;
+              }
+            }
+            if (key_count == 1){
+              known_key_flag[index] = 1;
+            }
+            if (key_count == 0)
+                break; // this period is impossible
+        }
+        if ( key_count == 0){
+            out_str += "Period "+period+" is not possible.\n"
+            continue;
+        }
+        last = period-1;
+        out_str += "Known key values for period "+period+" (index range 0-"+last+"): ";
+        for (i=0;i<period;i++){
+          if ( known_key_flag[i] == 1)
+            out_str += "index "+i+" = "+key_value[i]+", ";
+        }
+        out_str += '\n';
+        
+
+        out_str += "period "+period+" OK at:";
+        flag = false;
+        for (start_pos = 0;start_pos<buffer.length - crib_len+1;start_pos++){
+            n = check_text(start_pos,numb_symbols);
+            if ( n != -1) {
+                if ( flag) out_str += ",";
+                //out_str += " "+start_pos+","
+                out_str += " "+start_pos;
+                if (n>0)
+                    out_str += " ("+n+" repeats)";
+                flag = true;
+
+                if (document.getElementById('crib_string').checked){
+                    out_str += '\n';
+                    // add crib string you can paste into hill-climber
+                    cnt = 0;
+                    for (i=0;i<start_pos;i++){
+                        out_str += '-';
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    for (i=0;i<crib.length;i++){
+                        out_str += alpha.charAt(crib[i]);
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    for (i=start_pos+crib.length;i<buffer.length;i++){
+                        out_str += '-';
+                        if (++cnt == 50){
+                            out_str += '\n';
+                            cnt = 0;
+                        }
+                    }
+                    out_str += '\n\n';
+                }
+            }
+        }
+        out_str += "\n";
+      
+    }
+    
+    document.getElementById('output_area').value = out_str;
+    
+}
+
+function check_text(start_pos,numb_symbols) {
+    var j, count,k;
+    var index,flag,n;
+    var x,y,i,j,v;
+    var max_value,c;
+    var numb_reps;
+        
+    /* crib positioned at start_pos */
+    /* initialize */
+    numb_reps = 0;
+    if (numb_symbols == 36)
+        max_value = 133; // 66+66+1
+    else
+        max_value= 111; // 55+55+1
+    var poly_alpha = [];
+    var inverse_poly_alpha = [];
+    for (i=0;i<period+1;i++){
+      poly_alpha[i] = [];
+      for (j=0;j<numb_symbols;j++)
+        poly_alpha[i][j] = -1;
+      inverse_poly_alpha[i] = [];
+      for (j=0;j<max_value;j++)
+        inverse_poly_alpha[i][j] = -1;
+    }
+    var crib_buffer = [];
+    for (i=0;i<buffer.length;i++)
+      crib_buffer[i] = -1;
+    for (i=0;i<crib_len;i++)
+      crib_buffer[start_pos+i] = crib[i];
+    index = 0;
+
+    for (n=0;n<buffer.length;n++){
+      if (crib_buffer[n] == -1){
+         index++;
+        if (index == period)
+          index = 0;
+        continue;
+      }
+      c = crib_buffer[n];
+      // does index have a known value? If so, save c in row with index 'period' (bottom row)
+      if (known_key_flag[index]==1){
+        v = (100+buffer[n] - key_value[index])%100;
+        if (poly_alpha[period][c]== -1) // first encounter
+          poly_alpha[period][c] = v;
+        else if (poly_alpha[period][c] != v) // crib doesn't fit here
+          return(-1); //reject this start_pos
+        else
+            numb_reps++;
+        if (inverse_poly_alpha[period][v] == -1)
+          inverse_poly_alpha[period][v] = c;
+        else if (inverse_poly_alpha[period][v] != c)
+          return(-1); //reject this start_pos
+        else
+            numb_reps++;
+      }
+      else { // index does not have a known key value
+        v = buffer[n];
+        if (poly_alpha[index][c]== -1) // first encounter
+          poly_alpha[index][c] = v;
+        else if (poly_alpha[index][c] != v) // crib doesn't fit here
+          return(-1); //reject this start_pos
+        else
+            numb_reps++;
+        if (inverse_poly_alpha[index][v] == -1)
+          inverse_poly_alpha[index][v] = c;
+        else if (inverse_poly_alpha[index][v] != c)
+          return(-1); //reject this start_pos
+        else
+            numb_reps++;
+      }
+      index++;
+      if ( index == period)
+        index = 0;
+    } // next n
+//printf("Period %li OK at position %li\n",period,start_pos);
+return(numb_reps); /* OK */
+} /* end check text */
+
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Nihilist substitution crib drag</h3> <br>
+Directions: Type or paste in ciphertext and crib. If keysquare is 6x6, check 6x6 box. Click Crib Drag button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 spellcheck="false" >
+</textarea><br>
+crib:<br>
+<textarea id="crib_area" rows = 2 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Crib Drag" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Minimum Period:
+<input type = text id="min_per" value = "5" size = 2 >
+&nbsp;  &nbsp; &nbsp; Maximum Period:
+<input type = text id="max_per" value = "15" size = 2 >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id="crib_string"> Include crib string
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id = "option6" >
+6x6
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+<br><br>
+<b>Note on repeats:</b> repeats with known key values are repeats in the plaintext; otherwise, repeats are repeats in the ciphertext at the same index position.
+
+
+</body>
+</html>

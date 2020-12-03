@@ -1,0 +1,682 @@
+<!-- Monome-Dinome scratchpad with column/row swapping, in javascript -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Monome-Dinome Worksheet</TITLE>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,code_array,crib_pos,cribtext;
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var digits="0123456789";
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var pair_line_limit=28;
+var last_cell;
+
+//try associative array for key
+var check_key = new Array();
+var left_key = new Array();
+var top_key = new Array();
+var rows_selected = new Array();
+var columns_selected = new Array();
+
+// labels for key rows
+var label0 = '-'; // always fixed
+var label1 = '2';
+var label2 = '9';
+
+
+function get_row_labels(){ // check for errors
+	var i,state,s,c,cd;
+	
+	state = 0;
+	s = document.getElementById('row_labels').value;
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		if (digits.indexOf(c) > -1){
+			if (state==0){
+				label1 = c;
+				state = 1;
+			}
+			else label2 = c;
+		}
+	}
+	if ( label1 == label2){
+		alert("Need two different row labels!");
+		return(1);
+	}
+	s = document.ciphertext.cipher_place.value;
+	s = s.toUpperCase();
+    s = s.replace(/Ø/g,'0');    
+	state=0;
+	cd = '';
+	for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		if ( digits.indexOf(c) >-1 ) {
+			if (state==0) {
+				if ( c == label1 || c == label2){
+					cd = cd+c;
+					state=1;
+				}
+				else
+					cd += label0+c+' '
+			}
+			else {
+				if ( c == label1 || c == label2){
+					alert("Label error. Cipher has two adjacent row labels!");
+					return(1);
+				}
+				cd = cd+c+' ';
+				state=0;
+			}
+		}
+	}
+	
+	return(0);
+}
+
+function reset_key() {
+	var j;
+	for (j=0;j<10;j++) {
+		if (digits.charAt(j) == label1 || digits.charAt(j) == label2) continue;
+		check_key[ label0+digits.charAt(j) ] = '-';
+		check_key[ label1+digits.charAt(j) ] = '-';
+		check_key[ label2+digits.charAt(j) ] = '-';
+		top_key[digits.charAt(j) ] = digits.charAt(j);
+	}
+	left_key[label0]=label0;
+	left_key[label1]=label1;
+	left_key[label2]=label2;	
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	document.getElementById('outputblock').innerHTML=s;		
+	s = 'Row Labels: <input type="text" id="row_labels" size=5>';
+	s += '<INPUT onclick=initialize(); type=button value="initialize" >';
+	document.getElementById('button_actions').innerHTML=s;		
+	s='Enter cipher and a pair of row labels, then click initialize button.'
+	document.getElementById('directions').innerHTML=s;	
+	document.getElementById('holdletterblock').innerHTML='';
+	document.getElementById('keyblock').innerHTML='';
+	
+}
+
+
+function setup_code_pairs() {
+	var state;
+	
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+    data = data.replace(/Ø/g,'0');    
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( digits.indexOf(c) >-1 ) {
+			if (state==0) {
+				if ( c == label1 || c == label2){
+					code = code+c;
+					state=1;
+				}
+				else
+					code += label0+c+' '
+			}
+			else {
+				code = code+c+' ';
+				state=0;
+			}
+		}
+	}
+	solving_flag=1;
+	if (state) {
+		alert("Cipher has label with nothing following it!");
+		solving_flag=0;
+		return;
+	}
+	code_array = code.split(' ');		
+}	
+
+function key_lookup(c) { // see if letter pair c is represented in the keyrectangle
+	var c1,p1,c2,p2,pr;
+
+	c1 = c.charAt(0);
+	if (c1==label0) p1 = c1; // top row always fixed
+	else
+		p1 = digits.charAt(left_key.indexOf(c1));	
+	c2 = c.charAt(1);
+	p2 = digits.charAt(top_key.indexOf(c2));
+	pr = p1+p2;
+	return ([check_key[pr],pr]);	
+}
+
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_pairs;
+	if (solving_flag ==0) {
+		setup_code_pairs();
+		if (solving_flag==0) return;//odd number of letters!
+	}
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=pair_line_limit;
+	numb_pairs=code_array.length-1;//final entry not a code pair
+	if (numb_pairs<limit)
+		limit = numb_pairs;
+	pos=0;
+	cnt=0;
+	pl='';
+	while (pos<numb_pairs ) {
+		str = str+code_array[pos]+' ';
+		//pl = pl+check_key[code_array[pos]]+'  ';
+		ce=code_array[pos];
+		c = key_lookup(ce);
+		ce = c[1]
+		c = c[0]
+		if ( ce==last_cell)
+			c = '<font color="red">'+c+'</font>';
+		pl = pl+c+'&nbsp;&nbsp;';
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+			//str=str+'\n'+pl+'\n';
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			cnt=0;
+			if (pos+pair_line_limit>numb_pairs)
+				limit = numb_pairs-pos;;
+		}
+	}
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function selectmouse(e)
+{
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));  
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+	  letter=symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  //update key array
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '-' ) {
+		  for (i=0;i<3;i++){
+			  if ( i==0) c1=label0;
+			  else if (i==1) c1 = label1;
+			  else c1 = label2;
+			  //c1 = digits.charAt(i);
+			  for (j=0;j<10;j++) {
+				  c2 = digits.charAt(j);
+				  if ( c2 == label1 || c2 == label2) continue;
+				  if (check_key[c1+c2]==letter && c1+c2 != cell){
+		  			//delete letter at old location
+		  			c = c1+c2;
+		  			check_key[c] = '-';
+					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+					s+='-</span>';
+					document.getElementById(c+'keymatrix').innerHTML= s;
+				}
+			}
+		}
+	}						  
+	  check_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+  }
+  else if (fobj.className.slice(1)=="keycolumn") {	  
+	  dobj = fobj;
+	  cell=dobj.className.slice(0,1);
+	  //update columns selected array
+	  columns_selected[ cell] ^= 1;
+	  if (columns_selected[ cell]==1) {
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
+	  	s +='X</span>';
+	   }
+	  else {	   
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
+	  	s +='&nbsp</span>';
+	   }		  
+	  document.getElementById(dobj.id).innerHTML= s;	
+      //next 3 lines for debugging
+	  //s = "you put it under letter "+cell+"\n";
+	  //s = s+check_key;
+	  //document.debug.output_area.value= s; 	
+      return false;	  
+  }
+  else if (fobj.className.slice(1)=="keyrow") {	  
+	  dobj = fobj;
+	  cell=dobj.className.slice(0,1);
+	  //update rows selected array
+	  rows_selected[ cell] ^= 1;
+	  if (rows_selected[ cell]==1) {
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
+	  	s +='X</span>';
+	   }
+	  else {	   
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
+	  	s +='&nbsp</span>';
+	   }		  
+	  document.getElementById(dobj.id).innerHTML= s;		  
+      //next 3 lines for debugging
+	  //s = "you put it under letter "+cell+"\n";
+	  //s = s+check_key;
+	  //document.debug.output_area.value= s; 	
+      return false;	  
+  }
+	  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	
+	s='Click on one of the blue symbols below , then click on a cell inside the key table<BR>	';
+	document.getElementById('directions').innerHTML=s;	
+	s=''
+	s += '<div id="letterblock" class="letter_block" ';
+	s += 'style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; '
+	s += 'margin-right:20px; padding:10px">'
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}	
+	s=s+'<br>';	
+	s += '</div>';
+	s += '<br>Key Table:<br>';
+	document.getElementById('holdletterblock').innerHTML=s;	
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+	
+	s='';
+	//one column of row labels
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+
+	//digits across the top
+	for (i=0;i<10;i++) {
+		c = digits.charAt(i);
+		if (c == label1 || c == label2) continue;
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top" class="'+c+'keytop" style="color:blue">';			
+			s=s+top_key[c]+'</span> </span>';
+	}		
+	s=s+'<br>';
+
+	
+	for (i=0;i<3;i++) {
+		if ( i==0) cr = label0;
+		else if ( i==1) cr = label1;
+		else cr = label2;
+			//left outer
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+cr+'key_left" class="'+cr+'keyleft" style="color:blue">';			
+			s=s+cr+'</span> </span>';
+		//row of key block cells
+		for (j=0;j<10;j++) {
+			cc=digits.charAt(j);
+			if ( cc == label1 || cc == label2) continue;
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'-'+'</span> </span>';
+		}
+		s=s+'<br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+	xlate();
+	//input_ok();
+	//document.ciphertext.cipher_place.value=code;
+	//solving_flag=0;
+}	
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		reset_key();
+		//letterblock_setup()
+		//keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+		crib_entered=0;
+	}	
+}	
+
+
+
+function redirect() {
+	window.location="checkerboard_lowres.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+}
+
+function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
+	var s,i,c;
+
+	s='';
+	//one column of row labels
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+
+	//digits across the top
+	for (i=0;i<10;i++) {
+		c = digits.charAt(i);
+		if (c == label1 || c == label2) continue;
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top" class="'+c+'keytop" style="color:blue">';			
+			s=s+top_key[c]+'</span> </span>';
+	}		
+	s=s+'<br>';
+
+	
+	for (i=0;i<3;i++) {
+		if ( i==0) cr = label0;
+		else if ( i==1) cr = label1;
+		else cr = label2;
+		v = left_key[cr];
+			//left outer
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+cr+'key_left" class="'+cr+'keyleft" style="color:blue">';			
+			s=s+v+'</span> </span>';
+		
+		//row of key block cells
+		for (j=0;j<10;j++) {
+			cc=digits.charAt(j);
+			if ( cc==label1 || cc == label2) continue;
+			c = cr+cc;
+			v = check_key[c];
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s += v+'</span> </span>';
+		}
+		if (flag) {// yellow row selection box
+			if (i>0){ // row i==0 is always fixed
+				s = s+'<span width="75" height="75" style="border: 2px solid black;background: yellow;"  >';
+				s=s+'&nbsp<span width="75" height = "75" id ="'+cr+'key_row" class="'+cr+'keyrow" style="color:yellow">';
+				s += '&nbsp</span> </span>';
+				rows_selected[cr]=0;
+			}
+		}
+		
+		s=s+'<br>';	
+	}	
+	if (flag) {//put in yellow column boxes
+	//one column of blank place holders
+		s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+		s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+		s=s+'</span> </span>';
+		
+	
+		// yellow selection boxes
+		for (i=0;i<10;i++) {
+				c = digits.charAt(i);
+				if ( c== label1 || c == label2) continue;
+				s = s+'<span width="75" height="75" style="border: 2px solid black;background: yellow;"  >';
+				s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_column" class="'+c+'keycolumn" style="color:yellow">';			
+				s += '&nbsp</span> </span>';
+				columns_selected[c] = 0;
+		}		
+	} // end if flag
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+	
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br><br>';
+	str = str + '<INPUT onclick=setup_swap(); type=button value="swap rows or columns in key" >';
+	document.getElementById('button_actions').innerHTML= str;	
+}
+
+function restore_original() {
+	set_original_buttons();
+	restore_keyblock(0);
+}
+
+function do_swap() {
+	var i,ccnt,rcnt, col1,col2,row1,row2,s,n,p,c;
+	
+	ccnt = rcnt=0
+	for (i=0;i<3;i++){
+		if ( i==0) c = label0;
+		else if ( i==1) c = label1;
+		else c = label2;
+		if (rows_selected[c]==1) {
+			if (rcnt==0) row1=c;
+			else if ( rcnt ==1 )row2=c;
+			rcnt += 1;
+		}
+	}
+	
+	for (i=0;i<10;i++) {
+		c = digits.charAt(i);
+		if ( c== label1 || c == label2) continue;
+		if (columns_selected[c]==1) {
+			if (ccnt==0) col1=c;
+			else if ( ccnt ==1 )col2=c;
+			ccnt += 1;
+		}
+	}
+	if (ccnt+rcnt>2) {
+			alert("Too many rows/columns selected!")
+			return
+	}
+	if (ccnt>0 && rcnt>0){		
+			alert("Select only rows or only columns!")
+			return
+	}
+	if (ccnt+rcnt<2) {
+			alert("Select a PAIR of rows or a PAIR of columns!")
+			return
+	}	
+	if ( ccnt ==2) { //swap columns col1 and col2
+		// swap top keys
+		s = top_key[col1];
+		top_key[col1]= top_key[col2];
+		top_key[col2] = s
+		// swap columns in keyrectangle
+		for (i=0;i<3;i++) {
+			if ( i==0)
+				n = label0;
+			else if ( i==1)
+				n = label1;
+			else n = label2;
+			//n = digits.charAt(i);
+			s = check_key[n+col1];
+			check_key[n+col1] = check_key[n+col2];
+			check_key[n+col2]=s;
+		}
+	}
+	if ( rcnt ==2) { //swap rows row1 and row2
+		// swap left keys
+		s = left_key[row1];
+		left_key[row1]= left_key[row2];
+		left_key[row2] = s
+		// swap rows in keyrectangle
+		for (i=0;i<10;i++) {
+			if ( i==label1 || i == label2) continue;
+			n = digits.charAt(i);
+			s = check_key[row1+n];
+			check_key[row1+n] = check_key[row2+n];
+			check_key[row2+n]=s;
+		}
+	}	
+	restore_original();
+}
+
+function setup_swap() {
+	str='Select a pair of rows or columns by clicking their yellow boxes. <br>';
+	str += 'Then click the swap button. <br>';
+	str += '<br><input type="button" value="Swap" onclick=do_swap()>';		
+	str += '&nbsp&nbsp<input type="button" value="Cancel" onclick=restore_original()>';	
+	document.getElementById('button_actions').innerHTML= str;
+	restore_keyblock(1);	
+}
+
+function initialize(){
+	var ck;
+	
+	ck=get_row_labels();
+	if (ck==1) return;
+	reset_key();
+	letterblock_setup();
+	keyblock_setup();
+	set_original_buttons();
+	xlate();
+}
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Monome-Dinome Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+</form>
+<!---
+Click on one of the blue symbols below , then click on a cell inside the key table<BR>
+--->
+<span id="directions">
+Enter cipher and a pair of row labels, then click initialize button.
+</span>
+<!-- mark off space for letter block -->
+<div id="holdletterblock" class="hold_letter_block">
+</div>
+<!-----------
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px">
+</div>
+--->
+
+<!---
+Key Table:<br>
+-->
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+Row Labels: <input type="text" id="row_labels" size=5>
+<INPUT onclick=initialize(); type=button value="initialize" >
+</div>
+
+
+<!------------
+<script type="text/javascript">
+screen_check();
+reset_key();
+letterblock_setup();
+keyblock_setup();
+set_original_buttons();
+</script>
+--------->
+
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>

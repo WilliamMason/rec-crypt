@@ -1,0 +1,43 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<TITLE>Gromark Primer Search</TITLE>
+<script src="primer_search_main.js"></script>
+</head>
+<body bgcolor="Silver" >
+<Center>
+<H2>Gromark Primer Search</H2>
+</Center>
+Cipher: <BR><TEXTAREA id=ciphertext styLe="font-family:monospace" name=ciphertext rows=8 cols=90>
+</TEXTAREA>
+<br>
+
+<input type="button" id="do_search" value="Search" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+ <input type="button" id="stop_search" value="Stop" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+show top:
+<input type="text" id='to_show' size=5 value = 100>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+<input type="radio" id = "std"  name="ctype" checked > Standard
+&nbsp; &nbsp;
+<input type="radio" id = "even_only"  name="ctype"> Even primers only
+&nbsp; &nbsp;
+<input type="radio" id = "g_flag"   name="ctype" > Gizmo's correction
+
+<br><br>
+Output: <BR><TEXTAREA id="output_area" styLe="font-family:monospace" rows=8 cols=90></TEXTAREA><BR>
+<br>
+status:
+<input type="text" id='status' size=5>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+
+Include rank of a specific primer =>
+<input type="text" id='specific_primer' size=7 value = " (none)">
+<br><br><br>
+
+</body>
+</html>
+

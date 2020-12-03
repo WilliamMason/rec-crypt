@@ -1,0 +1,98 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Inverse Key</title>
+<script type="text/javascript">
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function do_calc(){
+	var s,s1,n,c, key_numbs,max_num,i,j,k,index,min_num;
+	var digits='0123456789';
+    var inverse = [];
+    var key = [];
+	
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	s = alltrim(s);	
+    s = condense_white_space(s)
+	key_numbs = {};
+	max_num = -1;
+    min_num = 2000000;
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if ( digits.indexOf(c) != -1){
+			s1  = s.split(' ');
+			if ( s1.length <2){
+				alert("Numbers in key must be separated by blanks!");
+				return(false);
+			}
+			for (j=0;j<s1.length;j++){
+				k = parseInt(s1[j]);
+				if (isNaN(k)) {
+					//if ( j==s1.length-1) continue; // last entry might be line feed or something					
+					alert("Key contains mixed numbers and non-numbers!");
+					return(false);
+				}
+				if (k>max_num) max_num = k;
+				key_numbs[k]=1;
+                if (k<min_num) min_num = k;
+
+			}
+			for (j=1;j<max_num;j++){
+				if ( !(j in key_numbs)){
+					s = 'Number '+j+' missing from key.';
+					alert(s);
+					return(false);
+				}
+			}
+			break;
+		}
+	}
+    index = min_num;
+    for (j=0;j<s1.length;j++){
+        k = parseInt(s1[j]);
+        key[index++]=k;
+    }
+    for (j=min_num;j<key.length;j++)
+        inverse[key[j]] = j;
+
+	out_str="";
+	
+	for (j=min_num;j<inverse.length;j++)
+        out_str += inverse[j]+' '
+	document.getElementById('output_area').value = out_str;
+}
+
+function do_clear(){
+    document.getElementById('output_area').value = '';
+    document.getElementById('input_area').value = '';
+}    
+</script>
+</head>
+<body bgcolor="Silver">
+<h3>Get inverse  of a transposition key</h3><br><br>
+
+Enter key as numbers separated by blanks:<br>
+<textarea id="input_area" cols=80 >
+</textarea><br>
+<br>
+Inverse key:<br>
+<textarea id="output_area" cols=80>
+</textarea>
+<br><br>
+<input type="button" value="Get Inverse Key" onclick=do_calc();>
+<input type="button" value="Clear" onclick=do_clear();>
+<p>
+How is knowing the inverse key useful? To use the <A href="http://acaencodedecode.appspot.com" >encoding-decoding routines </A>on transposition ciphers such as columnar, swagman, redefense, etc, you must enter the key. But sometimes the "key" that is given as a solution to a Cryptogram cipher is not the key as defined in the "ACA and You" reference book. Instead you are sometimes given the inverse of the key. That is, you are given the "decoding key" instead of the "encoding key". These keys are inverses of each other. Given one, it's easy to calculate the other; this program does the calculation for you.
+</p>
+</body>
+</html>

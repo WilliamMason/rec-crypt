@@ -1,0 +1,454 @@
+<html>
+<head>
+<TITLE>Keyphrase Worksheet</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+
+<script>
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var c_symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+var digits="0123456789";
+
+var solving_flag = 0;
+var plain_key= [];
+var code,data;
+var plain ;
+var line_limit = 90;
+var fire_fox = 1;
+var dobj, cpos;
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+var undo_array2 = [];
+var redo_array2 = [];
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+    redo_array2[redo_index] = [];    
+	for (i=0;i<code.length;i++) {
+		redo_array[redo_index][i] = plain[ i ];
+	}
+	for (i=0;i<26;i++) {
+		redo_array2[redo_index][i] = plain_key[ i ];
+	}
+    
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<code.length;i++) {
+		plain[ i ] = undo_array[undo_index][i];
+	}
+	for (i=0;i<26;i++) {
+		plain_key[ i ] = undo_array2[undo_index][i];
+	}
+    
+    document.getElementById('redo_button').disabled = false;
+    update_keyblock();    
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<code.length;i++) {
+		plain[ i ] = redo_array[redo_index][ i ];
+	}
+	for (i=0;i<26;i++) {
+		plain_key[ i ] = redo_array2[redo_index][ i ];
+	}
+    update_keyblock();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+    undo_array2[undo_index] = [];    
+	for (i=0;i<code.length;i++) {
+		undo_array[undo_index][ i ] = plain[ i ];
+	}
+	for (i=0;i<26;i++) {
+		undo_array2[undo_index][ i ] = plain_key[ i ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+function setup_code() {
+    var n,i,c;
+	data = document.getElementById('cipher_place').value;
+	if (data.length<2){
+		alert("No ciphertext entered!");
+        clear();
+		return;
+	}
+	data = data.toUpperCase();
+	// global replace of line feeds and carriage returns with blank
+	code = data.replace(/[\n\r]/g,' ');
+	solving_flag = 1;
+	document.getElementById('outputblock').style.border = "3px ridge black";
+    
+	//solving_flag=1;
+	old_xlation = ['-'];
+    plain = [];
+	for (i = 0;i<code.length;i++){
+		old_xlation[i]= '-';
+        c = code.charAt(i);
+        n = c_symbols.indexOf(c);
+        if (n>-1 && n<26)
+            plain[i] = '-'
+        else
+            plain[i] = c;
+    }
+        
+	document.body.style.cursor = 'crosshair';
+    undo_index = redo_index = 0;    
+}	
+
+function clear(){
+    var str;
+    str = 'Ciphertext: (Type or paste cipher into this box, then click the Initialize button)<BR>';
+    str += '<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+    document.getElementById('outputblock').innerHTML = str;
+    document.getElementById('letterblock').style.display="none";
+    document.getElementById('keyblock').innerHTML = '';
+    document.getElementById('undo_redo').innerHTML = '';   
+    str = '<input type = "button" value="Initialize"; onclick="initialize()" >';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >'
+    document.getElementById('initial').innerHTML = str;
+    undo_index = redo_index = 0;  
+    solving_flag = 0;    
+}
+
+function reset_key(){
+    var i;
+    for (i=0;i<26;i++)
+        plain_key[i] = '-';
+    update_keyblock();
+}
+
+function letterblock_setup(){
+	var s,i,c;
+    s = "Click on one of the blue symbols below , then click below a cipher letter in the box above or on a place in the Key Table below. ";
+    document.getElementById('initial').innerHTML=s;
+    document.getElementById('letterblock').style.display="block";
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}	
+	s=s+'<br>';	
+	document.getElementById('letterblock').innerHTML=s;	
+	last_cell='';
+    s = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+    s += '<input type=button value = "undo" onclick="do_undo()">'
+    s += '<input type=button value = "redo" onclick="do_redo()" id="redo_button" disabled>';
+
+    document.getElementById('undo_redo').innerHTML=s;
+
+}
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,c1,n,c;
+    
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+
+	if (code.length<limit)
+		limit = code.length;
+    else {// break at white space
+        c = code.charAt(limit-1);
+        n = c_symbols.indexOf(c);
+        while ( n > -1 && n <26){
+            limit--;
+            c = code.charAt(limit-1);
+            n = c_symbols.indexOf(c);
+        }
+    }
+	pos=0;
+	cnt=0;
+	pl='';
+	while (pos<code.length) {
+        c = code.charAt(pos);
+		str = str+c;
+        c1 = plain[pos];
+		if ( old_xlation[pos] != c1){
+			old_xlation[pos]=c1;	
+			pl = pl+'<font color="red"><span class = "plain'+pos+'">'+c1+'</span></font>';					
+		}
+		else
+			pl = pl+'<span class = "plain'+pos+'">'+c1+'</span>';
+		//pl = pl+c+'&nbsp;&nbsp;';
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+			//str=str+'\n'+pl+'\n';
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			cnt=0;
+			if (pos+line_limit>code.length)
+				limit = code.length-pos;
+            else { // break line at word break
+                limit = line_limit;
+                c = code.charAt(pos+limit-1);
+                n = c_symbols.indexOf(c);
+                while ( n > -1 && n <26){
+                    limit--;
+                    c = code.charAt(pos+limit-1);
+                    n = c_symbols.indexOf(c);
+                }
+            }
+		}
+	}
+	//document.ciphertext.cipher_place.value=str;
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function outblock_setup(){
+    if (solving_flag == 0){
+        setup_code();
+    }
+    xlate();
+}
+
+function initialize(){
+reset_key();
+letterblock_setup()
+outblock_setup()
+disk_setup();
+}
+
+
+function disk_setup(){
+var str;
+
+str = '<br><INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >'
+str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+document.getElementById('diskops').innerHTML=str;
+}
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	} 
+	else {
+		try {
+			localStorage.setItem("keyphrase.cipher", data); //saves to the database, “key”, “value”
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+	str = '';
+	for (i=0;i< code.length;i++) {
+		str += plain[ i ];
+	}
+	localStorage.setItem("keyphrase.plain", str);
+	str = '';
+	for (i=0;i<26;i++) {
+		str += plain_key[i];
+	}
+	localStorage.setItem("keyphrase.plain.key", str);		
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k,temp;
+    
+	temp = localStorage.getItem("keyphrase.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    clear();
+    document.getElementById('cipher_place').value = temp;
+    initialize();
+    s = localStorage.getItem("keyphrase.plain");
+    for (i=0;i<code.length;i++)
+        plain[i] = s.charAt(i);
+    s = localStorage.getItem("keyphrase.plain.key");
+    for (i=0;i<26;i++)
+        plain_key[i] = s.charAt(i);
+    update_keyblock();
+    xlate();
+}
+
+function clear_disk(){
+	localStorage.removeItem("keyphrase.cipher");
+	localStorage.removeItem("keyphrase.plain");	
+	localStorage.removeItem("keyphrase.plain.key");		
+	alert("work cleared from disk");
+}
+
+
+function selectmouse(e){
+  var p_letter,n,c,n1,c_old,c_letter;
+  
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));  
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
+	  dobj = fobj;
+	  x = fobj.className.slice(5);
+	  p_letter=symbols.charAt(cpos);
+      n = parseInt(x);
+      c = code.charAt(n);
+      n1 = c_symbols.indexOf(c);
+      c_old = plain[n];
+      if ( n1 > -1 && n1 < 26) {
+        if (c_old != '-' && p_letter == '-'){
+            cpos = symbols.indexOf(c_old); // erasing a letter
+            c = '-';
+        }
+        if ( p_letter != '-' && plain_key[cpos] != '-' && plain_key[cpos] != c ){
+            alert("Selected letter inconsistent with key!");
+        }    
+        else if ( p_letter != '-' && c_old != '-' && p_letter != c_old){
+            alert("Erase old letter before changing to new letter!");
+        }    
+        else {
+            update_undo();
+            document.getElementById('redo_button').disabled = true;          
+            plain[ n ] = p_letter;
+            plain_key[cpos] = c;
+        }
+      } 
+      //next 3 lines for debugging
+	  //s = "using letter "+p_letter+" You clicked on pos "+x+" , which is below the codepair\n";
+	  //s = s+code_array[ parseInt(x)];
+	  //document.debug.output_area.value= s; 	
+	  letter_selected=0;	
+	  //reset letter block
+	  letterblock_setup();
+	  xlate();
+      update_keyblock();
+      return false;	  
+  }    
+  else if (fobj.className.slice(0,8)=="k_letter" && letter_selected) {
+	  dobj = fobj;
+	  x = fobj.className.slice(8);
+	  c_letter = c_symbols.charAt(cpos);
+      n = parseInt(x);
+      if (plain_key[n] != '-' && c_letter != plain_key[n]){
+        alert("Letter selected inconsistent with letter already filed in. Undo old letters first");
+      }
+      else {
+            update_undo();
+            document.getElementById('redo_button').disabled = true;          
+            plain_key[n] = c_letter;
+      }
+	  //document.debug.output_area.value= s; 	
+	  letter_selected=0;	
+	  //reset letter block
+	  letterblock_setup();
+	  xlate();
+      update_keyblock();
+      return false;	  
+  }    
+	  
+}
+document.onmousedown=selectmouse;
+function update_keyblock(){
+    var str,i,j,n;
+    
+    str = "Key Table<br>";
+    str += symbols.slice(0,26);
+    str += '<br>';
+    for (i=0;i<26;i++)
+        //str += plain_key[i];
+        str += '<span class="k_letter'+i+'">'+ plain_key[i]+'</span>';
+    document.getElementById('keyblock').innerHTML=str;
+    // calculate and show inverse key
+    var invkey = [];
+    for ( i=0;i<26;i++)
+        invkey[i] = '-';
+    for (i=0;i<26;i++)
+        if ( plain_key[i] != '-' ){
+           n = c_symbols.indexOf( plain_key[i] );
+           invkey[n] += symbols.charAt(i);
+    }
+    str = 'Inverse key Table<br>';
+    for (i=0;i<26;i++)
+        str += c_symbols[i]+invkey[i]+' ';
+    document.getElementById('invkeyblock').innerHTML=str;
+}
+</script>
+</head>
+<body bgcolor="Silver" >
+<center><span style="font-weight:bold;">Keyphrase Worksheet</span></center><br>
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, then click the Initialize button)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+<br>
+<div id="initial">
+<input type = "button" value="Initialize"; onclick="initialize()" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >
+</div>
+
+<BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px; display:none;">
+</div>
+<BR>
+
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block" 
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
+	  padding:10px; float:left;">
+</div>
+<div id="undo_redo"
+style="font-family:monospace; font-size: 15px; 
+	  padding:10px; float:left;">
+</div>
+
+<div id="invkeyblock"
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
+	  padding:10px; clear:left;">      
+</div>
+<div id = "diskops" style="clear:left;" >
+</div>
+</body>
+</html>

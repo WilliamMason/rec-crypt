@@ -1,0 +1,681 @@
+<!-- interactive knight tour solver  borrowed grille_mask from grille solver-->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Knight's Tour Worksheet</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+
+<script type="text/javascript">
+var logdi = new Array(
+[4,7,8,7,4,6,7,5,7,3,6,8,7,9,3,7,3,9,8,9,6,7,6,5,7,4],
+ [7,4,2,0,8,1,1,1,6,3,0,7,2,1,7,1,0,6,5,3,7,1,2,0,6,0],
+ [8,2,5,2,7,3,2,8,7,2,7,6,2,1,8,2,2,6,4,7,6,1,3,0,4,0],
+ [7,6,5,6,8,6,5,5,8,4,3,6,6,5,7,5,3,6,7,7,6,5,6,0,6,2],
+ [9,7,8,8,8,7,6,6,7,4,5,8,7,9,7,7,5,9,9,8,5,7,7,6,7,3],
+ [7,4,5,3,7,6,4,4,7,2,2,6,5,3,8,4,0,7,5,7,6,2,4,0,5,0],
+ [7,5,5,4,7,5,5,7,7,3,2,6,5,5,7,5,2,7,6,6,6,3,5,0,5,1],
+ [8,5,4,4,9,4,3,4,8,3,1,5,5,4,8,4,2,6,5,7,6,2,5,0,5,0],
+ [7,5,8,7,7,7,7,4,4,2,5,8,7,9,7,6,4,7,8,8,4,7,3,5,0,5],
+ [5,0,0,0,4,0,0,0,3,0,0,0,0,0,5,0,0,0,0,0,6,0,0,0,0,0],
+ [5,4,3,2,7,4,2,4,6,2,2,4,3,6,5,3,1,3,6,5,3,0,4,0,5,0],
+ [8,5,5,7,8,5,4,4,8,2,5,8,5,4,8,5,2,4,6,6,6,5,5,0,7,1],
+ [8,6,4,3,8,4,2,4,7,1,0,4,6,4,7,6,1,3,6,5,6,1,4,0,6,0],
+ [8,6,7,8,8,6,9,6,8,4,6,6,5,6,8,5,3,5,8,9,6,5,6,3,6,2],
+ [6,6,7,7,6,8,6,6,6,3,6,7,8,9,7,7,3,9,7,8,9,6,8,4,5,3],
+ [7,3,3,3,7,3,2,6,7,2,1,7,3,2,7,6,0,7,6,6,6,0,3,0,4,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0],
+ [8,6,6,7,9,6,6,5,8,3,6,6,6,6,8,6,3,6,8,8,6,5,6,0,7,1],
+ [8,6,7,6,8,6,5,7,8,4,6,6,6,6,8,7,4,5,8,9,7,4,7,0,6,2],
+ [8,6,6,5,8,6,5,9,8,3,3,6,6,5,9,6,2,7,8,8,7,4,7,0,7,2],
+ [6,6,7,6,6,4,6,4,6,2,3,7,7,8,5,6,0,8,8,8,3,3,4,3,4,3],
+ [6,1,0,0,8,0,0,0,7,0,0,0,0,0,5,0,0,0,1,0,2,1,0,0,3,0],
+ [7,3,3,4,7,3,2,8,7,2,2,4,4,6,7,3,0,5,5,5,2,1,4,0,3,1],
+ [4,1,4,2,4,2,0,3,5,1,0,1,1,0,3,5,0,1,2,5,2,0,2,2,3,0],
+ [6,6,6,6,6,6,5,5,6,3,3,5,6,5,8,6,3,5,7,6,4,3,6,2,4,2],
+ [4,0,0,0,5,0,0,0,3,0,0,2,0,0,3,0,0,0,1,0,2,0,0,0,4,4]);
+
+
+var fire_fox=!document.all;
+var data, starting_puzzle,side_len;
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+var symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+var spn_pts,spn_width;
+var grille_mask = new Array();
+
+var key = [];
+var current_index;
+var digits = '0123456789';
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+function update_mask(){
+    var i,j,x,y;
+    
+	for (i=0;i<side_len;i++){
+		for (j=0;j<side_len;j++) grille_mask[i][j] = 0;// all closed at start
+	}
+    for (i=0;i<current_index;i++){
+        x = parseInt(key[i][0],10);
+        y = parseInt(key[i][1],10);
+        grille_mask[x][y] = 1;
+    }
+}    
+
+function display_possible_moves(){
+    var x,y,nx,ny,s;
+    if (current_index == 0) return;
+    var i = current_index - 1;
+    x = parseInt(key[i][0],10);
+    y = parseInt(key[i][1],10);
+    
+    // show possible moves
+    var t = 0; // left over variable from grille solver.
+    ny = y+2;
+    if (ny < side_len) {
+        nx = x+1;
+        if (nx < side_len && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+        nx = x-1
+        if (nx >=0  && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+    }
+    ny = y-2;
+    if (ny >=0) {
+        nx = x+1;
+        if (nx < side_len && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+        nx = x-1
+        if (nx >=0  && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+    }
+    nx = x+2;
+    if (nx < side_len) {
+        ny = y+1;
+        if (ny < side_len && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+        ny = y-1
+        if (ny >=0  && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+    }
+    nx = x-2;
+    if (nx >=0) {
+        ny = y+1;
+        if (ny < side_len && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+        ny = y-1
+        if (ny >=0  && grille_mask[nx][ny]==0) {
+            s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+            document.getElementById(s).style.color="red";	
+        }
+    }
+}
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+	for (i=0;i<current_index;i++)  {
+		redo_array[redo_index][i] = key[ i ];
+	}
+    redo_index++;
+    undo_index--;    
+    current_index--;
+	for (i=0;i<current_index;i++)  {
+		key[ i ] = undo_array[undo_index][i];
+	}
+    document.getElementById('redo_button').disabled = false;
+    //restore_keyblock(0);
+    update_mask();
+    show_layout(starting_puzzle);
+    display_possible_moves();
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+    current_index++;
+	for (i=0;i<current_index;i++)  {
+        key[i ] = redo_array[redo_index][i];
+	}
+    //restore_keyblock(0);
+    update_mask();
+    show_layout(starting_puzzle);  
+    display_possible_moves();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<current_index;i++)  {
+		undo_array[undo_index][i] = key[ i ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+function reset(){	
+	var s;
+			
+	do_reset = confirm("Clear puzzle?")
+	if ( do_reset == true) {
+		s='Directions: Type or paste the cipher into box.';
+		s += 'Then click the Initialize button.<BR>';
+		document.getElementById('directions').innerHTML=s;	
+		s = 'Cipher: <br> <textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=10;	background:white;">';
+		s += '</textarea>';
+		document.getElementById('controlArea').innerHTML=s;
+		s='<INPUT onclick=initialize(); type=button value="Initialize" >';
+		document.getElementById('button_actions').innerHTML=s;
+		document.getElementById('outputBlock').innerHTML='';
+        undo_index = redo_index = current_index =0;
+        document.getElementById('redo_button').disabled = true;                  
+	}
+}		
+
+function start_over(){
+	var i,j;
+	
+	do_restart = confirm("Start over?")	
+	if ( do_restart == true) {	
+		for (i=0;i<side_len;i++){
+			for (j=0;j<side_len;j++) grille_mask[i][j] = 0;// all closed at start
+		}
+        current_index = undo_index = redo_index = 0;
+		show_layout(starting_puzzle);
+        document.getElementById('redo_button').disabled = true;                  		
+	}
+	
+}
+
+function check_knight_move(i){ // is the move to key[i] from key[i-1] a knight's jump? return 1 if not
+    if ( i==0) return(0); // initial move!
+    var d0 = parseInt(key[i].charAt(0),10)-parseInt(key[i-1].charAt(0),10);
+    if (d0<0) d0 = - d0;
+    var d1 = parseInt(key[i].charAt(1),10)-parseInt(key[i-1].charAt(1),10);
+    if (d1<0) d1 = - d1;
+    if ( d0 == 2 && d1 == 1) return(0);
+    if (d0 == 1 && d1 == 2) return(0);
+    return(1); // not a knight's move
+}    
+
+function xlate(){
+	var i,j,s,x;
+	var temp = new Array();
+	var temp1 = new Array();
+	
+    s = 'Plaintext:\n'
+    for (x=0;x<current_index;x++){
+        if ( check_knight_move(x) == 1) 
+            s += " (gap) ";
+        i = digits.indexOf(key[x].charAt(0));
+        j = digits.indexOf(key[x].charAt(1));
+        s += starting_puzzle.charAt(i*side_len+j);
+    }
+    if ( current_index == side_len*side_len)
+        s += " (board filled)";
+    s += "\nRoute:\n"
+    for (i=0;i<current_index;i++)
+        s += key[i]+' ';
+    s += "\nBoard:\n";
+    var board = []
+    for (i=0;i<side_len;i++){
+        board[i] = [];
+        for (j=0;j<side_len;j++)
+            board[i][j] = '-- ';
+    }
+    var nxt_move = 1;
+    for (x=0;x<current_index;x++){
+        i = parseInt(key[x][0],10);
+        j = parseInt(key[x][1],10);
+        if (nxt_move<10)
+            board[i][j] = ' '+nxt_move+' ';
+        else
+            board[i][j] = ''+nxt_move+' ';
+        nxt_move++;
+    }
+    for (i=0;i<side_len;i++) {
+        for (j=0;j<side_len;j++)
+            s += board[i][j];
+        s += '\n';
+    }
+	document.getElementById('decrypt').value=s;
+}
+		
+	
+
+function show_layout(puzzle) {
+	var s,cnt,turn_numb,i,j;
+	var w;
+	
+	s = '';
+	w = side_len*35; // so internet explorer won't cut off block in the middle
+
+    turn_numb = 0;
+		s += '<span id = "turn'+turn_numb+'" style = "float:left;width:'+w+'px;">'	
+
+		s += 'Board';
+	s += '<br>';
+	for (i=0;i<side_len;i++) {
+		cr = upperC.charAt(i);
+		s += '&nbsp';
+			cnt = i*side_len;	
+ 		for (j=0;j<side_len;j++) {						
+			//row of cells at start
+				cc=upperC.charAt(j);
+				c = cc+cr;
+				v = puzzle.charAt(cnt);
+				cnt += 1;
+				s = s+'<span width="'+spn_width+'" height = "'+spn_width+'" ';
+				if ( j==0 )
+					s += ' style="border-left: 2px solid black;';
+				else
+					s += ' style="border-left: 2px dotted black;';
+				if ( i==0 )
+					s += ' border-top: 2px solid black;';
+				else
+					s += ' border-top: 2px dotted black;';
+				if ( j==side_len-1)
+					s += ' border-right: 2px solid black;';
+				if ( i == side_len-1)
+					s += 'border-bottom: 2px solid black;';
+				s+= 'background: white;font-family:monospace;font-size:'+spn_pts+'px;"  >';
+                if (grille_mask[i][j] == 1){
+				s=s+'&nbsp<span width="'+spn_width+'" height = "'+spn_width+'" id ="'+c+turn_numb+'key" class="'+c+turn_numb+'key" style="color:blue">';
+                }
+                else {
+				s=s+'&nbsp<span width="'+spn_width+'" height = "'+spn_width+'" id ="'+c+turn_numb+'key" class="'+c+turn_numb+'key" style="color:black">';
+                }
+				s=s+v+'</span> </span>';
+			}
+		s=s+'&nbsp <br>';	
+	}	
+	s=s+'</span>';	
+
+	document.getElementById('controlArea').innerHTML=s;	
+  s = '<div style="clear:left;"> <br>Current Decrypt:<br>';
+  s += '<textarea id="decrypt"  name = "decryptarea" cols=90; rows=10;background:white;"></textarea></div>'
+	document.getElementById('outputBlock').innerHTML=s;	
+  //s='<span style="float:left;"><INPUT onclick=reset(); type=button value="Clear" ></span>';
+  s='<span style="float:left;"><INPUT onclick=reset(); type=button value="Clear" >';
+  s += '<INPUT onclick=start_over(); type=button value="Start over" ></span>';  
+  s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+  s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >';
+  s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" >';
+  s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=look_ahead(); type=button value="Look ahead" >';
+  s += '&nbsp;&nbsp; Show logdi scores above: <input type = text id="cut_off" value = 750 size=5>';
+  	document.getElementById('button_actions').innerHTML=s;	
+}
+
+function return_possible_moves(x,y,mask){
+    var nx,ny, s,s1, ct;
+    // show possible moves
+    var t = 0; // left over variable from grille solver.
+    s = [];
+    ct = 0;
+    ny = y+2;
+    if (ny < side_len) {
+        nx = x+1;
+        if (nx < side_len && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+        nx = x-1
+        if (nx >=0  && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+    }
+    ny = y-2;
+    if (ny >=0) {
+        nx = x+1;
+        if (nx < side_len && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+        nx = x-1
+        if (nx >=0  && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+    }
+    nx = x+2;
+    if (nx < side_len) {
+        ny = y+1;
+        if (ny < side_len && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+        ny = y-1
+        if (ny >=0  && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+    }
+    nx = x-2;
+    if (nx >=0) {
+        ny = y+1;
+        if (ny < side_len && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+        ny = y-1
+        if (ny >=0  && mask[nx][ny]==0) {
+            s[ct++] = nx;
+            s[ct++] = ny;
+        }
+    }
+    return(s);
+}
+
+
+function look_ahead(){
+    var s,mask,x,y,i,j,lst,c1,c2,c3,c4,lst2,lst3,x2,y2,k,c0,n;
+    var i0,i1,i2,i3,score,cut_off;
+    
+    cut_off = parseInt(document.getElementById('cut_off').value,10);
+    mask = [];
+    for (i=0;i<side_len;i++){
+        mask[i] = [];
+        for (j=0;j<side_len;j++)
+            mask[i][j] = grille_mask[i][j];
+    }    
+    
+    if (current_index == 0) return;
+    var i = current_index - 1;
+    x = parseInt(key[i][0],10);
+    y = parseInt(key[i][1],10);
+    c0 = starting_puzzle.charAt(x*side_len+y);  
+    i0 = upperC.indexOf(c0);
+    lst = return_possible_moves(x,y,mask)
+    s = "possible moves, logdi scores above "+cut_off+': ';
+    for (i=0;i<lst.length;i = i+2){
+        //s += starting_puzzle.charAt(lst[i]*side_len+lst[i+1]);
+        x = lst[i];
+        y = lst[i+1];
+        c1 = starting_puzzle.charAt(x*side_len+y);  
+        i1 = upperC.indexOf(c1);
+        mask[x][y] = 1;
+        lst2 = return_possible_moves(x,y,mask)
+        for (j=0;j<lst2.length;j=j+2){
+            //s += c1+ starting_puzzle.charAt(lst2[j]*side_len+lst2[j+1])+' ';
+            x2 = lst2[j];
+            y2 = lst2[j+1];
+            c2 = starting_puzzle.charAt(x2*side_len+y2);
+            i2 = upperC.indexOf(c2);
+            mask[x2][y2] = 1;
+            lst3 = return_possible_moves(x2,y2,mask)
+            for (k=0;k<lst3.length;k=k+2) {
+                c3 = starting_puzzle.charAt(lst3[k]*side_len+lst3[k+1]);
+                i3 = upperC.indexOf(c3);
+				if (i0<26 && i1 < 26 && i2<26 && i3<26)
+					score = Math.floor(100*logdi[i0][i1]+logdi[i1][i2]+logdi[i2][i3]/3);
+				else
+					score = 0;
+                //s += c0+c1+ c2+starting_puzzle.charAt(lst3[k]*side_len+lst3[k+1])+' ';
+                if ( score >= cut_off)
+                    s += c0+c1+ c2+c3+'('+score+') ';
+            }
+            mask[x2][y2] = 0;            
+        }    
+        mask[x][y] = 0;         
+    }
+    display_message( s, function(ans){
+        document.getElementById('m_display').style.visibility="hidden"; // close box
+    }
+    );
+
+}
+
+function initialize() {
+	var le,s,cnt;
+	var i,j;
+	
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+    data = data.replace(/Ø/g,'0');    
+	// set up puzzle from data
+	starting_puzzle = '';
+	for (i = 0;i<data.length;i++){
+		c = data.charAt(i);
+		if( symbols.indexOf(c) == -1) continue;
+		starting_puzzle += c;
+	}
+	le = starting_puzzle.length;
+	side_len = Math.sqrt(le);
+	side_len = Math.floor(side_len);
+	if ( side_len*side_len != le){
+		alert("Not a Knight's tour cipher. Length is not a perfect square.");
+		return;
+	}
+	for (i=0;i<side_len;i++){
+		grille_mask[i] = new Array();
+		for (j=0;j<side_len;j++) grille_mask[i][j] = 0;// all closed at start
+	}
+    current_index = 0;
+	spn_pts="15";
+	spn_width="75";
+	show_layout(starting_puzzle);
+    document.getElementById('redo_button').disabled = true;                  
+	s='Directions: Click on letters in box below. Blue is selected, red next possible moves, ';
+	s+= 'black unselected. Decrypt is finished when all letters are blue. Decrypt appears in box near bottom.';
+	document.getElementById('directions').innerHTML=s;
+	document.body.style.cursor = 'crosshair';	
+	letter_selected = 0;
+	current_puzzle = starting_puzzle;
+	saved_layout = current_puzzle;
+
+}
+
+
+function selectmouse(e){
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  var c_row,c_col,turn_numb,t,ti;
+  var result,s,i,x,y,j;
+  var ny,nx;
+  
+  if (fobj.className.slice(3)=="key") {
+    dobj = fobj;
+	turn_numb = dobj.className.charAt(2);
+	c_col = dobj.className.charAt(0);
+	c_row =dobj.className.charAt(1);
+
+	ti = parseInt(turn_numb,10);	
+	t = ti;
+	// get coordinate in grille mask
+	result = [c_row,c_col];
+	x = upperC.indexOf(result[0]);
+	y = upperC.indexOf(result[1]);
+	if (grille_mask[x][y] == 0) {// closed. make opening
+        // get rid of previous red letters
+        for (nx=0;nx<side_len;nx++) for (ny=0;ny<side_len;ny++){
+            if (grille_mask[nx][ny] ==0){ //unused letter
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="black";	
+            }
+        }
+		grille_mask[x][y]=1;
+        key[current_index++] = digits[x]+digits[y];
+        update_undo();
+        document.getElementById('redo_button').disabled = true;                  
+		document.getElementById(dobj.id).style.color="blue";
+        // show possible moves
+        ny = y+2;
+        if (ny < side_len) {
+            nx = x+1;
+            if (nx < side_len && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+            nx = x-1
+            if (nx >=0  && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+        }
+        ny = y-2;
+        if (ny >=0) {
+            nx = x+1;
+            if (nx < side_len && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+            nx = x-1
+            if (nx >=0  && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+        }
+        nx = x+2;
+        if (nx < side_len) {
+            ny = y+1;
+            if (ny < side_len && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+            ny = y-1
+            if (ny >=0  && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+        }
+        nx = x-2;
+        if (nx >=0) {
+            ny = y+1;
+            if (ny < side_len && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+            ny = y-1
+            if (ny >=0  && grille_mask[nx][ny]==0) {
+                s = upperC.charAt(ny)+upperC.charAt(nx)+t+'key';
+                document.getElementById(s).style.color="red";	
+            }
+        }
+         
+	}// end grille_make[x][y]==0
+	else { // grille has opening, close it
+        alert("This letter already used! Have to undo previous moves.");
+	}// end grille_make[x][y]== 1
+	
+	//next 3 lines for debugging
+	//s = "you clicked on turn "+turn_numb+" row "+c_row+" col "+c_col;
+	//s += " Next turn gives row "+result[0]+" and column "+result[1];
+	//document.debug.output_area.value= s; 
+
+	xlate();
+    return false;
+  }
+  
+}
+document.onmousedown=selectmouse;
+
+function display_message(message,callback){ // confirm box
+	var s;
+	
+	s = '<span id="m_display">';
+	s += message;
+	s += '<br><br><center><input value="OK" id="buttonOK" type="button">';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('m_display').style.visibility="visible";
+    //document.getElementById('buttonY').addEventListener("click",function(){callback("yes")});    
+    //document.getElementById('buttonN').addEventListener("click",function(){callback("no")});    
+    document.getElementById('buttonOK').addEventListener("click",function(){callback("ok")});    
+}
+
+
+</script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:250px;
+	top:10px;
+	width:500px;
+	height:500px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Knight's Tour worksheet</span></center><br>
+
+<form name="entryform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:75px; padding: 5px; ">
+Directions: Type or paste the cipher into box. Then click the Initialize button.<BR>
+</div>
+
+<div id = "controlArea">
+
+Cipher: <br>
+<!-- mark space for cipher -->
+<textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=10;
+background:white;">
+</textarea>
+</div>
+<div id = "outputBlock">
+</div>
+</form>
+<div id="button_actions" >
+
+<INPUT onclick=initialize(); type=button value="Initialize" >
+
+</div>
+
+<div id = "cm_display" >
+</div>	
+
+<!----
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+---->
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,313 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Headlines from Slidable</title>
+<script type="text/javascript">
+
+var logdi = new Array(
+[4,7,8,7,4,6,7,5,7,3,6,8,7,9,3,7,3,9,8,9,6,7,6,5,7,4],
+ [7,4,2,0,8,1,1,1,6,3,0,7,2,1,7,1,0,6,5,3,7,1,2,0,6,0],
+ [8,2,5,2,7,3,2,8,7,2,7,6,2,1,8,2,2,6,4,7,6,1,3,0,4,0],
+ [7,6,5,6,8,6,5,5,8,4,3,6,6,5,7,5,3,6,7,7,6,5,6,0,6,2],
+ [9,7,8,8,8,7,6,6,7,4,5,8,7,9,7,7,5,9,9,8,5,7,7,6,7,3],
+ [7,4,5,3,7,6,4,4,7,2,2,6,5,3,8,4,0,7,5,7,6,2,4,0,5,0],
+ [7,5,5,4,7,5,5,7,7,3,2,6,5,5,7,5,2,7,6,6,6,3,5,0,5,1],
+ [8,5,4,4,9,4,3,4,8,3,1,5,5,4,8,4,2,6,5,7,6,2,5,0,5,0],
+ [7,5,8,7,7,7,7,4,4,2,5,8,7,9,7,6,4,7,8,8,4,7,3,5,0,5],
+ [5,0,0,0,4,0,0,0,3,0,0,0,0,0,5,0,0,0,0,0,6,0,0,0,0,0],
+ [5,4,3,2,7,4,2,4,6,2,2,4,3,6,5,3,1,3,6,5,3,0,4,0,5,0],
+ [8,5,5,7,8,5,4,4,8,2,5,8,5,4,8,5,2,4,6,6,6,5,5,0,7,1],
+ [8,6,4,3,8,4,2,4,7,1,0,4,6,4,7,6,1,3,6,5,6,1,4,0,6,0],
+ [8,6,7,8,8,6,9,6,8,4,6,6,5,6,8,5,3,5,8,9,6,5,6,3,6,2],
+ [6,6,7,7,6,8,6,6,6,3,6,7,8,9,7,7,3,9,7,8,9,6,8,4,5,3],
+ [7,3,3,3,7,3,2,6,7,2,1,7,3,2,7,6,0,7,6,6,6,0,3,0,4,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0],
+ [8,6,6,7,9,6,6,5,8,3,6,6,6,6,8,6,3,6,8,8,6,5,6,0,7,1],
+ [8,6,7,6,8,6,5,7,8,4,6,6,6,6,8,7,4,5,8,9,7,4,7,0,6,2],
+ [8,6,6,5,8,6,5,9,8,3,3,6,6,5,9,6,2,7,8,8,7,4,7,0,7,2],
+ [6,6,7,6,6,4,6,4,6,2,3,7,7,8,5,6,0,8,8,8,3,3,4,3,4,3],
+ [6,1,0,0,8,0,0,0,7,0,0,0,0,0,5,0,0,0,1,0,2,1,0,0,3,0],
+ [7,3,3,4,7,3,2,8,7,2,2,4,4,6,7,3,0,5,5,5,2,1,4,0,3,1],
+ [4,1,4,2,4,2,0,3,5,1,0,1,1,0,3,5,0,1,2,5,2,0,2,2,3,0],
+ [6,6,6,6,6,6,5,5,6,3,3,5,6,5,8,6,3,5,7,6,4,3,6,2,4,2],
+ [4,0,0,0,5,0,0,0,3,0,0,2,0,0,3,0,0,0,1,0,2,0,0,0,4,4]);
+
+
+function score_shift(str){
+    var i,j,k,s,c,n,le;
+    
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    str = str.toUpperCase();
+    s = [];
+    le = 0;
+    for (i=0;i<str.length;i++){
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            s[le++] = n
+    }
+    var score = 0;
+    for (i=0;i<le-1;i++)
+        score += logdi[s[i]][s[i+1]];
+    return(score);
+}    
+ 
+ 
+function do_calc(){
+	var str, alpha,shift,out_str,c,n,slid_a,s,i;
+    var score,best_score, best_headline, best_shift;
+    var hn,all_decrypts;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    h_ids = ['headline1','headline2','headline3','headline4','headline5']
+    shift_ids = ['v1','v2','v3','v4','v5']
+    s = document.getElementById('alphabet_area').value;
+    s = s.toUpperCase();
+    slid_a = ''
+    for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0 && slid_a.indexOf(c) == -1)
+			slid_a += c;
+    }
+    if (slid_a.length != 26){
+        alert("Slidable alphabet does not have 26 different letters!")
+        return;
+    }
+	out_str="<center>Headlines</center><br>";	   
+    for (hn = 0;hn<5;hn++){
+        str = document.getElementById(h_ids[hn]).value;
+        if (str == '') continue;
+        str = str.toUpperCase();
+        best_score = 0;
+        best_shift = 0;    
+        best_headline = '';
+        all_decrypts = '';
+        for (shift = 0;shift<26;shift++) {
+            s='';
+            for (i=0;i<str.length;i++){
+                c = str.charAt(i);
+                n = alpha.indexOf(c);
+                if ( n>=0) {
+                    n = slid_a.indexOf(c);
+                    s += slid_a.charAt( (26+n-shift)%26 );
+                }
+                else
+                    s += c;
+            }
+            score = score_shift(s);
+            if (score>best_score){
+                best_score = score;
+                best_headline = s;
+                best_shift = shift;
+            }
+            all_decrypts += s.toLowerCase()+' ('+shift+')\n';
+        }
+        //document.getElementById('output_area').value = out_str;
+        //document.getElementById(h_ids[hn]).value = best_headline.toLowerCase();
+        if (document.getElementById('all_shifts').checked)
+            document.getElementById(h_ids[hn]).value = all_decrypts;
+        n = hn+1;
+        out_str += '('+n+') '+ best_headline.toLowerCase()+'<br>';
+        c = ''+best_shift;
+        document.getElementById(shift_ids[hn]).value = c;
+    }    // next hn
+    display_message(out_str);
+}
+
+function do_clear(){
+    h_ids = ['headline1','headline2','headline3','headline4','headline5'];
+    for (var i = 0;i<5;i++)
+        document.getElementById(h_ids[i]).value = '';
+    //document.getElementById('output_area').value = '';
+}    
+
+function do_settings(){
+	var str, alpha,shift,out_str,c,n,slid_a,s,i;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	
+   s = document.getElementById('alphabet_area').value;
+    s = s.toUpperCase();
+    slid_a = ''
+    for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0 && slid_a.indexOf(c) == -1)
+			slid_a += c;
+    }
+    if (slid_a.length != 26){
+        alert("Slidable alphabet does not have 26 different letters!")
+        return;
+    }
+    shift = []
+    shift[0] =  parseInt(document.getElementById('v1').value,10);
+    shift[1] =  parseInt(document.getElementById('v2').value,10);
+    shift[2] =  parseInt(document.getElementById('v3').value,10);
+    shift[3] =  parseInt(document.getElementById('v4').value,10);
+    shift[4] =  parseInt(document.getElementById('v5').value,10);
+    s='';
+    s += 'Possible Settings, forward and (reverse):<br>';
+    for (i=0;i<13;i++){
+        s += slid_a.charAt(i).toLowerCase()+': ';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+shift[j])%26);
+        s += ' (';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+shift[4-j])%26);
+        s += ')&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+        s += slid_a.charAt(i+13).toLowerCase()+': ';        
+
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+13+shift[j])%26);
+        s += ' (';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+13+shift[4-j])%26);
+        s += ')';
+        
+        s += '<br>';
+    }
+    //alert(s);
+    display_message(s);
+
+    
+    //document.getElementById('output_area').value = out_str;
+}
+
+function do_inverse_settings(){
+	var str, alpha,shift,out_str,c,n,slid_a,s,i;
+	
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	
+   s = document.getElementById('alphabet_area').value;
+    s = s.toUpperCase();
+    slid_a = ''
+    for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0 && slid_a.indexOf(c) == -1)
+			slid_a += c;
+    }
+    if (slid_a.length != 26){
+        alert("Slidable alphabet does not have 26 different letters!")
+        return;
+    }
+    shift = []
+    shift[0] =  parseInt(document.getElementById('v1').value,10);
+    shift[1] =  parseInt(document.getElementById('v2').value,10);
+    shift[2] =  parseInt(document.getElementById('v3').value,10);
+    shift[3] =  parseInt(document.getElementById('v4').value,10);
+    shift[4] =  parseInt(document.getElementById('v5').value,10);
+    s='';
+    s += 'Possible Settings, forward and (reverse):<br>';
+    for (i=0;i<13;i++){
+        s += slid_a.charAt(i).toLowerCase()+': ';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+26-shift[j])%26);
+        s += ' (';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+26-shift[4-j])%26);
+        s += ')&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+        s += slid_a.charAt(i+13).toLowerCase()+': ';        
+
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+13+26-shift[j])%26);
+        s += ' (';
+        for (j=0;j<5;j++)
+            s += slid_a.charAt( (i+13+26-shift[4-j])%26);
+        s += ')';
+        
+        s += '<br>';
+    }
+    //alert(s);
+    display_message(s);
+
+    
+    //document.getElementById('output_area').value = out_str;
+}
+
+
+function display_message(message){
+	var s;
+	
+	s = '<span id="m_display">';
+	s += message;
+	s += '<br><br><center><input value="Close" onclick="hide_message()" type="button"></center>';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('m_display').style.visibility="visible";
+}
+function hide_message(){
+	document.getElementById('m_display').style.visibility="hidden";
+}
+
+
+</script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:50px;
+	width:500px;
+	height:300px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+    font-family:monospace;
+	display:hidden;	
+}
+
+</style>
+
+</head>
+<body bgcolor="Silver">
+<h3> Headlines from Slidable Alphabet</h3> 
+Directions: Type or paste slidable alphabet and coded headlines into boxes. Click "Decode" button. <br><br>
+Slidable Alphabet:<br>
+<textarea id="alphabet_area" rows = 2 cols=30 >
+</textarea><br><br>
+Headline 1:<br>
+<textarea id="headline1" rows = 2 cols=80 >
+</textarea><br><br>
+Headline 2:<br>
+<textarea id="headline2" rows = 2 cols=80 >
+</textarea><br><br>
+Headline 3:<br>
+<textarea id="headline3" rows = 2 cols=80 >
+</textarea><br><br>
+Headline 4:<br>
+<textarea id="headline4" rows = 2 cols=80 >
+</textarea><br><br>
+Headline 5:<br>
+<textarea id="headline5" rows = 2 cols=80 >
+</textarea><br><br>
+
+
+<input type="button" value="Decode" onclick=do_calc();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Clear Headlines" onclick=do_clear();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id = "all_shifts"  > Show all shifts.
+
+<br><br>
+
+Show possible settings given shifts: 
+1 <input type="text" id="v1" size = 1 >
+2 <input type="text" id="v2" size = 1 >
+3 <input type="text" id="v3" size = 1 >
+4 <input type="text" id="v4" size = 1 >
+5 <input type="text" id="v5" size = 1 >
+<input type="button" value="Show settings" onclick=do_settings();>
+<input type="button" value="Show inverse settings" onclick=do_inverse_settings();>
+
+<!----  container for message display box  --->	
+<div id = "cm_display" >
+</div>	
+<br><br>
+
+</body>
+</html>

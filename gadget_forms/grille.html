@@ -1,0 +1,565 @@
+<!-- interactive grille solver  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<TITLE>Grille Worksheet</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;
+ font-size: 15px;
+}
+</style>
+
+<script type="text/javascript">
+var fire_fox=!document.all;
+var data, starting_puzzle,side_len;
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var spn_pts,spn_width;
+var grille_mask = new Array();
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+function do_undo(){
+    var i,j;
+
+  if (undo_index == 0) return;
+  redo_array[redo_index] = [];
+  for (i=0;i<side_len;i++){
+    redo_array[redo_index][i] = [];
+		for (j=0;j<side_len;j++) redo_array[redo_index][i][j]= grille_mask[i][j];
+	}
+  redo_index++;
+  undo_index--;
+  for (i=0;i<side_len;i++){
+		for (j=0;j<side_len;j++) grille_mask[i][j] = undo_array[undo_index][i][j] ;
+	}
+  restore_layout();
+  document.getElementById('redo_button').disabled = false;
+}
+
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+  for (i=0;i<side_len;i++){
+		for (j=0;j<side_len;j++) grille_mask[i][j] = redo_array[redo_index][i][j] ;
+	}
+  restore_layout();
+  document.getElementById('redo_button').disabled = false;
+}
+
+function update_undo(){
+    var i,j;
+    
+  undo_array[undo_index] = [];
+  for (i=0;i<side_len;i++){
+    undo_array[undo_index][i] = [];
+		for (j=0;j<side_len;j++) undo_array[undo_index][i][j]= grille_mask[i][j];
+	}
+  undo_index++;
+  redo_index = 0;
+}
+
+
+
+function restore_layout(){
+// to restore current key display:
+// first setup layout with all key letters in black.
+// then go through each of the 4 rotations setting letters with mask[x][y]==1 blue and the 3 letters in the x,y orbit red.
+
+// initial set up here
+  show_layout(starting_puzzle);
+
+	var i,j,s,k,x,y;
+	var temp = [];
+	var temp1 = [];
+	
+	for (i=0;i<side_len;i++){
+		temp[i] = [];
+		temp1[i] = [];;
+		for (j=0;j<side_len;j++)
+			temp[i][j] = grille_mask[i][j];
+	}
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp[i][j]==1 ){ //s += starting_puzzle.charAt(i*side_len+j);
+      	x = upperC.charAt(j);
+      	y = upperC.charAt(i);
+        s = x+y+'0key'; // x,y turn 0 key id
+        document.getElementById(s).style.color="blue";
+        t=0;
+    		for (k=0;k<3;k++){
+			    t = (t+1)%4;
+			    s = x+y+t+'key';
+			    document.getElementById(s).style.color="red";
+        }
+  }
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		      temp1[i][j] = temp[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+    if (temp1[i][j]==1 ){// s += starting_puzzle.charAt(i*side_len+j);
+      	x = upperC.charAt(j);
+      	y = upperC.charAt(i);
+        s = x+y+'1key'; // x,y turn 1 key id
+        document.getElementById(s).style.color="blue";
+        t=1;
+    		for (k=0;k<3;k++){
+			    t = (t+1)%4;
+			    s = x+y+t+'key';
+			    document.getElementById(s).style.color="red";
+        }
+  }
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		temp[i][j] = temp1[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp[i][j]==1 ){// s += starting_puzzle.charAt(i*side_len+j);
+      	x = upperC.charAt(j);
+      	y = upperC.charAt(i);
+        s = x+y+'2key'; // x,y turn 2 key id
+        document.getElementById(s).style.color="blue";
+        t=2;
+    		for (k=0;k<3;k++){
+			    t = (t+1)%4;
+			    s = x+y+t+'key';
+			    document.getElementById(s).style.color="red";
+        }
+  }
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		temp1[i][j] = temp[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp1[i][j]==1 ) {//s += starting_puzzle.charAt(i*side_len+j);
+      	x = upperC.charAt(j);
+      	y = upperC.charAt(i);
+        s = x+y+'3key'; // x,y turn 3 key id
+        document.getElementById(s).style.color="blue";
+        t=3;
+    		for (k=0;k<3;k++){
+			    t = (t+1)%4;
+			    s = x+y+t+'key';
+			    document.getElementById(s).style.color="red";
+        }
+  }
+  xlate(); // show plaintext so far
+
+}
+
+
+function reset(){
+	var s;
+			
+	do_reset = confirm("Clear puzzle?")
+	if ( do_reset == true) {
+		s='Directions: Type or paste the cipher into box.';
+		s += 'Then click the Initialize button.<BR>';
+		document.getElementById('directions').innerHTML=s;
+		s = 'Cipher: <br> <textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=10;	background:white;">';
+		s += '</textarea>';
+		document.getElementById('controlArea').innerHTML=s;
+		s='<INPUT onclick=initialize(); type=button value="Initialize" >';
+		document.getElementById('button_actions').innerHTML=s;
+		document.getElementById('outputBlock').innerHTML='';
+	}
+}
+
+function start_over(){
+	var i,j;
+	
+	do_restart = confirm("Start over?")
+	if ( do_restart == true) {
+		for (i=0;i<side_len;i++){
+			for (j=0;j<side_len;j++) grille_mask[i][j] = 0;// all closed at start
+		}
+		show_layout(starting_puzzle);
+	}
+	
+}
+
+function xlate(){
+	var i,j,s;
+	var temp = new Array();
+	var temp1 = new Array();
+	
+	for (i=0;i<side_len;i++){
+		temp[i] = new Array();
+		temp1[i] = new Array();
+		for (j=0;j<side_len;j++)
+			temp[i][j] = grille_mask[i][j];
+	}
+	s = '';
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp[i][j]==1 ) s += starting_puzzle.charAt(i*side_len+j);
+	s += ' ';
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		temp1[i][j] = temp[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp1[i][j]==1 ) s += starting_puzzle.charAt(i*side_len+j);
+	if ( (side_len%2) !=0)
+		s += ' '+starting_puzzle.charAt( (side_len*side_len-1)>>1)
+	s += ' ';
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		temp[i][j] = temp1[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp[i][j]==1 ) s += starting_puzzle.charAt(i*side_len+j);
+	s += ' ';
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		temp1[i][j] = temp[side_len-j-1][i]	;
+	for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+		if (temp1[i][j]==1 ) s += starting_puzzle.charAt(i*side_len+j);
+	s = s.toLowerCase();
+	s += '\n\nGrille  (- is closed, X is open)\n';
+	for (i=0;i<side_len;i++) {
+		for (j=0;j<side_len;j++){
+			if (grille_mask[i][j]==0)
+				s += '-';
+			else
+				s += 'X';
+		}
+		s += '\n';
+	}
+	document.getElementById('decrypt').value=s;
+}
+		
+	
+
+function show_layout(puzzle) {
+	var s,cnt,turn_numb,i,j;
+	var w;
+	
+	s = '';
+	w = side_len*35; // so internet explorer won't cut off block in the middle
+for (turn_numb = 0;turn_numb<4;turn_numb++) {
+		s += '<span id = "turn'+turn_numb+'" style = "float:left;width:'+w+'px;">'
+	if ( turn_numb == 0)
+		s += 'start';
+	else
+		s += 'rotation '+turn_numb;
+	s += '<br>';
+	for (i=0;i<side_len;i++) {
+		cr = upperC.charAt(i);
+		s += '&nbsp';
+			cnt = i*side_len;
+ 		for (j=0;j<side_len;j++) {
+			//row of cells at start
+				cc=upperC.charAt(j);
+				c = cc+cr;
+				v = puzzle.charAt(cnt);
+				cnt += 1;
+				s = s+'<span width="'+spn_width+'" height = "'+spn_width+'" ';
+				if ( j==0 )
+					s += ' style="border-left: 2px solid black;';
+				else
+					s += ' style="border-left: 2px dotted black;';
+				if ( i==0 )
+					s += ' border-top: 2px solid black;';
+				else
+					s += ' border-top: 2px dotted black;';
+				if ( j==side_len-1)
+					s += ' border-right: 2px solid black;';
+				if ( i == side_len-1)
+					s += 'border-bottom: 2px solid black;';
+				s+= 'background: white;font-family:monospace;font-size:'+spn_pts+'px;"  >';
+				s=s+'&nbsp<span width="'+spn_width+'" height = "'+spn_width+'" id ="'+c+turn_numb+'key" class="'+c+turn_numb+'key" style="color:black">';
+				s=s+v+'</span> </span>';
+			}
+		s=s+'&nbsp <br>';
+	}
+	s=s+'</span>';
+ } // next turn numb
+	document.getElementById('controlArea').innerHTML=s;
+  s = '<div style="clear:left;"> <br>Current Decrypt:<br>';
+  s += '<textarea id="decrypt"  name = "decryptarea" cols=90; rows=5;background:white;"></textarea></div>'
+	document.getElementById('outputBlock').innerHTML=s;
+  //s='<span style="float:left;"><INPUT onclick=reset(); type=button value="Clear" ></span>';
+  s='<span style="float:left;">';
+  s += '<input type=button value = "undo" onclick="do_undo()">'
+  s += '<input type=button value = "redo" onclick="do_redo()" id="redo_button" disabled>';
+  s += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+  
+s += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+s += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >'
+s += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+  
+  s += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+  s += '<INPUT onclick=reset(); type=button value="Clear" >';
+  s += '<INPUT onclick=start_over(); type=button value="Start over" ></span>';
+  	document.getElementById('button_actions').innerHTML=s;
+}
+
+function initialize() {
+	var le,s,cnt;
+	var i,j;
+	
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+	init_complete();
+	
+}
+
+function init_complete(){
+	// set up puzzle from data
+	starting_puzzle = '';
+	for (i = 0;i<data.length;i++){
+		c = data.charAt(i);
+		if( symbols.indexOf(c) == -1) continue;
+		starting_puzzle += c;
+	}
+	le = starting_puzzle.length;
+	side_len = Math.sqrt(le);
+	side_len = Math.floor(side_len);
+	if ( side_len*side_len != le){
+		alert("Not a Grille cipher. Length is not a perfect square.");
+		return;
+	}
+	for (i=0;i<side_len;i++){
+		grille_mask[i] = new Array();
+		for (j=0;j<side_len;j++) grille_mask[i][j] = 0;// all closed at start
+	}
+	spn_pts="15";
+	spn_width="75";
+	show_layout(starting_puzzle);
+	s='Directions: Click on letters in boxes below to open/close grille perforations. Blue is open, red closed, ';
+	s+= 'black undecided. Decrypt is finished when all letters are either blue or red. Decrypt appears in box near bottom.';
+	document.getElementById('directions').innerHTML=s;
+	document.body.style.cursor = 'crosshair';
+	letter_selected = 0;
+	current_puzzle = starting_puzzle;
+	saved_layout = current_puzzle;
+	query_flag = false;
+}
+
+function do_turn(row,col){
+	var n_row,n_col,r,c,nr,nc,pos;
+	
+	r = upperC.indexOf(row);
+	c = upperC.indexOf(col);
+	
+	nr = c;
+	nc = side_len-r-1;
+	n_row = upperC.charAt(nr);
+	n_col = upperC.charAt(nc);
+	return([n_row,n_col]);
+}
+
+function selectmouse(e){
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  var c_row,c_col,turn_numb,t,ti;
+  var result,s,i,x,y;
+  
+  if (fobj.className.slice(3)=="key") {
+    dobj = fobj;
+	update_undo();
+  
+	turn_numb = dobj.className.charAt(2);
+	c_col = dobj.className.charAt(0);
+	c_row =dobj.className.charAt(1);
+	ti = parseInt(turn_numb,10);
+	t = ti;
+	// get coordinate in grille mask
+	result = [c_row,c_col];
+	while ( t != 0){
+		t = (t+1)%4;
+		result = do_turn(result[0],result[1]);
+	}
+	x = upperC.indexOf(result[0]);
+	y = upperC.indexOf(result[1]);
+	if (grille_mask[x][y] == 0) {// closed. make opening
+		grille_mask[x][y]=1;
+		grille_mask[y][side_len-x-1]=0;
+		grille_mask[side_len-x-1][side_len-y-1]=0;
+		grille_mask[side_len-y-1][x]=0;
+		document.getElementById(dobj.id).style.color="blue";
+		t = ti;
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = c_col+c_row+t+'key';
+			document.getElementById(s).style.color="red";
+		}
+		result = do_turn(c_row,c_col);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="blue";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="red";
+		}
+		result = do_turn(result[0],result[1]);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="blue";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="red";
+		}
+		result = do_turn(result[0],result[1]);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="blue";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="red";
+		}
+	}// end grille_make[x][y]==0
+	else { // grille has opening, close it
+		grille_mask[x][y]=0;
+		grille_mask[y][side_len-x-1]=0;
+		grille_mask[side_len-x-1][side_len-y-1]=0;
+		grille_mask[side_len-y-1][x]=0;
+		document.getElementById(dobj.id).style.color="black";
+		t = ti;
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = c_col+c_row+t+'key';
+			document.getElementById(s).style.color="black";
+		}
+		result = do_turn(c_row,c_col);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="black";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="black";
+		}
+		result = do_turn(result[0],result[1]);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="black";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="black";
+		}
+		result = do_turn(result[0],result[1]);
+		ti = (ti+1)%4;
+		t = ti;
+		s = result[1]+result[0]+t+'key';
+		document.getElementById(s).style.color="black";
+		for (i=0;i<3;i++){
+			t = (t+1)%4;
+			s = result[1]+result[0]+t+'key';
+			document.getElementById(s).style.color="black";
+		}
+	}// end grille_make[x][y]== 1
+	
+	//next 3 lines for debugging
+	//s = "you clicked on turn "+turn_numb+" row "+c_row+" col "+c_col;
+	//s += " Next turn gives row "+result[0]+" and column "+result[1];
+	//document.debug.output_area.value= s;
+
+	xlate();
+    return false;
+  }
+  
+}
+document.onmousedown=selectmouse;
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	}
+	else {
+		try {
+			localStorage.setItem("grille.cipher", data); //saves to the database, �key�, �value�
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn�t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+	/*
+	str = ''+side_len;
+	localStorage.setItem("grille.side_len", str);
+	*/
+	str = '';
+	for (i=0;i< side_len;i++) for(j=0;j< side_len;j++) {
+		str += grille_mask[i][j];
+	}
+	localStorage.setItem("grille.key", str);
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k,temp;
+    
+	temp = localStorage.getItem("grille.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    data = temp;
+    init_complete();
+    k=0;
+    s = localStorage.getItem("grille.key");
+    for (i=0;i<side_len;i++) for(j=0;j<side_len;j++)
+        grille_mask[i][j] = s.charAt(k++);
+    restore_layout();
+}
+
+function clear_disk(){
+	localStorage.removeItem("grille.cipher");
+	localStorage.removeItem("grille.key");
+	alert("work cleared from disk");
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Grille worksheet</span></center><br>
+
+<form name="entryform">
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:75px; padding: 5px; ">
+Directions: Type or paste the cipher into box. Then click the Initialize button.<BR>
+</div>
+
+<div id = "controlArea">
+
+Cipher: <br>
+<!-- mark space for cipher -->
+<textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=10;
+background:white;>
+</textarea>
+</div>
+<div id = "outputBlock">
+</div>
+</form>
+<div id="button_actions" >
+
+<INPUT onclick=initialize(); type=button value="Initialize" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >
+
+</div>
+<br><br>
+
+<!---
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
+
