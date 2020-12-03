@@ -1,0 +1,40 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script src="one_key_search_main.js" ></script>
+
+</head>
+<body bgcolor="Silver">
+<p>
+<h3>Search word/phrase list file for single headline key</h3><br>
+Enter encrypting alphabet from the headline solution, choose word/phrase file, click Search button.
+</p>
+<br>
+Encrypting alphabet (order: cipher letter for 'a', cipher letter for 'b', etc. dashes '-' for unknown letters): <br>
+<input type = "text" id = "encrypting_alpha" size = 60 >
+<br><br>
+Word/Phrase list (.txt format): <input type="file" id="input2" >
+<br>
+<br>
+<input type="button" id="search_for_pattern" value = "Search">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" id="do_clear" value = "Clear">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT  type=button value="Slidable alphabet search" id="slidable" disabled >
+<br><br>
+Search Output:<br>
+<textarea id="output_area" cols=60 rows = 10>
+</textarea>
+<br><br>
+Maximum Hat Length: <input type = "text" id = "max_hat_len" value=10 size = 5>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Maximum Slidable Alphabet tries: <input type = "text" id = "max_slide_tries" value=200000 size = 8>
+<br><br>
+Slidable Output:<br>
+<textarea id="slide_output_area" cols=60 rows = 3>
+</textarea>
+
+</body>
+</html>

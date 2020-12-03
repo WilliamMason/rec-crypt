@@ -1,0 +1,53 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Portax Slide</title>
+<script type="text/javascript">
+
+var top_row = 'A B C D E F G H I J K L M';
+var row2 = 'N O P Q R S T U V W X Y Z N O P Q R S T U V W X Y Z ';
+var row3 = 'A C E G I K M O Q S U W Y A C E G I K M O Q S U W Y ';
+var row4 = 'B D F H J L N P R T V X Z B D F H J L N P R T V X Z ';
+var upperC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+var key_index = 0
+function display(){
+    var s;
+    
+    s = top_row+'<br>';
+    s += row2.slice(key_index,(26+key_index)%52)+'<br><br>'
+    s += row3.slice(key_index,(26+key_index)%52)+'<br>'
+    s += row4.slice(key_index,(26+key_index)%52)+'<br>'
+    s+= '<br>Key Letters: '+upperC.charAt(key_index)+','+ upperC.charAt(key_index+1)
+    document.getElementById('portax_table').innerHTML=s;
+}
+    
+function do_right(){
+
+    key_index = (key_index+2)%26;
+    display();
+}
+
+function do_left(){
+
+    key_index = (26+key_index-2)%26;
+    display();
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Portax Slide </h3>
+<br>
+<div id="portax_table" style="font-family:monospace;padding-left:100px;">
+</div>
+<br>
+<div style="font-family:monospace;padding-left:100px;">
+<input type="button" value="<=Shift" onclick=do_left();>
+<input type="button" value="Shift=>" onclick=do_right();>
+</div>
+<script type="text/javascript">
+display();
+</script>
+</body>
+</html>

@@ -1,0 +1,870 @@
+<html>
+<head>
+<title> Route worksheet </title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script type="text/javascript">
+var rwidth, rheight;
+var current_string = '';
+var matrix = [];
+var sequence = [];
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = current_string;
+    redo_index++;
+    undo_index--;
+    current_string = undo_array[undo_index];
+    document.getElementById('redo_button').disabled = false;
+    display_current_string();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+    current_string = redo_array[redo_index];
+     display_current_string();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = current_string;
+    undo_index++;
+    redo_index = 0;
+
+}
+
+function display_current_string(){
+    var out_str, cnt,i;
+    
+    out_str = '';
+    cnt = 0;
+    for(i=0;i<current_string.length;i++){
+        out_str += current_string.charAt(i);
+        if (++cnt == rwidth){
+            out_str += '\n';
+            cnt = 0;
+        }
+
+    }
+    out_str += '\n'+current_string;
+    out_str += '\n\nroute sequence:\n';
+    for (i=0;i<undo_index;i++)
+        out_str += sequence[i]+'\n';
+    document.getElementById('output_area').value = out_str;
+}
+
+function start_over(){
+
+    current_string = '';
+    document.getElementById('output_area').value = '';
+    undo_index = redo_index = 0;
+    
+}
+
+
+
+function get_ciphertext(){
+    var i,s,c,n;
+    var alpha = 'abcdefghijklmnopqrstuvwxyz';
+    s = document.getElementById('input_area').value;
+    s = s.toLowerCase();
+    current_string = '';
+    for (i=0;i<s.length;i++){
+        c = s.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n == -1)
+            continue;
+        current_string += c;
+    }
+    if (current_string.length == 0)
+        return(1);
+     return(0);
+}
+
+function do_check(){
+    var s,n;
+    
+    s = document.getElementById('rwidth').value;
+    if ( s == ''){
+        alert("No rectangle width entered!");
+        return(1);
+    }
+    rwidth = parseInt(s);
+    if ( isNaN(rwidth) || rwidth<1 ){
+        alert("Rectangle width is not a positive number!")
+        return(1);
+    }
+    if ( current_string == ''){
+        s = get_ciphertext();
+        if ( s == 1){
+            alert("No ciphertext entered!");
+            return(1);
+        }
+        rheight = Math.floor(current_string.length/rwidth)
+        if (rwidth * rheight != current_string.length){
+            s = "ciphertext does not fit into rectangle with width "+rwidth;
+            alert(s);
+            return(1);
+        }
+        if ( rwidth >rheight){
+            n = rwidth;
+            rwidth = rheight;
+            rheight = n;
+            document.getElementById('rwidth').value = ''+rwidth;
+            alert("swapped width and height");
+        }
+    }
+    return(0);
+}
+
+function do_hor(){ // horizontal route
+    var out_str,i,cnt;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Horizontal";
+    update_undo();
+    document.getElementById('redo_button').disabled = true; 
+    display_current_string();
+    
+}
+
+function do_alt_lr(){ // alternate left-right
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Alternate left-right";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    dr = 0;
+    for (i=0;i<rheight;i++)
+        matrix[i] = [];
+    for (k=0;k<rheight;k++){
+        if(dr==0){
+            for (j=0;j<rwidth;j++)
+                matrix[k][j] = current_string.charAt(cnt++);   
+        }
+        else {
+            for (j=0;j<rwidth;j++)
+                matrix[k][rwidth-1-j] = current_string.charAt(cnt++);   
+        }
+        dr ^= 1;
+    }
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+
+function do_vert(){ // vertical route
+    var out_str,i,cnt,j;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Vertical";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    for (i=0;i<rheight;i++)
+        matrix[i] = [];    
+    cnt = 0;
+    for (i=0;i<rwidth;i++){
+        for (j=0;j<rheight;j++)
+            matrix[j][i] = current_string.charAt(cnt++);
+    }
+    current_string = '';
+    for (i=0;i<rheight;i++)for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_vert_inv(){ // vertical route inverse
+    var out_str,i,cnt,j;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Vertical Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';
+    for (i=0;i<rwidth;i++)for (j=0;j<rheight;j++)
+        current_string += matrix[j][i];
+    display_current_string();
+}
+
+
+function do_alt_vert(){ // alternate down-up
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Alternate down-up";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    dr = 0;
+    for (i=0;i<rheight;i++)
+        matrix[i] = [];
+    for (j=0;j<rwidth;j++){
+        if(dr==0){
+            for (k=0;k<rheight;k++)
+                matrix[k][j] = current_string.charAt(cnt++);   
+        }
+        else {
+            for (k=0;k<rheight;k++)
+                matrix[rheight-1-k][j] = current_string.charAt(cnt++);   
+        }
+        dr ^= 1;
+    }        
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_alt_vert_inv(){ // alternate down-up inverse
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Alternate down-up Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';
+    dr = 0;
+    for (j=0;j<rwidth;j++){
+        if(dr==0){
+            for (k=0;k<rheight;k++)
+                current_string += matrix[k][j];
+        }
+        else {
+            for (k=0;k<rheight;k++)
+                current_string += matrix[rheight-1-k][j];
+        }
+        dr ^= 1;
+    }        
+    display_current_string();
+}
+
+
+function do_spiral(){ // spiral route
+    var out_str,i,cnt,j,k;
+    var sx,sy,ht,wd,index;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Spiral";        
+    update_undo();        
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    sx = sy = 0;
+    ht = rheight;
+    wd = rwidth;
+    cnt = ht*wd;
+    index = 0;
+    while( sx<wd) {
+        for (j=sx;j<wd;j++) {
+            matrix[sy][j] = current_string.charAt(index++);
+            cnt--;
+        }
+        if ( cnt == 0) break;
+        for (j=sy+1;j<ht;j++) {
+            matrix[j][wd-1] = current_string.charAt(index++); 
+            cnt--
+        }
+        if ( cnt == 0) break;                                
+        for(j=wd-2;j>sx-1;j--) {
+            matrix[ht-1][j] = current_string.charAt(index++); 
+            cnt--;
+        }
+        if ( cnt == 0) break;                                                                
+        for (j=ht-2;j>sy;j--) {
+            matrix[j][sx] = current_string.charAt(index++); 
+            cnt--;
+        }
+        wd--;
+        ht--;
+        sx++;
+        sy++;
+    } /* end while */    
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_spiral_inv(){ // spiral route inverse
+    var out_str,i,cnt,j,k;
+    var sx,sy,ht,wd,index;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Spiral Inverse";        
+    update_undo();        
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';    
+    sx = sy = 0;
+    ht = rheight;
+    wd = rwidth;
+    cnt = ht*wd;
+
+    while( sx<wd) {
+        for (j=sx;j<wd;j++) {
+            current_string += matrix[sy][j];
+            cnt--;
+        }
+        if ( cnt == 0) break;
+        for (j=sy+1;j<ht;j++) {
+            current_string += matrix[j][wd-1];
+            cnt--
+        }
+        if ( cnt == 0) break;                                
+        for(j=wd-2;j>sx-1;j--) {
+            current_string += matrix[ht-1][j];
+            cnt--;
+        }
+        if ( cnt == 0) break;                                                                
+        for (j=ht-2;j>sy;j--) {
+            current_string += matrix[j][sx];
+            cnt--;
+        }
+        wd--;
+        ht--;
+        sx++;
+        sy++;
+    } /* end while */    
+    display_current_string();
+}
+
+
+function do_cc_spiral(){ // cc spiral route
+    var out_str,i,cnt,j,k;
+    var sx,sy,ht,wd,index;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Counter clockwise Spiral";        
+    update_undo();        
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    sx = sy = 0;
+    ht = rheight;
+    wd = rwidth;
+    cnt = ht*wd;
+    index = 0;
+    while( cnt>0) {
+        for (j=sy;j<ht;j++) {
+            matrix[j][sx] = current_string.charAt(index++); 
+            cnt--;
+        }
+        if ( cnt == 0) break;
+        for (j=sx+1;j<wd;j++) {
+            matrix[ht-1][j] = current_string.charAt(index++); 
+            cnt--;
+        }
+        if ( cnt == 0) break;                                
+        for (j=ht-2;j>sy-1;j--) {
+            matrix[j][wd-1] = current_string.charAt(index++); 
+            cnt--;
+        }
+        if ( cnt == 0) break;                                
+        for(j=wd-2;j>sx;j--) {
+            matrix[sy][j] = current_string.charAt(index++); 
+            cnt--;
+        }
+        wd--;
+        ht--;
+        sx++;
+        sy++;
+    } /* end while */
+    
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_cc_spiral_inv(){ // cc spiral route inverse
+    var out_str,i,cnt,j,k;
+    var sx,sy,ht,wd,index;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Counter clockwise Spiral Inverse";        
+    update_undo();        
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';    
+    sx = sy = 0;
+    ht = rheight;
+    wd = rwidth;
+    cnt = ht*wd;
+    index = 0;
+    while( cnt>0) {
+        for (j=sy;j<ht;j++) {
+            current_string += matrix[j][sx];
+            cnt--;
+        }
+        if ( cnt == 0) break;
+        for (j=sx+1;j<wd;j++) {
+            current_string += matrix[ht-1][j];
+            cnt--;
+        }
+        if ( cnt == 0) break;                                
+        for (j=ht-2;j>sy-1;j--) {
+            current_string += matrix[j][wd-1];
+            cnt--;
+        }
+        if ( cnt == 0) break;                                
+        for(j=wd-2;j>sx;j--) {
+            current_string += matrix[sy][j];
+            cnt--;
+        }
+        wd--;
+        ht--;
+        sx++;
+        sy++;
+    } /* end while */
+    display_current_string();
+}
+
+
+function do_diag(){ // diagonal route
+    var out_str,i,cnt,j,k;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal up";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    cnt = 0
+    for (k=0;k<rheight+rwidth;k++)
+            for (j=0;j<rwidth;j++)
+                    if ( k-j>=0 && k-j<rheight)
+                            matrix[k-j][j] = current_string.charAt(cnt++);   
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_diag_inv(){ // diagonal route inv
+    var out_str,i,cnt,j,k;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal up Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';        
+    for (k=0;k<rheight+rwidth;k++)
+            for (j=0;j<rwidth;j++)
+                    if ( k-j>=0 && k-j<rheight)
+                            current_string += matrix[k-j][j];
+    display_current_string();
+}
+
+
+function do_rev_diag(){ // reverse diagonal route
+    var out_str,i,cnt,j,k;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal down";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    cnt = 0
+    for (k=0;k<rheight+rwidth;k++)
+            for (j=rwidth-1;j>=0;j--)
+                    if ( k-j>=0 && k-j<rheight)
+                            matrix[k-j][j] = current_string.charAt(cnt++);   
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_rev_diag_inv(){ // reverse diagonal route inv
+    var out_str,i,cnt,j,k;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal down Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';        
+    for (k=0;k<rheight+rwidth;k++)
+            for (j=rwidth-1;j>=0;j--)
+                    if ( k-j>=0 && k-j<rheight)
+                            current_string += matrix[k-j][j];
+    display_current_string();
+}
+
+
+function do_alt_diag(){ // diagonal route up,down
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal up-down";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    cnt = 0
+    dr = 1;
+    for (k=0;k<rheight+rwidth;k++) {
+        if ( dr==0){
+            for (j=0;j<rwidth;j++)
+                if ( k-j>=0 && k-j<rheight)
+                    matrix[k-j][j] = current_string.charAt(cnt++);   
+        }
+        else {
+            for (j=rwidth-1;j>=0;j--)
+                if ( k-j>=0 && k-j<rheight)
+                matrix[k-j][j] = current_string.charAt(cnt++);   
+        }
+        dr ^= 1;
+    }
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_alt_diag_inv(){ // diagonal route up,down inv
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal up-down Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';        
+    dr = 1;
+    for (k=0;k<rheight+rwidth;k++) {
+        if ( dr==0){
+            for (j=0;j<rwidth;j++)
+                if ( k-j>=0 && k-j<rheight)
+                    current_string += matrix[k-j][j];
+        }
+        else {
+            for (j=rwidth-1;j>=0;j--)
+                if ( k-j>=0 && k-j<rheight)
+                    current_string += matrix[k-j][j];
+        }
+        dr ^= 1;
+    }
+    display_current_string();
+}
+
+
+function do_rev_alt_diag(){ // diagonal route down-up
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal down-up";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+    }
+    cnt = 0
+    dr = 0;
+    for (k=0;k<rheight+rwidth;k++) {
+        if ( dr==0){
+            for (j=0;j<rwidth;j++)
+                if ( k-j>=0 && k-j<rheight)
+                    matrix[k-j][j] = current_string.charAt(cnt++);   
+        }
+        else {
+            for (j=rwidth-1;j>=0;j--)
+                if ( k-j>=0 && k-j<rheight)
+                matrix[k-j][j] = current_string.charAt(cnt++);   
+        }
+        dr ^= 1;
+    }
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+}
+
+function do_rev_alt_diag_inv(){ // diagonal route down-up inv
+    var out_str,i,cnt,j,k;
+    var dr;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Diagonal down-up Inverse";        
+    update_undo(); 
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            matrix[i][j] = current_string.charAt(cnt++);
+    }
+    current_string = '';        
+    dr = 0;
+    for (k=0;k<rheight+rwidth;k++) {
+        if ( dr==0){
+            for (j=0;j<rwidth;j++)
+                if ( k-j>=0 && k-j<rheight)
+                    current_string += matrix[k-j][j];
+        }
+        else {
+            for (j=rwidth-1;j>=0;j--)
+                if ( k-j>=0 && k-j<rheight)
+                    current_string += matrix[k-j][j];
+        }
+        dr ^= 1;
+    }
+    display_current_string();
+    
+}
+
+
+function do_lr(){ // left-right swap
+    var out_str,i,cnt,j,k;
+    var temp_matrix;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Left-right swap";        
+    update_undo();
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    temp_matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        temp_matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            temp_matrix[i][j] = current_string.charAt(cnt++);        
+    }
+    for (j=0;j<rheight;j++)
+        for (k=0;k<rwidth;k++)
+            matrix[j][k] = temp_matrix[j][rwidth-1-k];    
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+    
+}
+
+function do_tb(){ // top_bottom swap
+    var out_str,i,cnt,j,k;
+    var temp_matrix;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Top-bottom swap";        
+    update_undo();
+    document.getElementById('redo_button').disabled = true;                  
+    matrix = [];
+    temp_matrix = [];
+    cnt = 0;
+    for (i=0;i<rheight;i++){
+        matrix[i] = [];
+        temp_matrix[i] = [];
+        for (j=0;j<rwidth;j++)
+            temp_matrix[i][j] = current_string.charAt(cnt++);        
+    }
+    for (j=0;j<rheight;j++)
+        for (k=0;k<rwidth;k++)
+            matrix[j][k] = temp_matrix[rheight-1-j][k];
+    current_string = '';
+    for (i=0;i<rheight;i++) for (j=0;j<rwidth;j++)
+        current_string += matrix[i][j];
+    display_current_string();
+    
+}
+
+function do_reverse(){ // reverse the route
+    var s,i,cnt;
+    
+    if( do_check() )
+        return; // error
+    sequence[undo_index] = "Reverse";
+    update_undo();
+    document.getElementById('redo_button').disabled = true; 
+    s = current_string.split('');
+    s.reverse();
+    current_string = s.join('');
+    display_current_string();
+    
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3>Route Transpostion Worksheet</h3>
+Paste in ciphertext, enter rectangle width. Click one or more write-in or read-out buttons.
+<br><br>
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 3>
+</textarea><br><br>
+Rectangle width: <input type="text" size = 3 id="rwidth" >
+<br><br>
+<span  style="border:2px solid black; padding:10px; background:yellow;">
+<b>Write In:</b>
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Horizontal" onclick=do_hor() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Alternate left-right" onclick=do_alt_lr() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Vertical" onclick=do_vert() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Alternate down-up" onclick=do_alt_vert() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Spiral" onclick=do_spiral() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="CC Spiral" onclick=do_cc_spiral() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal up" onclick=do_diag() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal down" onclick=do_rev_diag() >
+</span>
+<br><br>
+<span  style="border:2px solid black; padding:10px; background:yellow;">
+<input type="button" value="Diagonal up-down" onclick=do_alt_diag() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal down-up" onclick=do_rev_alt_diag() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Left-right swap" onclick=do_lr() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Top-bottom swap" onclick=do_tb() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Reverse" onclick=do_reverse() >
+</span>
+<br><br>
+<span  style="border:2px solid black; padding:10px; background:aqua;">
+<b>Read Out:</b>
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Vertical" onclick=do_vert_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Alternate down-up" onclick=do_alt_vert_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Spiral" onclick=do_spiral_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="CC Spiral" onclick=do_cc_spiral_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal up" onclick=do_diag_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal down" onclick=do_rev_diag_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal up-down" onclick=do_alt_diag_inv() >
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Diagonal down-up" onclick=do_rev_alt_diag_inv() >
+</span>
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=15>
+</textarea>
+<br><br>
+<INPUT onclick=start_over(); type=button value="start over" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >
+<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >
+
+
+</body>
+</html>

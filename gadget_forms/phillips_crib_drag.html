@@ -1,0 +1,245 @@
+<html>
+<!--
+Playfair crib drag
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Phillips Crib Drag</TITLE>
+
+<script type="text/javascript">
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var crib = [];
+var EMPTY = -1;
+
+var numb_symbols;
+var keysquare_width;
+
+var period = 8;
+var en_alphabet = [];
+var de_alphabet = [];
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('input_area').value;
+  data = data.toUpperCase();
+  data = data.replace(/Ø/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if (  c =='J'){
+		    alert('Cipher has a J');
+			return(false);
+		}
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	return(true);
+}
+
+function ck_alphabets(x,y,depth){
+  var n,r;
+	//for n in range(period):
+	for (n=0;n<period;n++){
+		c = de_alphabet[n][x];
+		if (c == y) return(1);//#no good
+		if (c != EMPTY && depth != 2) {
+			r = ck_alphabets(c,y,depth+1);
+			if(r!=0) return (1);//no good
+		}
+	}
+	return(0);// OK!
+}
+
+
+
+function crib_test(pos){
+  var n,reps,index,count,i,y,r;
+  var c,c1,c2;
+  
+  for (n=0;n<period;n++){
+		for (i=0;i<26;i++)
+		  en_alphabet[n][i] = de_alphabet[n][i] = EMPTY;
+  }	
+	reps = 0;
+	count = pos % 5;
+	index = (Math.floor(pos/5)) % period;
+	for (i=0;i<crib.length;i++){
+	  c = code[i+pos];
+      if ( c == crib[i] ) // letter cannot be mapped to itself!
+			return( [0,0]);      
+	  c1 = en_alphabet[index][crib[i]];
+	  c2 = de_alphabet[index][c];
+	  if (c1 != EMPTY && c1 != c)
+			return( [0,0]);
+	  if (c2 != EMPTY && c2 != crib[i])
+			return( [0,0]);
+	  if (de_alphabet[index][c] != EMPTY)
+			reps += 1;
+	  en_alphabet[index][crib[i]]=c;
+	  de_alphabet[index][c] = crib[i];
+	  count += 1;
+	  if (count == 5) {
+			count = 0;
+			index = (index+1)%period;
+	  }
+	}
+	for (i=0; i<25;i++){ //4->0 7->1
+		c1 = de_alphabet[0][i];
+		c2 = de_alphabet[4][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return([0,0]);
+		if (c2 != EMPTY)
+			de_alphabet[0][i]=c2;
+		if (c1 != EMPTY)
+			de_alphabet[4][i]=c1;
+		c1 = en_alphabet[0][i]
+		c2 = en_alphabet[4][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return( [0,0] ) ;
+		c1 = de_alphabet[1][i];
+		c2 = de_alphabet[7][i];
+		if (c1 != EMPTY && c2!=EMPTY && c1!=c2)
+			return([0,0]);
+		if (c2 != EMPTY)
+			de_alphabet[1][i]=c2;
+		if (c1 != EMPTY)
+			de_alphabet[7][i]=c1			
+		c1 = en_alphabet[1][i]
+		c2 = en_alphabet[7][i]
+		if (c1 !=EMPTY && c2!=EMPTY && c1!=c2)
+			return( [0,0]);            
+	}
+	//for n in range(period-1):
+	for (n=0;n<period-1;n++){
+		if (n==4) continue;
+		//for i in range(25):
+		for (i=0;i<25;i++){
+			c = de_alphabet[n][i];
+			c1 = c;
+			count = 0;
+			while (c != EMPTY){
+				c = de_alphabet[n][c];
+				count += 1;
+				if (c == c1) {//got chain
+					if (count == 5)
+						break
+					return [0,0];
+				}
+			}
+		}
+	}
+	//letter changed its row/column?
+	//for n in range(period):
+	for (n=0;n<period;n++)
+	 //for y in range(25):
+	 for (y=0;y<25;y++){
+	 	c = de_alphabet[n][y]
+	 	if (c != EMPTY){
+	 		r = ck_alphabets(c,y,0)
+	 		if (r!=0)
+	 			return([2,reps])//RC maybe OK
+	 	}
+	return([1,reps])//passed all tests
+	}
+
+}
+
+function do_drag(){
+  var result,s,n,c,i,cnt,crib_pos,out_str;
+  var alpha = 'abcdefghijklmnopqrstuvwxyz';
+  symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+  numb_symbols = 26; // global
+  keysquare_width = 5; //global
+
+  result = setup_code(); // get code and convert to numbers
+	if ( result == false)
+		return;
+	s = document.getElementById('crib').value;
+	s = s.toUpperCase();
+	if ( s==''){
+		alert("No crib entered!");
+		return;
+	}
+	crib = [];
+	cnt = 0;
+	for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  crib[cnt++]=n
+		}
+	}
+	out_str = 'Crib positions (positions start at 0):\n';
+  for (n=0;n<period;n++){
+		en_alphabet[n]= [];
+		de_alphabet[n]= [];
+  }	
+	for (crib_pos=0;crib_pos<code.length - crib.length+1;crib_pos++) {
+		result = crib_test(crib_pos);
+		if ( result[0] != 0) {
+			out_str += "Position "+crib_pos+" OK";
+			if ( result[0] == 2)
+			  out_str += " (RC only)";
+			 out_str += " with "+result[1]+" repeats\n";
+			// add crib string you can paste into hill-climber
+			cnt = 0;
+			for (i=0;i<crib_pos;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=0;i<crib.length;i++){
+				out_str += alpha.charAt(crib[i]);
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=crib_pos+crib.length;i<code.length;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			out_str += '\n\n';
+		}
+	}
+	
+	document.getElementById('output_area').value = out_str;
+
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<center><h3>Philips crib drag</h3></center>
+Enter cipher and crib. Click Drag button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows=10>
+</textarea>
+<br><br>
+Crib:
+<input type="text" size=25 id="crib">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Drag" onclick="do_drag()" >
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+
+<br>
+</body>
+</html>

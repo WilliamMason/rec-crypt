@@ -1,0 +1,741 @@
+<html>
+<!--
+Playfair crib drag
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Playfair Crib Drag</title>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var crib = [];
+var EMPTY = -1;
+
+var flag_6x6;
+var numb_symbols;
+var keysquare_width;
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('input_area').value;
+  data = data.toUpperCase();
+  data = data.replace(/Ø/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+	state=0;
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( !flag_6x6 && c =='J'){
+		    alert('Cipher has a J');
+			return(false);
+		}
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	if ( (cnt%2) != 0 ) {
+		alert("Cipher has odd number of symbols!");
+		return(false);
+	}
+	return(true);
+}
+
+
+function do_drag(){
+var result,s,n,c,i,cnt,crib_pos,out_str;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+
+  if (document.getElementById('play6').checked) {
+    flag_6x6 = true;
+    alpha = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // global
+    numb_symbols = 36; // global
+    keysquare_width = 6; //global
+  }
+  else {
+    flag_6x6 = false;
+    alpha = 'abcdefghijklmnopqrstuvwxyz';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 26; // global
+    keysquare_width = 5; //global
+  }
+	result = setup_code(); // get code and convert to numbers
+	if ( result == false)
+		return;
+	s = document.getElementById('crib').value;
+	s = s.toUpperCase();
+	if ( s==''){
+		alert("No crib entered!");
+		return;
+	}
+	crib = [];
+	cnt = 0;
+	for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		if ( !flag_6x6 && c =='J') c = 'I'
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  crib[cnt++]=n
+		}
+	}
+	out_str = 'Crib positions (positions start at 0):\n';
+	for (crib_pos=0;crib_pos<code.length - crib.length+1;crib_pos++) {
+		result = crib_test(crib_pos);
+		if ( result == true) {
+			out_str += "Position "+crib_pos+" OK\n";
+			// add crib string you can paste into hill-climber
+			cnt = 0;
+			for (i=0;i<crib_pos;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=0;i<crib.length;i++){
+				out_str += alpha.charAt(crib[i]);
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=crib_pos+crib.length;i<code.length;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			out_str += '\n\n';
+		}
+	}
+	document.getElementById('output_area').value = out_str;
+	
+}
+
+function crib_test(crib_pos){
+	var i,j,row_label,col_label,result,le,st;
+	
+	// quick scans before trying label building:
+	// check for letters going to themselves
+	for (i=0;i<crib.length;i++)
+		if ( crib[i] == code[crib_pos+i]) return(false);
+	if ( (crib_pos%2) == 0 ){ // crib_pos is even
+		st = 0;
+		if ( (crib.length%2) == 0)
+			le = crib.length;
+		else
+			le = crib.length-1;
+	}
+	else { // crib position is odd
+		st = 1;
+		if ( (crib.length%2) == 0)
+			le = crib.length-2;
+		else
+			le = crib.length-1;
+	}
+	// scan for repeated pairs and for a pair going into its own reverse
+	for (i=st;i<le;i = i+2) {
+		if ( crib[i] == crib[i+1]) return(false); // doubled letters at even position
+		if ( crib[i] == code[crib_pos+i+1] && crib[i+1] == code[crib_pos+i] ) return(false);//xy can't go to yx.
+	}
+	// scan for repeated pairs going into non-repeated pairs, also reversed pairs going into non-reversed pairs
+	for (i=st;i<le-2;i = i+2) for (j = i+2;j<le;j = j+2) {
+		if ( crib[i] == crib[j] && crib[i+1]==crib[j+1] && (code[crib_pos+i] != code[crib_pos+j] ||
+			code[crib_pos+i+1] != code[crib_pos+j+1]) ) return(false);
+		if ( code[crib_pos+i] == code[crib_pos+j] && code[crib_pos+i+1] == code[crib_pos+j+1] && 
+			( crib[i] != crib[j] || crib[i+1]!=crib[j+1] ) ) return(false);			
+		if ( crib[i] == crib[j+1] && crib[i+1]==crib[j] && (code[crib_pos+i+1] != code[crib_pos+j] ||
+			code[crib_pos+i] != code[crib_pos+j+1]) ) return(false);
+		if ( code[crib_pos+i] == code[crib_pos+j+1] && code[crib_pos+i+1]==code[crib_pos+j] && 
+			( crib[i+1] != crib[j] || crib[i] != crib[j+1] ) ) return(false);
+	}
+	if ( st == 1) {// crib does not start with a complete pair, but you can still check repeated and 
+		// reversed ciphertext pairs.
+		for (i=1;i<le;i=i+2) {
+			if ( code[crib_pos+i] == code[crib_pos-1] && code[crib_pos+i+1] == code[crib_pos] && 
+				( crib[i+1]!=crib[0] ) ) return(false);	
+			if ( code[crib_pos+i] == code[crib_pos] && code[crib_pos+i+1]==code[crib_pos-1] && 
+				( crib[i] != crib[0] ) ) return(false);
+		}
+	}
+	if ( ((crib_pos+crib.length)%2) != 0) {// crib ends in non-paired letter, but can still check for repeated 
+		//and reversed ciphertext pairs
+		for (i=st;i<le;i++) {
+			if ( code[crib_pos+i] == code[crib_pos+crib.length-1] && code[crib_pos+i+1] == 
+				code[crib_pos+crib.length] && ( crib[i]!=crib[crib.length-1] ) ) return(false);	
+			if ( code[crib_pos+i] == code[crib_pos+crib.length] && code[crib_pos+i+1]==code[crib_pos+crib.length-1] && ( crib[i+1] != crib[crib.length-1] ) ) return(false);
+		}
+		if ( st==1) // special case: crib both starts and ends with a non-paired letter,
+			// see if corresponding ciphertext pairs are reversed, if so first and last crib letters should be same
+			if ( crib[0] != crib[crib.length-1] && code[crib_pos+crib.length-1] == code[crib_pos]
+				&& code[crib_pos+crib.length] == code[crib_pos-1] ) return(false);
+	}		
+	// passed quick scans. next, recursive label building.
+	row_label = [];
+	col_label = [];
+	for (i=0;i<numb_symbols;i++)
+		row_label[i] = col_label[i] = EMPTY;
+	if( st==0) result = test_position(crib_pos,row_label,col_label,0,0); // crib position is even
+	else result = test_odd_start_position(crib_pos,row_label,col_label,0,0); // crib position is odd
+	return(result);
+}
+
+function test_odd_start_position(crib_pos,row_label,col_label,crib_index,numb_labels){
+// crib_pos is an odd numbered index. Use left_index = crib_index-1, so crib[left_index] doesn't exist.
+// label arrays are empty so will always be consistent, don't need to check.
+	var i,j,k,row,col,la1,la2,la3,la4,n,result,q;
+	var next_label;
+	var left_index;
+	
+	left_index = crib_index-1;
+	
+// first try cipher pair in same keysquare row
+	row = [];
+	col = [];
+	for (i=0;i<26;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	//la1 = row[ crib[left_index] ];
+	la2 = row[ crib[left_index+1] ];
+	la3 = row[ code[crib_pos+left_index] ];
+	la4 = row[ code[crib_pos+left_index+1] ];
+	//row[ crib[left_index] ] = next_label;
+	row[ crib[left_index+1] ]= next_label;
+	row[ code[crib_pos+left_index] ]= next_label;
+	row[ code[crib_pos+left_index+1] ] = next_label;
+	next_label++;
+	if ( left_index == crib.length-2) {// end of crib, this crib position is OK!
+		return(true);
+	}
+	// add next pair in crib
+	n = test_position(crib_pos,row,col, left_index+2,next_label);
+	if ( n == true) return(true); // OK at this position
+	// if n == false, cipher pair in same row doesn't work, try next possibility
+
+// next try cipher pair in same keysquare column
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	//la1 = col[ crib[left_index] ];
+	la2 = col[ crib[left_index+1] ];
+	la3 = col[ code[crib_pos+left_index] ];
+	la4 = col[ code[crib_pos+left_index+1] ];
+
+	//col[ crib[left_index] ] = next_label;
+	col[ crib[left_index+1] ]= next_label;
+	col[ code[crib_pos+left_index] ]= next_label;
+	col[ code[crib_pos+left_index+1] ] = next_label;
+	next_label++;
+	if ( left_index == crib.length-2){// end of crib, this crib position is OK!
+		return(true);
+	}
+	// add next pair in crib
+	n = test_position(crib_pos,row,col, left_index+2,next_label);
+	if ( n == true) return(true); // OK at this position
+	// if n == false, crib pair in same column doesn't work, try last possibility
+
+// OK, last try. cipher pair in different rows and columns
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	/* diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in column labels for this crib index
+	//la1 = col[ crib[left_index] ];
+	la2 = col[ crib[left_index+1] ];
+	la3 = col[ code[crib_pos+left_index] ];
+	la4 = col[ code[crib_pos+left_index+1] ];
+	// // first column, la1, la4
+	// second column la2,la3
+
+	col[ crib[left_index+1] ] = next_label;
+	col[ code[crib_pos+left_index] ] = next_label;
+	next_label++;
+	/* repeat diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in row labels for this crib index
+	//la1 = row[ crib[left_index] ];
+	la2 = row[ crib[left_index+1] ];
+	la3 = row[ code[crib_pos+left_index] ];
+	la4 = row[ code[crib_pos+left_index+1] ];
+	// // first row, la1, la3
+	// second row la2,la4
+	row[ crib[left_index+1] ] = next_label;
+	row[ code[crib_pos+left_index+1] ] = next_label;
+	next_label++;
+
+	result = test_position(crib_pos,row,col, left_index+2,next_label);
+	return(result);
+}	// end test_odd_start_position
+
+
+function test_position(crib_pos,row_label,col_label,crib_index,numb_labels){// assuming crib_index is even
+	var i,j,k,row,col,la1,la2,la3,la4,n,result,q;
+	var next_label;
+	
+	if (crib_index == crib.length-1) { // isolated letter at end of crib, special case
+		result = test_final_letter(crib_pos,row_label,col_label,crib_index,numb_labels);
+		return(result);
+	}
+// first try crib pair in same keysquare row
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	la1 = row[ crib[crib_index] ];
+	la2 = row[ crib[crib_index+1] ];
+	la3 = row[ code[crib_pos+crib_index] ];
+	la4 = row[ code[crib_pos+crib_index+1] ];
+	if ( la1==EMPTY && la2 == EMPTY && la3 == EMPTY && la4 == EMPTY) {
+		row[ crib[crib_index] ] = next_label;
+		row[ crib[crib_index+1] ]= next_label;
+		row[ code[crib_pos+crib_index] ]= next_label;
+		row[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+		result = true; // new labels automatically consistent.
+	}
+	else {
+		// get first non-empty label
+		if (la1 != EMPTY) n = la1;
+		else if (la2 != EMPTY) n = la2;
+		else if (la3 != EMPTY) n = la3;
+		else n = la4;
+		// join all to n
+		if (la1 == EMPTY)
+			row[ crib[crib_index] ] = n;
+		// la1 non-empty, it's equal to n already
+		if (la2 == EMPTY)
+			row[ crib[crib_index+1] ] = n;
+		else if (la2 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (row[k] == la2) row[k] = n;
+		if (la3 == EMPTY)
+			row[ code[crib_pos+crib_index] ] = n;
+		else if (la3 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (row[k] == la3) row[k] = n;
+		if (la4 == EMPTY)
+			row[ code[crib_pos+crib_index+1] ] = n;
+		else if (la4 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (row[k] == la4) row[k] = n;
+		// check for consistency
+		result = check_consistent(row,col,next_label);
+	} // end else
+	if ( result == true) { // keysquare is consistent so far
+		if ( crib_index == crib.length-2) {// end of crib, this crib position is OK!
+			return(true);
+		}
+		// add next pair in crib
+		n = test_position(crib_pos,row,col, crib_index+2,next_label);
+		if ( n == true) return(true); // OK at this position
+		// if n == false, crib pair in same row doesn't work, try next possibility
+	}
+// next try crib pair in same keysquare column
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	la1 = col[ crib[crib_index] ];
+	la2 = col[ crib[crib_index+1] ];
+	la3 = col[ code[crib_pos+crib_index] ];
+	la4 = col[ code[crib_pos+crib_index+1] ];
+	if ( la1==EMPTY && la2 == EMPTY && la3 == EMPTY && la4 == EMPTY) {
+		col[ crib[crib_index] ] = next_label;
+		col[ crib[crib_index+1] ]= next_label;
+		col[ code[crib_pos+crib_index] ]= next_label;
+		col[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+		result = true; // new labels automatically consistent.
+	}
+	else {
+		// get first non-empty label
+		if (la1 != EMPTY) n = la1;
+		else if (la2 != EMPTY) n = la2;
+		else if (la3 != EMPTY) n = la3;
+		else n = la4;
+		// join all to n
+		if (la1 == EMPTY)
+			col[ crib[crib_index] ] = n;
+		// la1 non-empty, it's equal to n already
+		if (la2 == EMPTY)
+			col[ crib[crib_index+1] ] = n;
+		else if (la2 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (col[k] == la2) col[k] = n;
+		if (la3 == EMPTY)
+			col[ code[crib_pos+crib_index] ] = n;
+		else if (la3 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (col[k] == la3) col[k] = n;
+		if (la4 == EMPTY)
+			col[ code[crib_pos+crib_index+1] ] = n;
+		else if (la4 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (col[k] == la4) col[k] = n;
+		// check for consistency
+		result = check_consistent(row,col,next_label);
+	} // end else
+	if ( result == true) { // keysquare is consistent so far
+		if ( crib_index == crib.length-2){// end of crib, this crib position is OK!
+			return(true);
+		}
+		// add next pair in crib
+		n = test_position(crib_pos,row,col, crib_index+2,next_label);
+		if ( n == true) return(true); // OK at this position
+		// if n == false, crib pair in same column doesn't work, try last possibility
+	}
+// OK, last try. crib pair in different rows and columns
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	/* diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in column labels for this crib index
+	la1 = col[ crib[crib_index] ];
+	la2 = col[ crib[crib_index+1] ];
+	la3 = col[ code[crib_pos+crib_index] ];
+	la4 = col[ code[crib_pos+crib_index+1] ];
+	// first column, la1, la4
+    if (la1 == EMPTY && la4 == EMPTY){
+		col[ crib[crib_index] ] = next_label;
+		col[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+	}
+	else if (la1 == EMPTY)
+		col[ crib[crib_index] ] = col[ code[crib_pos+crib_index+1] ];
+	else if (la4 == EMPTY)
+		col[ code[crib_pos+crib_index+1] ] = col[ crib[crib_index] ];
+	else { // both columns are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (col[k] == la4) col[k] = la1;
+	}
+	// second column la2,la3
+    if (la2 == EMPTY && la3 == EMPTY){
+		col[ crib[crib_index+1] ] = next_label;
+		col[ code[crib_pos+crib_index] ] = next_label;
+		next_label++;
+	}
+	else if (la2 == EMPTY)
+		col[ crib[crib_index+1] ] = col[ code[crib_pos+crib_index] ];
+	else if (la3 == EMPTY)
+		col[ code[crib_pos+crib_index] ] = col[ crib[crib_index+1] ];
+	else { // both columns are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (col[k] == la3) col[k] = la2;
+	}
+	/* repeat diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in row labels for this crib index
+	la1 = row[ crib[crib_index] ];
+	la2 = row[ crib[crib_index+1] ];
+	la3 = row[ code[crib_pos+crib_index] ];
+	la4 = row[ code[crib_pos+crib_index+1] ];
+	// first row, la1, la3
+    if (la1 == EMPTY && la3 == EMPTY){
+		row[ crib[crib_index] ] = next_label;
+		row[ code[crib_pos+crib_index] ] = next_label;
+		next_label++;
+	}
+	else if (la1 == EMPTY)
+		row[ crib[crib_index] ] = row[ code[crib_pos+crib_index] ];
+	else if (la3 == EMPTY)
+		row[ code[crib_pos+crib_index] ] = row[ crib[crib_index] ];
+	else { // both rows are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (row[k] == la3) row[k] = la1;
+	}
+	// second row la2,la4
+    if (la2 == EMPTY && la4 == EMPTY){
+		row[ crib[crib_index+1] ] = next_label;
+		row[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+	}
+	else if (la2 == EMPTY)
+		row[ crib[crib_index+1] ] = row[ code[crib_pos+crib_index+1] ];
+	else if (la4 == EMPTY)
+		row[ code[crib_pos+crib_index+1] ] = row[ crib[crib_index+1] ];
+	else { // both rows are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (row[k] == la4) row[k] = la2;
+	}
+	result = check_consistent(row,col,next_label);
+	if ( result == false) return(false); // can't get consistent keysquare, don't go on.
+	if ( crib_index == crib.length-2) {// final crib pair, all done.
+		return(result);
+	}
+	// not done but so far so good, try next pair.
+	result = test_position(crib_pos,row,col, crib_index+2,next_label);
+	return(result);
+}	// end test_position
+
+function test_final_letter(crib_pos,row_label,col_label,crib_index,numb_labels){
+// final crib entry is single letter, not part of a crib pair.
+//  crib[crib_index+1] doesn't exist.
+// Don't need to make further recursive calls since this is the final crib letter
+	var i,j,k,row,col,la1,la2,la3,la4,n,result,q;
+	var next_label;
+// first try cipher pair in same keysquare row
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	la1 = row[ crib[crib_index] ];
+	//la2 = row[ crib[crib_index+1] ];
+	la3 = row[ code[crib_pos+crib_index] ];
+	la4 = row[ code[crib_pos+crib_index+1] ];
+	if ( la1==EMPTY /*&& la2 == EMPTY*/ && la3 == EMPTY && la4 == EMPTY) {
+		row[ crib[crib_index] ] = next_label;
+		//row[ crib[crib_index+1] ]= next_label;
+		row[ code[crib_pos+crib_index] ]= next_label;
+		row[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+		result = true; // new labels automatically consistent.
+	}
+	else {
+		// get first non-empty label
+		if (la1 != EMPTY) n = la1;
+		//else if (la2 != EMPTY) n = la2;
+		else if (la3 != EMPTY) n = la3;
+		else n = la4;
+		// join all to n
+		if (la1 == EMPTY)
+			row[ crib[crib_index] ] = n;
+		// la1 non-empty, it's equal to n already
+		if (la3 == EMPTY)
+			row[ code[crib_pos+crib_index] ] = n;
+		else if (la3 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (row[k] == la3) row[k] = n;
+		if (la4 == EMPTY)
+			row[ code[crib_pos+crib_index+1] ] = n;
+		else if (la4 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (row[k] == la4) row[k] = n;
+		// check for consistency
+		result = check_consistent(row,col,next_label);
+	} // end else
+	if ( result == true) { // keysquare is consistent
+		return(true);
+	}
+// next try cipher pair in same keysquare column
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	// fill in labels for this crib index
+	la1 = col[ crib[crib_index] ];
+	//la2 = col[ crib[crib_index+1] ];
+	la3 = col[ code[crib_pos+crib_index] ];
+	la4 = col[ code[crib_pos+crib_index+1] ];
+	if ( la1==EMPTY /*&& la2 == EMPTY*/ && la3 == EMPTY && la4 == EMPTY) {
+		col[ crib[crib_index] ] = next_label;
+		//col[ crib[crib_index+1] ]= next_label;
+		col[ code[crib_pos+crib_index] ]= next_label;
+		col[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+		result = true; // new labels automatically consistent.
+	}
+	else {
+		// get first non-empty label
+		if (la1 != EMPTY) n = la1;
+		//else if (la2 != EMPTY) n = la2;
+		else if (la3 != EMPTY) n = la3;
+		else n = la4;
+		// join all to n
+		if (la1 == EMPTY)
+			col[ crib[crib_index] ] = n;
+		// la1 non-empty, it's equal to n already
+		if (la3 == EMPTY)
+			col[ code[crib_pos+crib_index] ] = n;
+		else if (la3 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (col[k] == la3) col[k] = n;
+		if (la4 == EMPTY)
+			col[ code[crib_pos+crib_index+1] ] = n;
+		else if (la4 != n)
+			for (k=0;k<numb_symbols;k++)
+				if (col[k] == la4) col[k] = n;
+		// check for consistency
+		result = check_consistent(row,col,next_label);
+	} // end else
+	if ( result == true) { // keysquare is consistent
+		return(true);
+	}
+// OK, last try. crib pair in different rows and columns
+	row = [];
+	col = [];
+	for (i=0;i<numb_symbols;i++) {
+		row[i] = row_label[i];
+		col[i] = col_label[i];
+	}
+	next_label = numb_labels;
+	/* diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in column labels for this crib index
+	la1 = col[ crib[crib_index] ];
+	//la2 = col[ crib[crib_index+1] ];
+	la3 = col[ code[crib_pos+crib_index] ];
+	la4 = col[ code[crib_pos+crib_index+1] ];
+	// first column, la1, la4
+    if (la1 == EMPTY && la4 == EMPTY){
+		col[ crib[crib_index] ] = next_label;
+		col[ code[crib_pos+crib_index+1] ] = next_label;
+		next_label++;
+	}
+	else if (la1 == EMPTY)
+		col[ crib[crib_index] ] = col[ code[crib_pos+crib_index+1] ];
+	else if (la4 == EMPTY)
+		col[ code[crib_pos+crib_index+1] ] = col[ crib[crib_index] ];
+	else { // both columns are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (col[k] == la4) col[k] = la1;
+	}
+	// // second column la2,la3
+	/* repeat diagram
+		la1 . . la3
+		la4 . . la2
+	*/
+	
+	// fill in row labels for this crib index
+	la1 = row[ crib[crib_index] ];
+	//la2 = row[ crib[crib_index+1] ];
+	la3 = row[ code[crib_pos+crib_index] ];
+	la4 = row[ code[crib_pos+crib_index+1] ];
+	// first row, la1, la3
+    if (la1 == EMPTY && la3 == EMPTY){
+		row[ crib[crib_index] ] = next_label;
+		row[ code[crib_pos+crib_index] ] = next_label;
+		next_label++;
+	}
+	else if (la1 == EMPTY)
+		row[ crib[crib_index] ] = row[ code[crib_pos+crib_index] ];
+	else if (la3 == EMPTY)
+		row[ code[crib_pos+crib_index] ] = row[ crib[crib_index] ];
+	else { // both rows are labeled, join them into one label
+		for (k=0;k<numb_symbols;k++)
+				if (row[k] == la3) row[k] = la1;
+	}
+	// // second row la2,la4
+	result = check_consistent(row,col,next_label);
+	return(result);
+} // end test_final_letter
+
+
+function check_consistent(row,col,numb_labels){// row and col are label arrays
+	var la,i,j,k,sum;
+	
+	
+	for (la=0;la<numb_labels;la++){
+		sum = 0;
+		for (j=0;j<numb_symbols;j++)
+			if (row[j] == la) {
+				sum++;
+				if ( sum > keysquare_width) // too many letters in same row
+					return(false);
+		}
+	}
+	for (la=0;la<numb_labels;la++){
+		sum = 0;
+		for (j=0;j<numb_symbols;j++)
+			if (col[j] == la) {
+				sum++;
+				if ( sum > keysquare_width) // too many letters in same col
+					return(false);
+		}
+	}
+	// check for different lettters in same row and column
+	for (i=0;i<numb_symbols-1;i++){
+		if ( row[i] != EMPTY && col[i] != EMPTY) {
+			for (j=i+1;j<numb_symbols;j++)
+				if ( row[i] == row[j] && col[i] == col[j] ) return(false); // letters i and j have same keysquare coordinates
+		}
+	}
+	return(true); //passed consistency checks
+}
+		
+	
+	
+</script>
+</head>
+<body bgcolor="Silver">
+<center><h3>Playfair crib drag</h3></center>
+Enter cipher and crib. If playfair is 6x6, check the 6x6 box. Click Drag button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows=10>
+</textarea>
+<br><br>
+Crib:
+<input type="text" size=25 id="crib">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Drag" onclick="do_drag()" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id="play6" > 6x6
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+
+<br>
+</body>
+</html>

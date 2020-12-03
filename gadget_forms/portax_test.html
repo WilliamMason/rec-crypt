@@ -1,0 +1,169 @@
+<HTML><HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>AAHJU's Portax ID test</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<SCRIPT language=JavaScript>
+
+// From MJ 2001 Cryptogram, converted to javascript by BION
+
+var cipher_symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var numb_symbols;
+var cipher_values = new Array(9);
+numb_symbols = cipher_symbols.length;
+var per_ic = new Array(50);
+var max_index;
+var max_period = 15;
+var MIN_PERIOD = 3;
+var buf_len;
+
+var logdi = new Array(
+[4,7,8,7,4,6,7,5,7,3,6,8,7,9,3,7,3,9,8,9,6,7,6,5,7,4],
+ [7,4,2,0,8,1,1,1,6,3,0,7,2,1,7,1,0,6,5,3,7,1,2,0,6,0],
+ [8,2,5,2,7,3,2,8,7,2,7,6,2,1,8,2,2,6,4,7,6,1,3,0,4,0],
+ [7,6,5,6,8,6,5,5,8,4,3,6,6,5,7,5,3,6,7,7,6,5,6,0,6,2],
+ [9,7,8,8,8,7,6,6,7,4,5,8,7,9,7,7,5,9,9,8,5,7,7,6,7,3],
+ [7,4,5,3,7,6,4,4,7,2,2,6,5,3,8,4,0,7,5,7,6,2,4,0,5,0],
+ [7,5,5,4,7,5,5,7,7,3,2,6,5,5,7,5,2,7,6,6,6,3,5,0,5,1],
+ [8,5,4,4,9,4,3,4,8,3,1,5,5,4,8,4,2,6,5,7,6,2,5,0,5,0],
+ [7,5,8,7,7,7,7,4,4,2,5,8,7,9,7,6,4,7,8,8,4,7,3,5,0,5],
+ [5,0,0,0,4,0,0,0,3,0,0,0,0,0,5,0,0,0,0,0,6,0,0,0,0,0],
+ [5,4,3,2,7,4,2,4,6,2,2,4,3,6,5,3,1,3,6,5,3,0,4,0,5,0],
+ [8,5,5,7,8,5,4,4,8,2,5,8,5,4,8,5,2,4,6,6,6,5,5,0,7,1],
+ [8,6,4,3,8,4,2,4,7,1,0,4,6,4,7,6,1,3,6,5,6,1,4,0,6,0],
+ [8,6,7,8,8,6,9,6,8,4,6,6,5,6,8,5,3,5,8,9,6,5,6,3,6,2],
+ [6,6,7,7,6,8,6,6,6,3,6,7,8,9,7,7,3,9,7,8,9,6,8,4,5,3],
+ [7,3,3,3,7,3,2,6,7,2,1,7,3,2,7,6,0,7,6,6,6,0,3,0,4,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0],
+ [8,6,6,7,9,6,6,5,8,3,6,6,6,6,8,6,3,6,8,8,6,5,6,0,7,1],
+ [8,6,7,6,8,6,5,7,8,4,6,6,6,6,8,7,4,5,8,9,7,4,7,0,6,2],
+ [8,6,6,5,8,6,5,9,8,3,3,6,6,5,9,6,2,7,8,8,7,4,7,0,7,2],
+ [6,6,7,6,6,4,6,4,6,2,3,7,7,8,5,6,0,8,8,8,3,3,4,3,4,3],
+ [6,1,0,0,8,0,0,0,7,0,0,0,0,0,5,0,0,0,1,0,2,1,0,0,3,0],
+ [7,3,3,4,7,3,2,8,7,2,2,4,4,6,7,3,0,5,5,5,2,1,4,0,3,1],
+ [4,1,4,2,4,2,0,3,5,1,0,1,1,0,3,5,0,1,2,5,2,0,2,2,3,0],
+ [6,6,6,6,6,6,5,5,6,3,3,5,6,5,8,6,3,5,7,6,4,3,6,2,4,2],
+ [4,0,0,0,5,0,0,0,3,0,0,2,0,0,3,0,0,0,1,0,2,0,0,0,4,4]);
+
+
+function convert_string() {
+	var num_code = new Array(),i,clen,n;
+	
+	code = document.puzzle.ciphertext.value;
+	code = code.toUpperCase();
+	clen=0;
+	for (i=0;i<code.length;i++) {
+		n = cipher_symbols.indexOf(code.charAt(i))
+		if ( n != -1){
+			num_code[clen]=n;
+			clen++;
+		}
+	}
+	return num_code;
+}
+
+function decode_pair(k,c1, c2) {
+        var t_flag,b_flag,t_index,b_index;
+        var rvalue,sum;
+
+        if (c1<13) t_flag = 0;
+        else t_flag = 2;
+        if ( c2 % 2 ) b_flag = 1;
+        else b_flag = 0;
+        rvalue = [0,0,0];
+        sum = t_flag+b_flag;
+        if ( sum == 2)
+			if (c1-13 != (c2 >> 1)) // c1,c2 not verticaly aligned
+				rvalue = [1, (c2 >> 1)+13,(c1-13) << 1]
+        if ( sum == 3)
+			if (c1-13 != (c2>>1))// c2, c2 not vertically aligned
+				rvalue = [1,(c2>>1)+13,( (c1-13)<<1 )+1 ]
+        return(rvalue);
+} /* end decode_pair */
+
+
+function do_calc() {
+	var s, count,score,hi,j,k,result
+	var big_step;
+	var best_score;
+	var period,best_period;
+	
+	nc = convert_string()
+	if (nc.length < 2) {
+		alert("Cipher too short!")
+		return
+	}
+	if ( (nc.length%2) != 0){
+		alert("Cipher has odd length. It's not Portax");
+		return;
+	}
+	hi = (nc.length/16).toFixed(0);
+	s = "Cipher length: "+nc.length+" -- ACA recommended maximum period is "+hi+"\n";
+	buf_len = nc.length;	
+	best_score = 0;
+    max_period = document.puzzle.period_entry.value
+
+	for (period = MIN_PERIOD; period <= max_period; period++) {
+        /* do encryption/decryption */
+        big_step = 2*period;
+        count = 0;
+        score = 0;
+        for (j=0;j<buf_len;j=j+big_step) 
+                for (k=0;k<period;k++) {
+                        c1 = nc[j+k];
+                        c2 = nc[j+k+period];
+                        if (j+k+period >= buf_len) break;                        
+                        result = decode_pair(k,c1,c2)
+                        if (result[0]==1 ) {
+	                        	c3 = result[1];
+	                        	c4 = result[2];
+                                /* plaintext independent of key values*/
+                                score += logdi[c3][c4];
+                                count++;
+                        }
+        } /* next k,j */
+        /* skip testing of remainder, probably won't be crucial  */
+        score *= 100;
+        score /= count;
+        //printf("%5.2f\t%li\n",score,period);
+        if ( score > best_score) {
+                best_score = score;
+                best_period = period;
+        }
+    } /* period */
+	s += "Best score is "+Math.floor(best_score);
+	s += " for period "+best_period;
+	if (best_score >= 580)
+		s += ". Cipher may be Portax";
+	else
+		s += ". Cipher may not be Portax";	
+	document.puzzle.cipherstats.value = s
+}
+
+function do_clear() {
+	document.puzzle.ciphertext.value = ""	
+	document.puzzle.cipherstats.value = ""
+}
+
+	
+</SCRIPT>	
+</HEAD>
+<BODY bgcolor="Silver">
+<Center>
+<H2>AAHJU's Portax ID test</H2>
+</Center>
+
+
+<FORM name=puzzle>
+Cipher: <BR><TEXTAREA id=ciphertext styLe="font-family:monospace" name=ciphertext rows=8 cols=90></TEXTAREA><BR>
+Results: <BR><TEXTAREA id=cipherstats styLe="font-family:monospace" name=cipherstats rows=5 cols=90></TEXTAREA><BR>
+<BR><BR><INPUT onclick=do_calc(); type=button value="Calculate" >
+<INPUT onclick=do_clear(); type=button value="Clear" >
+&nbsp &nbsp &nbsp &nbsp Maximum period to use: <input type = text name=period_entry  size = 3 >
+</FORM>
+<BR> <B>Directions:</B> Type or paste cipher into cipher box. Set maximum period. Click on Calculate button. 
+<script type="text/javascript">
+document.puzzle.period_entry.value = max_period;
+</script>
+
+
+</BODY></HTML>

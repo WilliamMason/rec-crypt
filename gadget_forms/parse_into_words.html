@@ -1,0 +1,61 @@
+<html>
+<!--- word scoring and parsing using user supplied word lists, can load multiple lists -->
+<head>
+<title>Parse string into words</title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<script src="parse_into_words_main.js" ></script>
+</head>
+<body bgcolor="Silver" >
+<h3> Parse string of letters into words. (word list supplied by user)</h3>
+Directions: Type or paste a plaintext or trial decrypt into the top box. Choose one or more word list files. <br>Click one of the "parse" buttons.
+Attempted word divisions appear in "Parse" box. Unparsable strings <br> and ignored words appear in parentheses.
+<br>
+Click "try complete parse" button to try parsing into a suffix plus zero or more words plus a prefix.
+<br>
+"Divide into completely parsed substrings" will also show double square score.
+<br>
+
+(Warning: word list routine reads letters a-z only. Letters with accents, umlauts, or other diacritical marks are skipped.)
+<br><br>
+Plaintext or trial decrypt:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+<span id="filename">
+Word list: <input type="file" id="input2" >
+</span>
+&nbsp;&nbsp;&nbsp;&nbsp;
+Lists already loaded:
+<input id="list_area" size=30 value="none" >
+<br><br>
+Parse:<br>
+<textarea id="output_area" cols=80 rows = 10>
+</textarea>
+<br>
+
+<input type="button" value="Forward parse" id="do_parse">
+<input type="button" value="Reverse parse" id="do_reverse_parse" >
+
+&nbsp &nbsp
+Ignore words of length at most: 
+<input type="text" value="2" size= 3 id="skip_numb">
+&nbsp; &nbsp;
+<input type="checkbox" id = "show_score"  > Show scores
+&nbsp; &nbsp;
+<input type="button" value="Clear" id="do_clear">
+<br><br>
+<input type="button" value="Try for complete parse" id="do_complete_parse" >
+&nbsp; &nbsp;
+<input type="button" value="Divide into completely parsed substrings" id="do_multiple_parse" >
+<br><br>
+<!-----------
+Basic score used for simple substitution trial decrypts. Extended score for Grandpre/Numbered-Key trial decrypts.
+------>
+<br>
+
+<!---
+<input type="button" value="load" onclick=initialize();>
+-->
+
+
+</body>
+</html>
