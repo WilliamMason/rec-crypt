@@ -1,0 +1,294 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Swagman Test</title>
+<script type="text/javascript">
+// based on swag test in anal.py
+var numb_symbols = 26;
+
+var swagman_calcs = function(){
+// T has compressed binary Single letter - Trigraph Discrepancy values
+// had to replace \ by \\ 
+var T="sP5D4475HAAPRphXWR=><I@A42p`E1"
+T=T+"N71rHAR2ApH2`M8BAiEW75A@uiAYU1"
+T=T+"r`NpS1IDR51@8D2@p5pI4PpTOO>D4p"
+T=T+"18;`QR6@p@Xonj`1p44s@4Xq6cQ822"
+T=T+"BrPq41r4262s4pRp4p2p@4111A44@p"
+T=T+"T8>4r1t1@@@458A1665pP`4v4tb7lX"
+T=T+":r4XS^V6s1p44p1:pPZnJ^q4r8q1rX"
+T=T+"bXNt1p8p1Pu@41118PX3xA4544Ap@@"
+T=T+"s8PU1v1p@rH1?22r1BRQy1p24hN_^?"
+T=T+"q1r2t@;@@2s@t911s4A@@P@@Qx@q11"
+T=T+"p4u2p:Cv@u2PQP2q@tjeW3E@82B6Y8"
+T=T+"@2@rB@p@BP8p<ApCAqR`NP1d5TT1hG"
+T=T+"S8HNiYApD4t@<@CIslG`@T4AIAQp2Q"
+T=T+"p421@6YI@H@435AqP68qA444S2p44w"
+T=T+"41:pPSH8RAT44q8q1rXPRC1r@1P8pA"
+T=T+"Ps@r115Hc[c3q@t@q44@p@s9r1v1q4"
+T=T+"4p\\p6::sha[[1w@T24882Rr1p1424s"
+T=T+"P^hH:s@r@p8u4A@@rPx@4p11p4u@82"
+T=T+"I}2PQPr@xTA8N64Yq2Bp8q@rQp14{4"
+T=T+"p4r2s1q44qPp8s1t14p@65HAig_g1p"
+T=T+"@uhcWc31q`4H8Xr4p6VT`p@q@42TTA"
+T=T+":BTQD8RhT61UE8p8KTb<wH7XK@oU\\5"
+T=T+"WCD6D4511p988qdD2sg1\\F4A9FD1QJ"
+T=T+"9p1@p\\CH26NliaAp2P<p2:Hp1paPp1"
+T=T+"p1p@@tAT2p887Rq81r2p@{@p22@p8q"
+T=T+"144p4A@@1qXs4t4A1114p61p8Dr1u1"
+T=T+"v;`S2r@PT@`4s4A@@qXq22p82p@rPw"
+T=T+"22t4@q4pB@t14p4pPdZ1q1t41@@@p1"
+T=T+"p1sPp@t8v@qH88s`O]neNAAAHE2Q1p"
+T=T+":pPX4H6hp6pQ48p4s7B1J2s1P88AT4"
+T=T+"4v1pT:8;PEeF6s1p14p@p@qPPpV9]Y"
+T=T+"v1tHp62sPl_RQr@tAT2pH<7R;q1p8p"
+T=T+"2p@sZ8hHs@q6@p81q444p@@2pS@i4w"
+T=T+"@4p111Dp54@p@2aZIv@uCPS1sPonjn"
+T=T+"y8qJcYK2p@r1u\\?o^?sLTV71p2y`dW"
+T=T+"><x1p@xX_f>4u4tPp8y@6q@meVCU5:"
+T=T+"p4Q@2RhaWSU7:64C4`Dr[T7:>41P8p"
+T=T+"oQXpU7F6D64A@pQqT7fF6sn38pTE;>"
+T=T+"4GThIq@p41rFph@sl?o>=p1pPl3Z11"
+T=T+"w@P2ph97Rq81r2p@s18:Ps@q2@48qA"
+T=T+"4441@rW8Z@1444t4p11I4251q42Olk"
+T=T+"lx41p83PSp2q@p:T@@s4r@4XqjRS91"
+T=T+"p@rPq4t2u4pTp4p2@@s1444q28x41p"
+T=T+"@@FU@Aq6Pz4q1q`ph:th_VdMN@H@Aq"
+T=T+"1Pp:pPkfb>hAV3U7H44qPpep84yPqP"
+T=T+"wVZ?KU7nN6s1p44uP@8^;=S|8p6ulS"
+T=T+"YA5p@@tAPRphl?f>q1r2p@sglhOs@p"
+T=T+"J2@p9p1p4T44A@qPHZp1p14s@4111A"
+T=T+"44pD@8pb[JIv@t8;PQPr@8olZ^r44A"
+T=T+"p@p4Xq6cQ86@BrPq41qh6_>5s4pRp4"
+T=T+"p2@r1pA44D8488p4@p1s41@@@FeIA1"
+T=T+"4p4Lpb8v4qAp@`pXXt@p2p@NmkmD4P"
+T=T+"Q118qPqPh@VA5A82p1qHslOoN51p1p"
+T=T+"VP<pPADN4p1q^o[KQ3N6DomkM6q2T7"
+T=T+"9FD11@9~p4q2u`3RAq@@t1p2pXK:>5"
+T=T+"q1r2uO8h:s@s411@t@@pPCjH@x4q1p"
+T=T+"4~v8p2PQu2:Hx@4X8pVkSI2pBrPpP4"
+T=T+"1p2x4PVA4p2r11pA44@X8Z>4r1t1@@"
+T=T+"@FUhAA42Uq@w4q@@p`7lXZ@q42p681"
+T=T+"|omiN|Pp1Q~q@s2pP~xRz8PSP1w8PY"
+T=T+"AX?_>GpQqAP64889Rq11rRp@pP81w@"
+T=T+"p:4PNmj5hc_C5p@pP22s8t@EpY11q4"
+T=T+"4@8BRs1s1@r11p2Pq4p8qbH8}B8s@r"
+T=T+"PuX5:^1~q@rP~@s1s8I^85}Hq14p40"
+
+var bstd = []
+
+function construct_table(){
+    var i,n,index,c,ze,x,j,mask;
+    // read T and put it into the working binary trigraph table: bstd
+    n = 26*26*26
+    i = index = 0;
+
+    ze = '0'.charCodeAt(0);
+    while (i < n){
+        c = T.charCodeAt(index);
+        index +=1
+        //x = ord(c)-ord('0')
+        x = c-ze;
+        if (x > 63){
+            x -= 63;
+            //for j in range(6*x):
+            for (j=0;j<6*x;j++){
+                bstd[i] = 0;
+                i += 1;
+            }
+        }
+        else{
+            mask = 1;
+            while (mask < 64){
+                if (mask & x ){
+                    bstd[i] = 1;
+                }
+                else bstd[i] = 0;
+                i += 1;
+                mask += mask;
+                if (i >= n)  break;
+            }
+        }
+    }    
+}
+
+construct_table();
+//alert("table constructed");
+
+
+function next_per(str,le){
+	/*
+	get next permutation of array str of length le
+	return 0 if finished, 1 otherwise.
+	*/
+	if (le < 2) return (0);
+	//find last element not in reverse alphabetic order
+	var last = le-2;
+	while (str[last] >= str[last+1]){
+		if (last == 0) return(0);
+		last -= 1;
+    }
+	// find first element that is larger than the element at last
+	var fst = le-1;
+	while (str[fst] <= str[last])
+		fst -= 1;
+
+	//swap these two
+	var c = str[last];
+	str[last] = str[fst];
+	str[fst] = c;
+
+	//put part of string at tail into ascending order
+	if (str[last+1] != str[le-1] ){
+		var i = 1;
+		while (last+i < le -i){
+			c = str[last+i];
+			str[last+i] = str[le-i];
+			str[le-i] = c;
+			i += 1;
+        }
+    }
+	return(1);
+}
+
+	function construct_row(row_order,swag_array,period,numb_columns){
+        var i,c;
+		var row = []
+		var index = 0
+		//for i in range(numb_columns):
+        for (i=0;i<numb_columns;i++){
+			c = swag_array[ row_order[index] ][i]
+			//row.append(c)
+            row[i] = c;
+			index += 1;
+			if (index == period ) index = 0;
+        }
+		return(row);
+    }
+
+	function score_row(row){
+		var score = 0
+		//for i in range(len(row)-2):
+        for (var i=0;i<row.length-2;i++)
+			score += bstd[row[i]+26*row[i+1]+26*26*row[i+2]];
+		return score;
+    }
+
+
+    function swag_test(code,period){
+        var i,j,index,c;
+        /*
+        test code digits for swagman of given period, return binary std score
+        and best scoring line
+        */
+        var numb_columns = code.length/period; // should always be integer
+        var row_order = [];
+        for (i=0;i<period;i++)
+            row_order[i] = i;
+        var swag_array = [];
+        for (i=0;i<period;i++)
+            swag_array[i] = []
+        index = i = 0;
+        //for c in code:
+        for (j=0;j<code.length;j++){
+            c = code[j];
+            swag_array[i][index] = c;
+            i += 1;
+            if (i == period ){
+                index += 1;
+                i = 0;
+            }
+        }
+        var row = construct_row(row_order,swag_array,period,numb_columns)
+        var score = score_row(row)
+        var best_score = score
+        var best_row = row
+        while (next_per(row_order,row_order.length) != 0){
+            row = construct_row(row_order,swag_array,period,numb_columns)
+            score = score_row(row)
+            if (score > best_score){
+                best_score = score;
+                best_row = row;
+            }
+        }
+        var std_score = Math.floor(100*best_score / (numb_columns-2));
+        var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        //l1 = convert_to_string(best_row)
+        var l1 = '';
+        for (i=0;i<best_row.length;i++)
+            l1 += alpha.charAt(best_row[i]);
+        return ([std_score,l1]);
+    }
+    var do_swag_calc = function(){ // return this function which can use the pseudo-global variables
+        var str, alpha,out_str,c,n,i,ct,sum,c1,c2;
+        var code_len,code;
+        var period, best_score, best_line,result,best_period;
+        
+        alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        out_str="";
+        code = [];
+        code_len = 0;
+        str = document.getElementById('input_area').value;
+        str = str.toUpperCase();
+        for (i=0;i<str.length;i++){
+            c = str.charAt(i);
+            n = alpha.indexOf(c);
+            if ( n>=0) {
+                    code[code_len++] = n
+            }
+        }
+        if ( code_len == 0){
+            alert("No letters entered!");
+            return;
+        }
+        //out_str = 'testng'
+        best_score = 0;
+        best_line = '(none)';
+        best_period = '--';
+        for (period = 4;period <= 8;period++){
+            if ( code.length % period != 0) continue;
+            if (3*period*period > code.length) break; // not enough code blocks
+            result = swag_test(code,period);
+            if (result[0] > best_score){
+                best_score = result[0];
+                best_line = result[1];
+                best_period = period;
+             }
+        }
+        out_str += 'Best score is '+best_score+' for period '+best_period+'. Best line is: '+best_line.toLowerCase();
+        if (best_score < 65) out_str += "\n (This may not be a Swagman cipher.)";
+        document.getElementById('output_area').value = out_str;
+    } // end do_cal_calc function
+    return (do_swag_calc); // return this function which can access pseudo_global variables
+} // end columnar_calcs closure function
+
+
+
+
+function do_calc(){
+    do_swag_calc = swagman_calcs(); // closure to isolate 'pseudo_global' variables
+    do_swag_calc();
+}    
+</script>
+</head>
+<body bgcolor="Silver" >
+<center><h3>Swagman Test</h3></center>
+Directions: Type or paste cipher into cipher box. Click "Do Test" button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows = 5 >
+</textarea><br>
+<br>
+Output:<br>
+<textarea id="output_area" cols=80 rows = 5>
+</textarea>
+<br><br>
+<input type="button" value="Do Test" onclick=do_calc();>
+<br><br>
+
+<!-------------
+&nbsp; &nbsp; &nbsp; &nbsp; 
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="checkbox" id = "size6"  > 6x6 cipher
+---->
+</body>
+</html>

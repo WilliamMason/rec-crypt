@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/Templates/ACA.dwt" codeOutsideHTMLIsLocked="false" -->
+<!-- VERSION 2.5.0 but no puzzles-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Solve a Cipher &nbsp; &nbsp; limited </title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<script type="text/javascript" src="solve_cipher_only.js">
+</script>
+<!-- InstanceEndEditable -->
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:300px;
+	width:500px;
+	height:100px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+.black_overlay{
+	display: none;
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	z-index:1001;
+	-moz-opacity: 0.7;
+	opacity:.70;  /* the higher the more opaque */
+	filter: alpha(opacity=70);
+}
+.white_content {
+	display: none;
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 25%;
+	padding: 16px;
+    background: #EEEEEE;
+    color: #000;
+    border:10px ridge black;
+	z-index:1002;
+	overflow: auto;
+}
+
+</style>
+</head>
+<body bgcolor="Silver">
+<div id="page">
+<div id="logo">
+</div>
+<div id="main">
+	<div id="contents"><h2><!-- InstanceBeginEditable name="PageHeader" -->
+	Solve A Cipher, (solver only)<!-- InstanceEndEditable --></h2><!-- InstanceBeginEditable name="Contents" -->
+            <br/>
+            <div id="directions">
+            &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp 
+             <br>
+            </div>
+      <form name="menu">
+
+        <input value="Erase" id = "go1" type="button"> 
+        &nbsp &nbsp &nbsp &nbsp 
+        <!------
+        &nbsp &nbsp &nbsp &nbsp
+        &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp 
+        &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp 
+        --->
+		<INPUT id="letter_count1" type=button value="Display/hide letter count" > 
+		&nbsp &nbsp &nbsp &nbsp  
+		<input value="Display/hide directions" id="show_directions1" type="button">   
+	</form>       
+
+<!----  container for message display box  --->	
+<div id = "cm_display" >
+</div>	
+<!----  containers for light box  --->	
+<div id="light" class="white_content">
+</div>
+<div id="fade" class="black_overlay"></div>
+
+<form name="puzzle">
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:126px; margin-right:100px; padding: 10px; background:white; margin-top:10px;">
+ Cipher: <br>
+  <textarea id="ciphertext" style="font-family: monospace;" name="ciphertext" rows="6" cols="90"></textarea><br>
+</div>  
+  <br>
+<div id = "key_caption">
+Key: 
+<br>
+</div>
+<div id="key_space" style=" float:left; font-family:monospace; height:40px; width:210px;margin-top:5px; border:1px ridge black; padding:5px;margin-bottom:5px;">
+
+</div>
+<div id="let_space"  style=" float:left; font-family:monospace; height:40px; width:630px; margin-top:5px; padding:5px; margin-left:10px;margin-bottom:5px;">
+</div>
+
+<div style="clear:left">  
+&nbsp &nbsp &nbsp &nbsp;&nbsp; Cipher letter: <font size="2"> 
+  <input value="A" style="width: 25px;" type="button" id="b0"> <input value="B" style="width: 25px;" type="button" id="b1"> <input value="C" style="width: 25px;" type="button" id="b2"> <input value="D" style="width: 25px;" type="button" id="b3"> <input value="E" style="width: 25px;" type="button" id="b4"> <input value="F" style="width: 25px;" type="button" id="b5"> <input value="G" style="width: 25px;" type="button" id="b6"> <input value="H" style="width: 25px;" type="button" id="b7"> <input value="I" style="width: 25px;" type="button" id="b8"> <input value="J" style="width: 25px;" type="button" id="b9"> <input value="K" style="width: 25px;" type="button" id="b10"> <input value="L" style="width: 25px;" type="button" id="b11"> <input value="M" style="width: 25px;" type="button" id="b12"> <input value="N" style="width: 25px;" type="button" id="b13"> <input value="O" style="width: 25px;" type="button" id="b14"> <input value="P" style="width: 25px;" type="button" id="b15"> <input value="Q" style="width: 25px;" type="button" id="b16"> <input value="R" style="width: 25px;" type="button" id="b17"> <input value="S" style="width: 25px;" type="button" id="b18"> <input value="T" style="width: 25px;" type="button" id="b19"> <input value="U" style="width: 25px;" type="button" id="b20"> <input value="V" style="width: 25px;" type="button" id="b21"> <input value="W" style="width: 25px;" type="button" id="b22"> <input value="X" style="width: 25px;" type="button" id="b23"> <input value="Y" style="width: 25px;" type="button" id="b24"> <input value="Z" style="width: 25px;" type="button" id="b25"> </font> <br>
+
+  <br>
+Goes to plain letter: <font size="2"> 
+<input id="p0" value="a" style="width: 25px;" type="button"> <input id="p1" value="b" style="width: 25px;" type="button"> <input id="p2" value="c" style="width: 25px;" type="button"> <input id="p3" value="d" style="width: 25px;" type="button"> <input id="p4" value="e" style="width: 25px;" type="button"> <input id="p5" value="f" style="width: 25px;" type="button"> <input id="p6" value="g" style="width: 25px;" type="button"> <input id="p7" value="h" style="width: 25px;" type="button"> <input id="p8" value="i" style="width: 25px;" type="button"> <input id="p9" value="j" style="width: 25px;" type="button"> <input id="p10" value="k" style="width: 25px;" type="button"> <input id="p11" value="l" style="width: 25px;" type="button"> <input id="p12" value="m" style="width: 25px;" type="button"> <input id="p13" value="n" style="width: 25px;" type="button"> <input id="p14" value="o" style="width: 25px;" type="button"> <input id="p15" value="p" style="width: 25px;" type="button"> <input id="p16" value="q" style="width: 25px;" type="button"> <input id="p17" value="r" style="width: 25px;" type="button"> <input id="p18" value="s" style="width: 25px;" type="button"> <input id="p19" value="t" style="width: 25px;" type="button"> <input id="p20" value="u" style="width: 25px;" type="button"> <input id="p21" value="v" style="width: 25px;" type="button"> <input id="p22" value="w" style="width: 25px;" type="button"> <input id="p23" value="x" style="width: 25px;" type="button"> <input id="p24" value="y" style="width: 25px;" type="button"> <input id="p25" value="z" style="width: 25px;" type="button"> <input id="p26" value="-" name="ebutton" type="button"> 
+</font> <br>
+</div>
+  <br>
+  <input id="start_over1" value="Start Over" type="button">
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp 
+<INPUT id="save_to_disk1" type=button value="save work" >
+<INPUT id="get_from_disk1" type=button value="retrieve saved work" >
+<INPUT id="clear_disk1" type=button value="clear saved work" >
+<span style="float:right; margin-right:14px;"><a href="http://www.cryptogram.org" target="_blank" title="Home">ACA Home</a></span>
+</form>		
+<br><br><br>
+<!-- InstanceEndEditable --></div>
+</div>
+</div>
+
+<div id="footer">Copyright © 2005, 2010-12 American Cryptogram Association</div>
+
+</body>
+<!-- InstanceEnd --></html>

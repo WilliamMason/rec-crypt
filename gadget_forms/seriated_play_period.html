@@ -1,0 +1,115 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Seriated Playfair Periods</title>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+function do_calc(){
+	var str, alpha,out_str,c,n,code,digits,i,period ,cycle,code_len,j,k;
+	var min_per,max_per,c1,state,n1,key,flag,pos,x,y,sq_size;
+    
+    min_per = 2;
+    max_per = 20;
+	alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    digits = '0123456789';
+    if ( document.getElementById('play6').checked)
+        alpha += digits;
+	out_str="";
+	code = [];
+    code_len = 0;
+	str = document.getElementById('input_area').value;
+    str = str.toUpperCase();
+    str = str.replace(/Ø/g,'0');        
+	for (i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0) {
+                code[code_len++] = n
+        }
+	}
+    if ( (code_len&1) != 0){
+        alert("Odd number of letters in cipher!");
+        return;
+    }
+    if ( code_len == 0){
+        alert("No letters entered!");
+        return;
+    }
+    /*
+    sq_size = 5;
+    if ( document.getElementById('size6').checked)
+        sq_size = 6;
+    */
+    hi = (code_len/20).toFixed(0);
+    lo = Math.floor(code_len/30);
+    out_str += "Length: "+code_len+", ";
+    out_str += "Range of periods for this cipher according to ACA guidelines: "+lo+"-"+hi+"\n";
+    var left_over;
+    for (period = min_per;period<= max_per;period++) {
+		left_over = 0;
+		x = Math.floor(code_len / (2*period));
+		left_over = code_len - x*2*period;
+		flag = 1;
+		pos = 0;
+		while( pos <code_len-left_over) {
+            for (j=0;j<period;j++) {
+                if ( code[pos+j] == code[pos+j+period]) {
+                    flag = 0;
+                    break;
+                }
+            }
+            pos += 2*period;
+		} /* end while */
+		if ( left_over) {
+			pos = code_len - left_over;
+			for (j=0;j<Math.floor(left_over/2);j++){
+	      		if ( code[pos+j] == code[pos+j+left_over/2]) {
+					flag = 0;
+					break;
+				}
+			}
+		}
+		//printf("%li ",period);
+		if ( flag ) {
+            out_str += "period "+period+" OK\n";
+		}
+        /*
+		else
+			printf("has doubled letters\n");
+        */
+    } /* next period */
+	
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver" >
+<center><h3>Periods for Seriated Playfair Cipher</h3></center>
+Directions: Type or paste cipher into cipher box. If keysquare is 6x6, check the 6x6 box. Click "Get Periods" button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows = 5 >
+</textarea><br>
+<br>
+Possible periods:<br>
+<textarea id="output_area" cols=80 rows = 5>
+</textarea>
+<br><br>
+<input type="button" value="Get Periods" onclick=do_calc();>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id="play6" > 6x6
+
+<!-------------
+&nbsp; &nbsp; &nbsp; &nbsp; 
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="checkbox" id = "size6"  > 6x6 cipher
+---->
+</body>
+</html>

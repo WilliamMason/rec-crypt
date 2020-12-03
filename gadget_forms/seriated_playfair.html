@@ -1,0 +1,799 @@
+<!-- Seriated Playfair scratchpad with column/row swapping, in javascript -->
+<HTML>
+<!-- written by BION -->
+<!-- add disk save/load operations 12-17-15 -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Seriated Playfair Worksheet</TITLE>
+<script type="text/javascript">
+var period;
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		redo_array[redo_index][digits.charAt(i)+digits.charAt(j)] = play_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		play_key[ digits.charAt(i)+digits.charAt(j) ] = undo_array[undo_index][digits.charAt(i)+digits.charAt(j)];
+	}
+    document.getElementById('redo_button').disabled = false;
+    restore_keyblock(0);
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		play_key[ digits.charAt(i)+digits.charAt(j) ] = redo_array[redo_index][digits.charAt(i)+digits.charAt(j)];
+	}
+    restore_keyblock(0);
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		undo_array[undo_index][digits.charAt(i)+digits.charAt(j)] = play_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,code_array,crib_pos,cribtext;
+var symbols="abcdefghiklmnopqrstuvwxyz-"; // no j
+var digits="0123456789";
+var letters="ABCDEFGHIKLMNOPQRSTUVWXYZ-"; // no J
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var line_limit=60;
+var last_cell;
+var old_xlation;
+
+//try associative array for key
+var play_key = new Array();
+var rows_selected = new Array();
+var columns_selected = new Array();
+
+var data;
+
+function reset_key() {
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		play_key[ digits.charAt(i)+digits.charAt(j) ] = '-';
+	}
+    undo_index = redo_index = 0;    
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;		
+}
+
+
+function setup_code_pairs() {
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+	code = '';
+    code_array = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+				code = code+c;
+                code_array.push(c);
+		}
+	}
+	solving_flag=1;
+	if (code.length&1 != 0) {
+		alert("Cipher has odd number of letters!");
+		solving_flag=0;
+		return;
+	}
+
+	old_xlation = ['-'];
+	for (i = 0;i<code_array.length;i++)
+		old_xlation[i]= '-';
+    undo_index = redo_index = 0;        
+}	
+
+function key_lookup(c) { // see if letter pair c is represented in the keysquare
+	var c1,p1,c2,p2,pr;
+	var row1, col1,row2,col2,flag,cr,cc;
+	
+//	s = "looking up "+c;
+//	document.debug.output_area.value= s; 	
+	
+	c1 = c.charAt(0);
+	c1 = c1.toLowerCase();
+	flag = 0;
+	for (i=0;i<5;i++){
+		cr = digits.charAt(i);
+		for (j=0;j<5;j++){
+			cc = digits.charAt(j);
+			if ( play_key[cr+cc] == c1){
+				row1 = i;
+				col1 = j;
+				flag = 1;
+				break;
+			}
+		}
+		if ( flag == 1) break;
+	}
+	if ( flag == 0) return(['--',['55','55']]); // letter c1 not found in key square
+//	s = "found row1 col1 ";
+//	document.debug.output_area.value= s; 	
+	
+	c2 = c.charAt(1);
+	c2 = c2.toLowerCase();	
+	flag = 0;
+	for (i=0;i<5;i++){
+		cr = digits.charAt(i);
+		for (j=0;j<5;j++){
+			cc = digits.charAt(j);
+			if ( play_key[cr+cc] == c2){
+				row2 = i;
+				col2 = j;
+				flag = 1;
+				break;
+			}
+		}
+		if ( flag == 1) break;
+	}
+	if ( flag == 0) return(['--',['55','55']]); // letter c2 not found in key square
+	if ( row1 == row2) { // same row, decrypt is letters to left
+		n2 = (col1+4)%5;
+		p2 = digits.charAt(n2);
+		p1 = digits.charAt(row1);
+		pr1 = p1+p2;
+		r = play_key[pr1];
+		n2 = (col2+4)%5;
+		p2 =  digits.charAt(n2);
+		pr2 = p1+p2;
+		r += play_key[pr2];
+		return ([r,[pr1,pr2]]); 
+	}
+	if ( col1 == col2) {//same column, decrypt is letters above
+		n1 = (row1+4)%5;
+		p1 = digits.charAt(n1);
+		p2 = digits.charAt(col1);
+		pr1 = p1+p2;
+		r = play_key[pr1];
+		n1 = (row2+4)%5;
+		p1 =  digits.charAt(n1);
+		pr2 = p1+p2;
+		r += play_key[pr2];
+		return ([r,[pr1,pr2]]); // oops! must return a pair of letters, not one letter!
+	}
+	// corners of rectangle
+	
+	p1 = digits.charAt(row1);
+	p2 = digits.charAt(col2);
+	pr1 = p1+p2;
+	r = play_key[pr1];
+	p1 = digits.charAt(row2);
+	p2 = digits.charAt(col1);
+	pr2 = p1+p2;
+	r += play_key[pr2];
+	return( [r,[pr1,pr2]] );
+}
+
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_pairs;
+    var cline,cline2,pline,pline2;
+    var left_over,i,c1,c2,c,p1,p2,n,ce;
+    
+	if (solving_flag ==0) {
+		setup_code_pairs();
+		if (solving_flag==0) return;//odd number of letters!
+	}
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+	pos=0;
+	cnt=0;
+    pline = '';
+    pline2 = '';
+    cline = '';
+    cline2='';
+    left_over = code.length%(2*period);
+    
+	pl='';
+	while (pos < code.length - left_over ) {
+        for (i=0;i<period;i++) {
+            c1= code_array[pos+i];
+            c2 = code_array[pos+i+period];
+            cline += c1;
+            cline2 += c2;
+            c = key_lookup(c1+c2);
+            p1 = c[0][0];
+            p2 = c[0][1];
+            ce = c[1];
+            if ( ce[0]==last_cell || ce[1] == last_cell || old_xlation[pos+i] != p1 || old_xlation[pos+i+period] != p2){
+                old_xlation[pos+i]=p1;
+                p1 = '<font color="red">'+p1+'</font>';
+                old_xlation[pos+i+period]=p2;
+                p2 = '<font color="red">'+p2+'</font>';
+            }
+            
+            pline += p1;
+            pline2 += p2;
+            cnt++;
+        }
+        cline += ' ';
+        cline2 += ' ';
+        pline += ' ';
+        pline2 += ' ';
+        pos += 2*period;
+		if (cnt>=limit) {
+            str += cline+'<br>'+cline2+'<br><font color="blue">'+pline+'<br>'+pline2+'</font><br>';
+			cnt=0;
+            pline = '';
+            pline2 = '';
+            cline = '';
+            cline2='';
+		}
+	}
+    n = left_over/2;
+    for (i=0;i<n;i++) {
+        c1= code_array[pos+i];
+        c2 = code_array[pos+i+n];
+        cline += c1;
+        cline2 += c2;
+        c = key_lookup(c1+c2);
+        p1 = c[0][0];
+        p2 = c[0][1];
+        ce = c[1];
+        if ( ce[0]==last_cell || ce[1] == last_cell || old_xlation[pos+i] != p1 || old_xlation[pos+i+n] != p2){
+            old_xlation[pos+i]=p1;
+            p1 = '<font color="red">'+p1+'</font>';
+            old_xlation[pos+i+n]=p2;
+            p2 = '<font color="red">'+p2+'</font>';
+        }
+        
+        pline += p1;
+        pline2 += p2;
+        cnt++;
+    }
+    str += cline+'<br>'+cline2+'<br><font color="blue">'+pline+'<br>'+pline2+'</font><br>';
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function selectmouse(e)
+{
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = symbols.indexOf(dobj.className.charAt(0));  
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+	  letter=symbols.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;          
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '-' ) {
+		  for (i=0;i<5;i++){
+			  c1 = digits.charAt(i);
+			  for (j=0;j<5;j++) {
+				  c2 = digits.charAt(j);
+				  if (play_key[c1+c2]==letter && c1+c2 != cell){
+		  			//delete letter at old location
+		  			c = c1+c2;
+		  			play_key[c] = '-';
+					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+					s+='-</span>';
+					document.getElementById(c+'keymatrix').innerHTML= s;
+				}
+			}
+		}
+	}						  
+	  play_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+  }
+  else if (fobj.className.slice(1)=="keycolumn") {	  
+	  dobj = fobj;
+	  cell=dobj.className.slice(0,1);
+	  //update columns selected array
+	  columns_selected[ cell] ^= 1;
+	  if (columns_selected[ cell]==1) {
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
+	  	s +='X</span>';
+	   }
+	  else {	   
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
+	  	s +='&nbsp</span>';
+	   }		  
+	  document.getElementById(dobj.id).innerHTML= s;	
+      //next 3 lines for debugging
+	  //s = "you put it under letter "+cell+"\n";
+	  //s = s+play_key;
+	  //document.debug.output_area.value= s; 	
+      return false;	  
+  }
+  else if (fobj.className.slice(1)=="keyrow") {	  
+	  dobj = fobj;
+	  cell=dobj.className.slice(0,1);
+	  //update rows selected array
+	  rows_selected[ cell] ^= 1;
+	  if (rows_selected[ cell]==1) {
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
+	  	s +='X</span>';
+	   }
+	  else {	   
+	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
+	  	s +='&nbsp</span>';
+	   }		  
+	  document.getElementById(dobj.id).innerHTML= s;		  
+      //next 3 lines for debugging
+	  //s = "you put it under letter "+cell+"\n";
+	  //s = s+play_key;
+	  //document.debug.output_area.value= s; 	
+      return false;	  
+  }
+	  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}	
+	s=s+'<br>';	
+	document.getElementById('letterblock').innerHTML=s;	
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+	
+	s='';
+	//two columns of blank place holders
+
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+		cr = digits.charAt(i);		
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'-'+'</span> </span>';
+		}
+		s=s+'<br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+	input_ok();
+	document.ciphertext.cipher_place.value=code;
+	solving_flag=0;
+    xlate();
+}	
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+		crib_entered=0;
+	}	
+}	
+
+
+
+function redirect() {
+	window.location="playfair_lowres.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+}
+
+function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
+	var s,i,c;
+	
+	s='';
+	//two columns of blank place holders
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+		cr = digits.charAt(i);
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			v = play_key[c];
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s += v+'</span> </span>';
+		}
+		if (flag) {// yellow row selection box
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: yellow;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+cr+'key_row" class="'+cr+'keyrow" style="color:yellow">';
+			s += '&nbsp</span> </span>';
+			rows_selected[cr]=0;
+		}
+		
+		s=s+'<br>';	
+	}	
+	if (flag) {//put in yellow column boxes
+
+		// yellow selection boxes
+		for (i=0;i<5;i++) {
+					c = digits.charAt(i);
+				s = s+'<span width="75" height="75" style="border: 2px solid black;background: yellow;"  >';
+				s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_column" class="'+c+'keycolumn" style="color:yellow">';			
+				s += '&nbsp</span> </span>';
+				columns_selected[c] = 0;
+		}		
+	} // end if flag
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+	
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	//str = str+'<INPUT onclick=reset(); type=button value="erase cipher" >';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+    str += '<br><br>';    
+    str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >';
+    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+    
+    str += '<br><br><br>';
+	str = str + '<INPUT onclick=setup_swap(); type=button value="swap rows or columns in key" >';
+	document.getElementById('button_actions').innerHTML= str;	
+}
+
+function restore_original() {
+	set_original_buttons();
+	restore_keyblock(0);
+}
+
+function do_swap() {
+	var i,ccnt,rcnt, col1,col2,row1,row2,s,n,p;
+	
+	ccnt = rcnt=0
+	for (i=0;i<5;i++) {
+		c = digits.charAt(i);
+		if (columns_selected[c]==1) {
+			if (ccnt==0) col1=c;
+			else if ( ccnt ==1 )col2=c;
+			ccnt += 1;
+		}
+		if (rows_selected[c]==1) {
+			if (rcnt==0) row1=c;
+			else if ( rcnt ==1 )row2=c;
+			rcnt += 1;
+		}
+	}
+	if (ccnt+rcnt>2) {
+			alert("Too many rows/columns selected!")
+			return
+	}
+	if (ccnt+rcnt<2) {
+			alert("Select a PAIR of rows or columns!")
+			return
+	}	
+	if ( ccnt ==2) { //swap columns col1 and col2
+        update_undo();    
+		// swap columns in keysquare
+		for (i=0;i<5;i++) {
+			n = digits.charAt(i);
+			s = play_key[n+col1];
+			play_key[n+col1] = play_key[n+col2];
+			play_key[n+col2]=s;
+		}
+	}
+	if ( rcnt ==2) { //swap rows row1 and row2
+        update_undo();    
+		// swap rows in keysquare
+		for (i=0;i<5;i++) {
+			n = digits.charAt(i);
+			s = play_key[row1+n];
+			play_key[row1+n] = play_key[row2+n];
+			play_key[row2+n]=s;
+		}
+	}	
+	if ( rcnt==1 && ccnt==1) {
+		//swap row1 with col1
+		for (i=0;i<5;i++) {
+			n = digits.charAt(i);
+			s = play_key[row1+n];
+			play_key[row1+n] = play_key[n+col1];
+			play_key[n+col1]=s;
+		}
+	}	
+	xlate();
+	restore_original();
+    document.getElementById('redo_button').disabled = true;       
+}
+
+function setup_swap() {
+	str='Select a pair of rows or columns by clicking their yellow boxes. <br>';
+	str += 'Then click the swap button. <br>';
+	str += '<br><input type="button" value="Swap" onclick=do_swap()>';		
+	str += '&nbsp&nbsp<input type="button" value="Cancel" onclick=restore_original()>';	
+	document.getElementById('button_actions').innerHTML= str;
+	restore_keyblock(1);	
+}
+
+function initialize(){
+    var s,c,n,i;
+    var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    s = document.ciphertext.cipher_place.value;
+	s = s.toUpperCase();
+    n = 0;
+    for (i=0;i<s.length;i++)
+        if (alpha.indexOf(s.charAt(i) ) != -1) n++;
+    if ( n == 0) {
+        alert("No ciphertext entered!")
+        return;
+    }
+    if ( n&1 != 0) {
+        alert("Ciphertext must have even length!")
+        return;
+    }
+    period = parseInt(document.getElementById('period').value);
+    if (period == 0 || isNaN(period) ){
+        alert("Period must be a positive number!");
+        return;
+    }
+    document.getElementById('explain').style.display = "block";
+    document.getElementById('letterblock').style.display = "block";
+    document.getElementById('caption').style.display = "block";
+    document.getElementById('keyblock').style.display = "block";
+    document.getElementById('get_period').innerHTML='<span style="margin-right:50px; float:right;">Period: '+period+'</span>' ;
+    screen_check();
+    reset_key();
+    letterblock_setup();
+    keyblock_setup();
+    set_original_buttons();
+    xlate();
+}
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	} 
+	else {
+		try {
+			localStorage.setItem("ser_playfair.cipher", data); //saves to the database, “key”, “value”
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+    str = ''+period;
+    localStorage.setItem("ser_playfair.period", str);    
+	str = '';
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		str +=play_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+	localStorage.setItem("ser_playfair.key", str);
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k;
+    var temp;
+
+	temp = localStorage.getItem("ser_playfair.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    data = temp;
+    period = parseInt(localStorage.getItem("ser_playfair.period") );
+    document.getElementById('explain').style.display = "block";
+    document.getElementById('letterblock').style.display = "block";
+    document.getElementById('caption').style.display = "block";
+    document.getElementById('keyblock').style.display = "block";
+    document.getElementById('get_period').innerHTML='<span style="margin-right:50px; float:right;">Period: '+period+'</span>' ;
+    
+	reset_key();
+	letterblock_setup();
+	keyblock_setup();
+	set_original_buttons();
+
+    input_ok();
+	document.ciphertext.cipher_place.value=data;
+	solving_flag=0;
+	crib_entered=0;
+	pair_setup=0;
+	start_over();
+	xlate();
+    
+	s = localStorage.getItem("ser_playfair.key");
+	k=0;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		play_key[ digits.charAt(i)+digits.charAt(j) ]= s.charAt(k);
+		k++;
+	}
+	
+	restore_keyblock(0);
+	xlate();
+}
+
+function clear_disk(){
+	localStorage.removeItem("ser_playfair.cipher");
+    localStorage.removeItem("ser_playfair.period");
+	localStorage.removeItem("ser_playfair.key");	
+	alert("work cleared from disk");
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Seriated Playfair Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+</form>
+<div id="explain" style="display:none;"  >
+Click on one of the blue symbols below , then click on a cell inside the key table.<BR>
+</div>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px; display:none">
+</div>
+<BR>
+<span id="caption" style = "display:none;"> Key Table:<br> </span>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px; display:none">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+</div>
+<div id="get_period">
+Enter Period: 
+<input type="text" id="period" size=3>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Initialize" onclick="initialize()">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="retrieve work from disk" onclick="get_from_disk()">
+</div>
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>

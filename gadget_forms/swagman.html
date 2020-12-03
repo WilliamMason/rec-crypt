@@ -1,0 +1,514 @@
+<!-- swagman worksheet in javascript -->
+
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Swagman Worksheet</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+
+<script type="text/javascript">
+
+var code;
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var c_symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var key_len;
+var fire_fox=!document.all;
+var orig_data;
+
+var numb_cols;
+var code_col = new Array();
+var original_row = new Array();
+var digits="0123456789";
+var source_letter,source_id,source_row_source_col,action_row;
+var letter_selected;
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+//var undo_array2 = [];
+//var redo_array2 = [];
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+    //redo_array2[redo_index] = [];    
+    for (i=0;i<numb_cols;i++)
+        redo_array[redo_index][i] = [];
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            redo_array[redo_index][j][i] = code_col[j][i]
+        }
+    }
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            code_col[j][i] = undo_array[undo_index][j][i];
+        }
+    }
+
+    document.getElementById('redo_button').disabled = false;
+    update_display();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            code_col[j][i] = redo_array[redo_index][j][i];
+        }
+    }
+    update_display();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+    for (i=0;i<numb_cols;i++)
+        undo_array[undo_index][i] = [];
+    //undo_array2[undo_index] = [];   
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            undo_array[undo_index][j][i] = code_col[j][i]
+        }
+    }
+    undo_index++;
+    redo_index = 0;
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box, then enter the key length)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	document.getElementById('outputblock').innerHTML=s;			
+	s = '<span style="font-weight:bold;">Enter key length=></span>'
+	s += '<input type = text name=key_len_entry  size = 3 onKeyPress="checkEnter(event)">';
+	document.getElementById('key_lenblock').innerHTML=s;	
+	document.getElementById('swapblock').innerHTML= ' ';		
+}
+
+
+function setup_code_columns() {
+	var i,j,n;
+
+    undo_index = 0;
+    redo_index = 0;
+
+	for (i=0;i<numb_cols;i++) {
+		code_col[i] = new Array();
+		original_row[i] = new Array();
+	}
+	nxt = 0;
+	for (i=0;i<numb_cols;i++){
+		for (j=0;j<key_len;j++){
+			code_col[i][j] = code.charAt(nxt);
+			nxt += 1;
+			original_row[i][j] = j;
+		}
+		for (j=key_len;j<2*key_len;j++){
+			code_col[i][j] = '-';
+			original_row[i][j] = -1;
+		}
+		
+	}
+		
+
+	s = '';
+	s += 'Click on a letter, then click on an unfilled spot (in the same column) where you want to move it.<br><br>';	
+	for (i=0;i<key_len;i++){
+		cr = i.toString();
+		for (j=0;j<numb_cols;j++) {
+			cc = j.toString();
+			c = cr+' '+cc;
+			s += '<span class="colc'+c+'" id="ic'+c+'">'+code_col[j][i]+'&nbsp </span>';
+		}
+		s += '<br>';
+	}
+	s += '<br>';
+	for (i=0;i<key_len;i++){
+		cr = (i+key_len).toString();
+		for (j=0;j<numb_cols;j++) {
+			cc = j.toString();
+			c = cr+' '+cc;
+			s += '<span class="colc'+c+'" id="ic'+c+'">'+code_col[j][i+key_len]+'&nbsp </span>';
+		}
+		s += '<br>';
+	}
+	s += '<br>';
+	
+	document.getElementById('outputblock').innerHTML=s;	
+}	
+
+function get_hue(col,row){
+	var i,j,n;
+	
+	n = original_row[col][row];	
+	if ( n == action_row){
+		if ( (col % key_len) == (source_col%key_len))
+			hue = 'blue';
+		else
+			hue = 'red';
+	}
+	else hue = 'black';
+	return hue;
+}
+
+function update_display(){
+	var i,j,n,hue;
+		
+	s = '';
+	s += 'Click on a letter, then click on an unfilled spot (in the same column) where you want to move it.<br><br>';		
+	for (i=0;i<2*key_len;i++){
+		cr = i.toString();
+		for (j=0;j<numb_cols;j++) {
+			cc = j.toString();
+			c = cr+' '+cc;
+			hue = get_hue(j,i);
+			s += '<span class="colc'+c+'" id="ic'+c+'" style="color:'+hue+'">'+code_col[j][i]+'&nbsp </span>';
+		}
+		s += '<br>';
+		if ( i==(key_len-1)) s+= '<br>';
+	}
+	
+	document.getElementById('outputblock').innerHTML=s;	
+
+}	
+
+
+function parse_row_col(s){
+	var inx,r,c;
+
+	inx = s.indexOf(' ');
+	r = parseInt(s.slice(0,inx),10);
+	c = parseInt(s.slice(inx),10);
+	return [r,c];
+}
+
+function selectmouse(e){
+ var row, col,i,j,c1,c2;
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  
+  if (fobj.className.slice(0,4)=="colc") {
+    dobj = fobj;
+
+	c=dobj.className;	
+	lst = parse_row_col(c.slice(4));	
+	row = lst[0];
+	col = lst[1];
+	c1 = code_col[col][row]; // c1 is current character at this row and column
+	if ( c1 != '-' ){
+		letter_selected=1;		
+		source_letter = c1;
+		source_id = dobj.id;
+		source_row = row;
+		source_col = col;
+		source_class = c;
+		action_row = original_row[col][row];
+		update_display();
+	}
+	else if (letter_selected==1){
+		if (col != source_col) {
+			alert("Can't move letter outside its original column!");
+			return false;
+		}
+        update_undo();
+        document.getElementById('redo_button').disabled = true;          
+        
+		letter_selected=0;
+		for (i=0;i<numb_cols;i++)
+			if ( (i%key_len) == (col%key_len)){
+				code_col[i][row] = code_col[i][source_row];
+				code_col[i][source_row] = '-';
+				original_row[i][row] = action_row;
+				original_row[i][source_row] = -1;
+		}
+		update_display();
+				
+	}	
+	//next lines for debugging
+	//s = "you clicked on "+c;
+	//lst = parse_row_col(c.slice(4));
+	//s += 'with row '+lst[0]+' and column '+lst[1];
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+	  
+}
+
+document.onmousedown=selectmouse;
+
+function get_possible_heights(){
+	var w,h,le,s,flag;
+	
+	s = "Impossible column height!";
+	le = code.length;
+	s += '\ncode length: '+le+'\nACA rules allow heights:';
+	flag = 0;
+	for (h = 2; h<=le;h++){
+		if ( (le%h) == 0){
+			w = le/h;
+			mw = Math.floor(w/h);
+			if (mw >= 2 && mw <= 6)
+				if ( flag == 1)
+					s += ', '+h;
+				else {
+					s += ' '+h;	
+					flag = 1;
+				}
+		}
+	}
+	return s;
+}
+
+function checkEnter(e){ //e is event object passed from function invocation by entering a new key_len
+	var characterCode //literal character code will be stored in this variable
+	var data;
+
+	//next 2 lines for debuging
+	//s = "you pressed a key";
+	//document.debug.output_area.value= s; 	
+		
+	if(e && e.which){ //if which property of event object is supported (NN4)
+		e = e
+		characterCode = e.which //character code is contained in NN4's which property
+	}
+	else{
+		e = event
+		characterCode = e.keyCode //character code is contained in IE's keyCode property
+	}
+	
+	if(characterCode == 13){ //reset key_len
+		key_len = parseInt(document.ciphertext.key_len_entry.value);	
+		data = document.ciphertext.cipher_place.value;
+		if (data.length<2){
+			alert("No ciphertext entered!");
+			return true;
+		}
+		orig_data = data;
+		data = data.toLowerCase();
+		code = '';
+		for (i=0;i<data.length;i++) {
+			c = data.charAt(i);
+			if ( symbols.indexOf(c) >-1 && symbols.indexOf(c)< 26) {
+					code = code+c;
+			}
+		}
+		buf_len = code.length;
+		numb_cols = Math.floor(buf_len/key_len);
+		if ( numb_cols*key_len != buf_len){
+			s = get_possible_heights();
+			alert(s);
+			input_ok();
+			document.ciphertext.cipher_place.value = orig_data;
+			return true;
+		}
+			
+		//s = "you pressed enter for key_len"+key_len;
+		//document.debug.output_area.value= s; 	
+		/*
+		s = '<br>column height: <input type = text name=key_len_entry value =' +key_len+' size = 3 onKeyPress="checkEnter(event)">'
+		*/
+		s = '<br>column height: ' +key_len;
+		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=do_clear(); type=button value="Erase Cipher" >';	
+		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=color_scheme(); type=button value="Explain colors" >';	
+        s += '&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp';
+        s += '<INPUT onclick=do_undo(); type=button value="undo" >';
+        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+        s += '<br><br>';
+        s += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+        s += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >';
+        s += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+        
+		document.getElementById('key_lenblock').innerHTML=s;			
+		setup_code_columns();
+		return false
+	}
+	else{
+		return true
+	}
+
+}
+
+function setup_from_disk(){
+    var i,j,data;
+		data = orig_data;
+		if (data.length<2){
+			alert("No ciphertext entered!");
+			return 
+		}
+		data = data.toLowerCase();
+		code = '';
+		for (i=0;i<data.length;i++) {
+			c = data.charAt(i);
+			if ( symbols.indexOf(c) >-1 && symbols.indexOf(c)< 26) {
+					code = code+c;
+			}
+		}
+		buf_len = code.length;
+		numb_cols = Math.floor(buf_len/key_len);
+		if ( numb_cols*key_len != buf_len){
+			s = get_possible_heights();
+			alert(s);
+			input_ok();
+			document.ciphertext.cipher_place.value = orig_data;
+			return true;
+		}
+			
+		//s = "you pressed enter for key_len"+key_len;
+		//document.debug.output_area.value= s; 	
+		/*
+		s = '<br>column height: <input type = text name=key_len_entry value =' +key_len+' size = 3 onKeyPress="checkEnter(event)">'
+		*/
+		s = '<br>column height: ' +key_len;
+		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=do_clear(); type=button value="Erase Cipher" >';	
+		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=color_scheme(); type=button value="Explain colors" >';	
+        s += '&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp';
+        s += '<INPUT onclick=do_undo(); type=button value="undo" >';
+        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+        s += '<br><br>';
+        s += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+        s += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >';
+        s += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+        
+		document.getElementById('key_lenblock').innerHTML=s;			
+		setup_code_columns();
+
+}
+
+function do_clear() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+	}	
+}	
+
+function color_scheme(){
+	s ="<br> Color scheme: When you click on a letter, it's colored blue as are the letters that will be moved along with it.";
+	s += "<br>The letters that were originally in the same ciphertext row as the blue letters are colored red."; 
+	s += "<br>In the final plaintext you don't want any red and blue letters occupying the same row.";
+	document.getElementById('swapblock').innerHTML=s;				
+
+}
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	} 
+	else {
+		try {
+			localStorage.setItem("swagman.cipher", orig_data); //saves to the database, “key”, “value”
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+    str = ''+key_len;
+    localStorage.setItem("swagman.key_len", str);    
+	str = '';
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            str += code_col[j][i]
+        }
+    }
+    
+	localStorage.setItem("swagman.layout", str);
+    
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k;
+    var temp;
+
+	temp = localStorage.getItem("swagman.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    orig_data = temp;
+    key_len = parseInt(localStorage.getItem("swagman.key_len") );  
+    setup_from_disk();
+	s = localStorage.getItem("swagman.layout");    
+	k=0;
+	for (i=0;i<2*key_len;i++){
+		for (j=0;j<numb_cols;j++) {
+            code_col[j][i] = s.charAt(k++);
+        }
+    }
+    update_display();
+    
+}
+
+function clear_disk(){
+	localStorage.removeItem("swagman.cipher");
+    localStorage.removeItem("swagman.ley_len");
+	localStorage.removeItem("swagman.layout");	
+	alert("work cleared from disk");
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Swagman Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; cursor: crosshair; font-family:monospace; font-size: 15px; height:400px; margin-right:10px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, then enter the column height)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+<!-- place to enter key_len -->
+<span id="key_lenblock">
+<br>
+<span style="font-weight:bold;">Enter column height=></span>
+<input type = text name=key_len_entry  size = 3 onKeyPress="checkEnter(event)">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="retrieve work from disk" onclick="get_from_disk()">
+
+</span>
+
+</form>
+
+<!-- mark off space for swap -->
+
+<div id="swapblock">
+
+</div>
+<div id="decrypt">
+</div>
+
+
+
+<!---------------------
+<Form name=debug>
+<BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+------->
+
+</BODY>
+</HTML>

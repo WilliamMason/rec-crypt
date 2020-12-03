@@ -1,0 +1,202 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<title>Words that expand key</title>
+<script type="text/javascript">
+var book_string = '';
+var word_list = [];
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+  
+
+function handleFiles(obj){
+	var str, fname;
+	fname = obj[0];
+	str = "handle file: "+fname.fileName;
+	//alert(str);
+	getAsText(fname);
+}
+
+function getAsText(readFile) {
+        
+  var reader = new FileReader();
+  // Handle progress, success, and errors
+  //reader.onprogress = updateProgress;
+  reader.onload = loaded;
+  reader.onerror = errorHandler;
+  
+  // Read file into memory as UTF-16
+  //reader.readAsText(readFile, "UTF-16");
+  reader.readAsText(readFile);
+  
+}
+
+function loaded(evt) {
+  // Obtain the read file data
+  var fileString = evt.target.result;
+  var s;
+  //alert("got to loaded");
+  // Handle UTF-16 file dump
+    //document.getElementById('output_area').value = fileString;
+  s = "The length of the file is "+fileString.length;
+  document.getElementById('output_area').value = s;
+  book_string = fileString;
+  construct_word_list();
+  
+}
+
+function errorHandler(evt) {
+  if(evt.target.error.code == evt.target.error.NOT_READABLE_ERR) {
+    // The file could not be read
+    alert("got error handler");
+  }
+}
+
+function construct_word_list(){ // construct word list from book_string
+  var i,j,k,n,c,s;
+  var space_flag,wrd;
+  //var alpha = 'abcdefghijklmnopqrstuvwxyz'; // made global
+  
+  space_flag = true;
+  book_string = book_string.toLowerCase();
+  word_list = [];
+  wrd = '';
+  for (i=0;i<book_string.length;i++){
+    c = book_string.charAt(i);
+    n = alpha.indexOf(c);
+    if ( n != -1 && space_flag){ //starting new word
+       wrd = c;
+       space_flag = false;
+    }
+    else if (n != -1 && !space_flag){ // in the middle of a word
+      wrd += c;
+    }
+    else if ( n == -1 && !space_flag){ //finished current word
+      word_list.push(wrd);
+      space_flag = true;
+    } // final case is n == -1 && space_flag, no action needed
+  }
+  s = document.getElementById('output_area').value;
+  s += " made word list with "+word_list.length+" words";
+  document.getElementById('output_area').value = s;
+}
+
+function do_find(){
+  var i,j,k,c,n,s;
+  var available_letters = '';
+  var remaining_key = '';
+  var cnt,complete_cnt, index,nxt_letter,fit_flag,already_used,wrd;
+  var all_complete_flag, all_fitting_flag;
+  var min_complete = 1000;
+  var shortest_complete = '(none)';
+  var output_str = '';
+  var temp_str = '\nAll fitting words:\n';
+  
+  if ( document.getElementById('all_complete').checked)
+    all_complete_flag = true;
+  else
+    all_complete_flag = false;
+    
+  if ( document.getElementById('all_fitting').checked)
+    all_fitting_flag = true;
+  else
+    all_fitting_flag = false;
+    
+  s = document.getElementById('available_letters').value;
+  s = s.toLowerCase();
+  for (i=0;i<s.length;i++){
+    c = s.charAt(i);
+    n = alpha.indexOf(c);
+    if (n!= -1)
+      available_letters +=c;
+  }
+  s = document.getElementById('remaining_key').value;
+  s = s.toLowerCase();
+  for (i=0;i<s.length;i++){
+    c = s.charAt(i);
+    n = alpha.indexOf(c);
+    if (n!= -1)
+      remaining_key +=c;
+  }
+  cnt = complete_cnt = 0;
+  for (i=0;i<word_list.length;i++){
+    wrd = word_list[i];
+    index = 0;
+    fit_flag = true;
+    nxt_letter = remaining_key.charAt(index);
+    already_used = available_letters.slice(0); // use copy because it will change
+    for (j=0;j<wrd.length;j++){
+      c = wrd.charAt(j);
+      if ( c == nxt_letter){
+        already_used += c;
+        index++ ;
+        if (index< remaining_key.length)
+          nxt_letter = remaining_key.charAt(index);
+        else {
+          nxt_letter = '(none)';
+        }
+      }
+      else { // c is not the next letter, is it in availlble letters?
+        n = already_used.indexOf(c);
+        if (n == -1) { // not available, word doesn't fit
+          fit_flag = false;
+          break;
+        }
+      }
+    }
+    if ( fit_flag && index>0){ // at least patial fit
+      if (all_fitting_flag){
+        temp_str += wrd+' ';
+      }
+      cnt++;
+      if (nxt_letter == '(none)'){
+          if ( all_complete_flag){
+            if ( complete_cnt == 0)
+              output_str += 'complete words\n'
+            output_str += wrd+' ';
+          }
+          complete_cnt++;
+          if (wrd.length<min_complete){
+            min_complete = wrd.length;
+            shortest_complete = wrd;
+          }
+      }
+    }
+  }
+  output_str += "\nThere were "+cnt+" fitting words";
+  output_str += "\nthere were "+complete_cnt+" words that used all the letters";
+  output_str += "\n shortest complete word is: "+shortest_complete;
+  if ( all_fitting_flag)
+    output_str += temp_str;
+  document.getElementById('output_area').value = output_str;
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3>Words that expand key</h3> Guess original key words before repeated letters removed from key.<br>
+Choose word list file. Enter key words already known and key segment remaining. Click "Find words"
+<br><br>
+<input type="file" id="input" onchange="{handleFiles(this.files)}">
+<br><br>
+Part of key already known <input type="text" id="available_letters">
+&nbsp;&nbsp;&nbsp;&nbsp;
+Key segment remaining <input type="text" id = "remaining_key" >
+<br><br>
+<input type="button" value = "Find words" onclick = "do_find()">
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id = "all_complete">
+ Show words filling all of key segment remaining.
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id = "all_fitting">
+ Show all fitting words
+
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=15>
+</textarea>
+
+<br>
+</body>
+</html>

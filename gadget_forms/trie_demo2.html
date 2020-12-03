@@ -1,0 +1,206 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script type="text/javascript">
+var EMPTY = -1;
+var END_OF_WORD_INDEX = 26;
+var LETTER_INDEX = 27; // only need for display purposes
+var CHANGED = 28; // display this trie element
+var trie = new Array();
+var max_trie_index;
+var alpha = "abcdefghijklmnopqrstuvwxyz";
+var old_trie = new Array();
+
+function new_trie_element(indx,n){
+	var i;
+	
+	trie[indx] = new Array();
+	for ( i=0;i<26;i++)
+		trie[indx][i] = EMPTY;
+	trie[indx][END_OF_WORD_INDEX] = 0;
+	trie[indx][LETTER_INDEX] = n;
+	// keep old trie same size as new
+	old_trie[indx] = new Array();
+	for ( i=0;i<26;i++)
+		old_trie[indx][i] = EMPTY;
+	old_trie[indx][END_OF_WORD_INDEX] = 0;
+	old_trie[indx][LETTER_INDEX] = n;	
+	
+}
+
+function insert_word(wrd){
+	var i,j,c,n;
+	var current_index,next_index;
+
+	c = wrd.charAt(0);
+	n = alpha.indexOf(c);
+	if ( n == -1) return;
+	current_index = n;
+	if (wrd.length == 1){
+		trie[n][END_OF_WORD_INDEX] = 1;
+		return;
+	}
+	for (i=1;i<wrd.length;i++){
+		c = wrd.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n == -1) continue; // skip dashes and apostophes, if they haven't already been removed
+		next_index = n;
+		if (trie[current_index][next_index] == EMPTY){
+			new_trie_element(max_trie_index,next_index);
+			trie[current_index][next_index] = max_trie_index;
+			max_trie_index++;
+		}
+		current_index = trie[current_index][next_index];
+	}
+	trie[current_index][END_OF_WORD_INDEX] = 1;
+}
+
+function word_search(){ // word search from beginning of string
+	var i,c,current_index;
+	var cnt,len;
+	var str,pos,n;
+	var numb_words;
+
+	str = document.getElementById('next_word').value;	
+	buf_len = str.length;
+	pos = 0;
+	c = str.charAt(pos);
+	n = alpha.indexOf(c);
+	if ( n == -1) return([0,0,0]);
+	current_index = n;
+	if ( current_index<0 || current_index > 25) return( [0,0,0]); // maybe parsing an aristocrat and hit blank
+	len = trie[current_index][END_OF_WORD_INDEX];
+	numb_words = len;
+	cnt = 1;
+	old_trie[current_index][END_OF_WORD_INDEX] = CHANGED;
+	while( ++pos< buf_len){
+		c = str.charAt(pos);
+		n = alpha.indexOf(c);
+		if (n<0 || n>25) break; // maybe parsing an aristocrat and hit blank
+		old_trie[current_index][n] = CHANGED;
+		if ( trie[current_index][n] == EMPTY)
+			break;
+		cnt++;
+		current_index = trie[current_index][n];
+		old_trie[current_index][END_OF_WORD_INDEX] = CHANGED;
+		if ( trie[current_index][END_OF_WORD_INDEX] == 1) {// found word!
+			len = cnt;
+			numb_words++;
+		}
+	}
+	return( [len,cnt,numb_words] );//return length of longest word, and how many letters you could go in trie
+}
+
+function do_search(){
+	var result,str;
+	
+	result = word_search();
+	str = " &nbsp Letters searched: "+result[1]+", Words: "+result[2]+", Longest word: "+result[0];
+	document.getElementById('search_result').innerHTML=str;
+	show_trie();
+}
+	
+
+function next_word(){
+	var i,str;
+	
+	str = document.getElementById('next_word').value;
+	insert_word(str);
+	document.getElementById('search_result').innerHTML=''; // erase old word search	
+	show_trie()
+}
+
+function clear_word(){
+	document.getElementById('next_word').value = '';
+	document.getElementById('search_result').innerHTML='';
+}
+
+function initialize(){
+	var str,i,s1;
+	
+	for (i=0;i<26*2;i++)
+		new_trie_element(i,i);
+	max_trie_index = 26;	
+	str = "I &nbsp L &nbsp  E &nbsp ";
+	for (i=0;i<26;i++)
+		str += alpha.charAt(i)+ ' &nbsp ';
+	str += '<br>';
+	s1 = " N &nbsp ";
+	for (i=0;i<26;i++) s1+= "- &nbsp ";
+	s1 += '<br>';
+	for (i=0;i<10;i++)
+		str += i+" &nbsp "+alpha.charAt(i)+"  &nbsp"+s1;
+	for (i=10;i<26;i++)
+		str += i+"&nbsp "+alpha.charAt(i)+"  &nbsp"+s1;
+		
+	document.getElementById('output_area').innerHTML = str;
+}
+
+function show_trie(){
+	var str,i,j;	
+
+	str = "I &nbsp L &nbsp  E &nbsp ";
+	for (i=0;i<26;i++)
+		str += alpha.charAt(i)+ ' &nbsp ';
+	str += '<br>';
+	for (i=0;i<max_trie_index;i++){
+		if ( i<10)
+			str += i+" &nbsp "+alpha.charAt(trie[i][LETTER_INDEX])+"  &nbsp";
+		else
+			str += i+"&nbsp "+alpha.charAt(trie[i][LETTER_INDEX])+"  &nbsp";
+		if (trie[i][END_OF_WORD_INDEX]  == 0){
+				if (trie[i][END_OF_WORD_INDEX] != old_trie[i][END_OF_WORD_INDEX])
+					str += '<font color="red"> N &nbsp </font>';
+				else
+					str += " N &nbsp "
+		}
+		else if (trie[i][END_OF_WORD_INDEX] != old_trie[i][END_OF_WORD_INDEX])
+			str += '<font color="red"> Y &nbsp </font>';
+		else
+			str += " Y &nbsp "
+		old_trie[i][END_OF_WORD_INDEX] = trie[i][END_OF_WORD_INDEX];
+		for (j=0;j<26;j++){
+			if (trie[i][j]==EMPTY) {
+				if (trie[i][j] != old_trie[i][j])
+					str += '<font color="red">- &nbsp </font>';
+				else
+					str += "- &nbsp ";
+			}
+			else if (trie[i][j] != old_trie[i][j])
+				str += '<font color="red">'+trie[i][j]+'&nbsp </font>';
+			else 
+				str += trie[i][j]+"&nbsp ";
+			old_trie[i][j] = trie[i][j]
+		}
+		str += '<br>';
+	}
+	document.getElementById('output_area').innerHTML = str;	
+}	
+
+</script>
+</head>
+<body bgcolor="Silver" >
+<center><h3>Trie storage, search demo</h3></center><br>
+String: <input type="text" size = 10 id = "next_word" >
+<input type="button"  value= "insert word in trie" id = "next_word_button" onclick="next_word()">
+<input type="button"  value= "clear word"  onclick="clear_word()">
+<input type="button"  value= "search for words" id = "word_search_button" onclick="do_search()">
+<span id="search_result">
+</span>
+<br>
+Column labels: 
+I index of trie element,
+L letter for this index,
+E word end (Y/N)?,
+index numbers for next letter ( '-' for none)<br><br>
+
+<div id="output_area" style="font-family:monospace; font-size:12px;" >
+</div>
+<br>
+
+<script type="text/javascript">
+initialize();
+</script>
+
+</body>
+</html>

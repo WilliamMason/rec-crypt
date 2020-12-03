@@ -1,0 +1,465 @@
+<!-- Running key scratchpad, in javascript,  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Running Key Worksheet</TITLE>
+<script type="text/javascript">
+var fire_fox=!document.all;
+var curs_pos;
+var col_display=0;
+var porta_warning  = true;
+
+
+//make all three areas scroll together
+function scrolltheothers(){
+	var farea = document.runform.cipherarea;
+	var sarea = document.runform.keyarea;
+	var tarea = document.runform.plainarea;
+	sarea.scrollLeft = farea.scrollLeft;
+	tarea.scrollLeft = farea.scrollLeft;
+	setTimeout("scrolltheothers()",10);
+}
+window.onload = scrolltheothers;
+
+
+var code;
+var dobj, solving_flag =0;
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var ciph_type='vig';
+
+//next function is for positioning the cursor in a textarea
+function setSelectionRange(input, selectionStart, selectionEnd) {
+	if (input.createTextRange) {
+		var range = input.createTextRange();
+		range.collapse(true);
+		range.moveEnd('character', selectionEnd);
+		range.moveStart('character', selectionStart);
+		range.select();
+	}
+	else if (input.setSelectionRange) {
+		input.focus();
+		input.setSelectionRange(selectionStart, selectionEnd);
+	}
+}
+
+function show_column(where) {
+	
+	if (fire_fox) begin = where.selectionStart;
+	else {
+		sel = document.selection.createRange();
+		if(sel.text==""){
+			sel.text='???';
+			dummy = where.createTextRange();
+			dummy.findText('???');
+			dummy.select();
+			begin=where.value.indexOf('???');
+			document.selection.clear();
+		}
+	}
+	c = begin+1;
+	s = 'Clicked on column: '+c;
+	document.getElementById('col_position').innerHTML=s;
+	col_display=1;
+	//document.debug.output_area.value= begin;
+	
+}
+
+function decrypt_symbol(ci,ki,origin){
+	var v,s
+	
+	if (solving_flag==1) {//which cipher type is checked?
+		for (var i = 0;i<document.buttonarea.ctype.length;i++)
+			if (document.buttonarea.ctype[i].checked){
+				ciph_type = document.buttonarea.ctype[i].value;
+				break;
+		}
+		//update button area with the fixed cipher type
+		s = 'Cipher type: '
+		if (ciph_type=='vig') {
+		s += 'Vigenere'
+		}
+		else if(ciph_type=='bea'){
+		s += 'Beaufort'
+		}
+		else if(ciph_type=='var'){
+		s += 'Variant'
+		}
+		else if(ciph_type=='por'){
+		s += 'Porta'
+		}        
+		s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+		s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+		document.getElementById('button_actions').innerHTML=s;
+		solving_flag=2;
+	}
+	if (ki<0 || ki>25)
+		return(26); // index of dash in symbols array
+	if (ciph_type=='vig') {
+		v = (26-ki+ci)%26;
+		return(v);
+	}
+	else if(ciph_type=='bea'){
+		if ( origin==1) ci = - ci;
+		v = (26+ki+ci)%26;
+		//document.debug.output_area.value= ki+' '+ci+' '+v;
+		return(v);
+	}
+	else if(ciph_type=='var'){
+		if ( origin==1) ci = - ci;
+		v = (26+ki-ci)%26;
+		//document.debug.output_area.value= ki;
+		return(v);
+	}
+	else if(ciph_type=='por'){
+		if ( origin==1) {
+            ky = Math.floor(ki/2);
+            v = ci;
+            if (v < 13){
+                v += ky;
+                if (v < 13) v += 13;
+            }
+            else {
+                v -= ky;
+                if (v > 12) v -= 13;
+            }
+        }
+        else { // if ki entered in plaintext area, can't narrow letter down to one choice.
+            //v = 26; // use this choice if you want to ignore top plaintext
+            if ( porta_warning){
+                s = "Porta Warning\n"
+                s += "The top plaintext letter could be one of two consecutive letters. ";
+                s += "Using the lower one\n(This warning won't be shown again.)"
+                alert(s);
+                porta_warning = false;
+            }
+            // exactly one of ki, ci is less than 13
+            v = ci-ki;
+            if ( v< 0 ) v = -v;
+            if ( v > 12 ) v -= 13;
+            v = 2*v; // could also be v = 2*v+1;
+            
+        }
+        return(v);
+	}
+}
+
+function drag_crib(row,dir) {
+	var t,s;
+	
+	if ( row=="top") {
+		t = document.getElementById('keytext').value;
+		if (dir=="right")
+			t = '-'+t.slice(0,-1)
+		else
+			t = t.slice(1)+'-';
+		s = ''
+		t = t.toLowerCase();
+		for (var i=0 ;i<code.length;i++) {
+			cic = code.charAt(i);
+			ci = letters.indexOf(cic)
+			ni = t.charAt(i);
+			n = symbols.indexOf(ni);
+			v = decrypt_symbol(ci,n,1);
+			s += symbols.charAt(v);
+		}
+	}
+	else {
+		s = document.getElementById('plaintext').value;
+		if (dir=="right")
+			s = '-'+s.slice(0,-1)
+		else
+			s = s.slice(1)+'-';
+		t = ''
+		s = s.toLowerCase();
+		for (var i=0 ;i<code.length;i++) {
+			cic = code.charAt(i);
+			ci = letters.indexOf(cic)
+			ni = s.charAt(i)
+			n = symbols.indexOf(ni);
+			v = decrypt_symbol(ci,n,0);
+			t += symbols.charAt(v);
+		}
+	}
+	document.getElementById('keytext').value=t;
+	document.getElementById('plaintext').value=s;
+}
+
+function setup_code() {
+	var s
+	
+	data = document.getElementById('cipher').value
+	data = data.toUpperCase();
+	
+	
+//	document.debug.output_area.value= data;
+	
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+				code = code+c;
+		}
+	}
+	solving_flag=1;
+	s = code;
+	document.getElementById('cipher').value=s;
+	s = "Select cipher type, then enter decrypted letters in top or bottom plaintext box";
+	s += '<br>To erase enter a dash "-". Can enter crib & use shift buttons to drag it<br>';
+	document.getElementById('directions').innerHTML=s;
+	s = '<INPUT onclick=drag_crib("top","left"); type=button value="<=shift Top Plaintext left" >';
+	s += '&nbsp &nbsp &nbsp &nbsp<INPUT onclick=drag_crib("top","right"); type=button value="shift Top Plaintext right=>" >';
+	s +='<br><br><INPUT onclick=drag_crib("bot","left"); type=button value="<=shift Bottom Plaintext left" >';
+	s += '&nbsp &nbsp <INPUT onclick=drag_crib("bot","right"); type=button value="shift Bottom Plaintext right=>" >';
+	document.getElementById('cribblock').innerHTML=s;
+//	document.debug.output_area.value= code;
+}
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		document.getElementById('cipher').value='';
+		document.getElementById('keytext').value='';
+		document.getElementById('plaintext').value='';
+		code = '';
+		solving_flag = 0;
+		s = '<INPUT onclick=make_template(); type=button value="Initialize" >'
+		document.getElementById('button_actions').innerHTML=s;
+		s='Directions: Type or paste cipher into the box labeled cipher. Then click the Initialize button.<BR><br>';
+		document.getElementById('directions').innerHTML=s;
+		s='&nbsp'
+		document.getElementById('cribblock').innerHTML=s;
+	}
+	
+}
+
+function start_over() {
+	solving_flag = 1; // change from 2 to 1 to allow change of cipher type
+	s= '';
+	for (i=0;i<code.length;i++)
+		s += '-';
+	document.getElementById('keytext').value=s;
+	document.getElementById('plaintext').value=s;
+	s='<form name="buttonarea"><input type="radio" checked name="ctype" value="vig"> Vigenere'
+	s +='<input type="radio" name="ctype" value="bea"> Beaufort'
+	s +='<input type="radio" name="ctype" value="var"> Variant'
+	s +='<input type="radio" name="ctype" value="por"> Porta'
+	s += '</form>'
+	s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+	s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+	document.getElementById('button_actions').innerHTML=s;
+}
+
+function make_template() {
+	var s;
+	
+	if (solving_flag==0) setup_code()
+	s= '';
+	for (i=0;i<code.length;i++)
+		s += '-';
+	document.getElementById('keytext').value=s;
+	document.getElementById('plaintext').value=s;
+	s='<form name="buttonarea"><input type="radio" checked name="ctype" value="vig"> Vigenere'
+	s +='<input type="radio" name="ctype" value="bea"> Beaufort'
+	s +='<input type="radio" name="ctype" value="var"> Variant'
+	s +='<input type="radio" name="ctype" value="por"> Porta'
+	s += '</form>'
+	s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+	s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+
+	document.getElementById('button_actions').innerHTML=s;
+}
+
+
+
+function process_key(e,where){
+	var x = e.keyCode;
+	if ( col_display==1) {
+		s = '&nbsp'
+		document.getElementById('col_position').innerHTML=s;
+		col_display=0;
+	}
+  	//document.debug.output_area.value= x;
+	if(x!=37&&x!=38&&x!=40&&x!=45&&x!=39&&x!=9){
+		if (x==8 || x == 46) {//backspace key or delete key
+			if (fire_fox) begin = where.selectionStart;
+			else {
+				sel = document.selection.createRange();
+				if(sel.text==""){
+					sel.text='???';
+					dummy = where.createTextRange();
+					dummy.findText('???');
+					dummy.select();
+					begin=where.value.indexOf('???');
+					document.selection.clear();
+				}
+			}
+			if (x==8)
+				 begin -= 1;
+			if (where.name == 'keyarea') {
+				k = 'keytext';
+				s = 'plaintext';
+			}
+			else {
+				s = 'keytext';
+				k = 'plaintext';
+			}
+			k1 =document.getElementById(k).value;
+			t = k1.slice(0,begin)+'-'+k1.slice(begin+1);
+			if (x==8)
+				t += '-';
+			document.getElementById(k).value=t;
+			s1 =document.getElementById(s).value;
+			t = s1.slice(0,begin)+'-'+s1.slice(begin+1);
+			document.getElementById(s).value=t;
+			//show_column(where,mv);
+			//reset cursor position, delay 10 milliseconds for updated string to get into place
+			setTimeout("setSelectionRange(document.getElementById(k), begin, begin)",10);
+			return;
+		}
+		overwrite(where);
+		//ci = document.getElementById('cipher').value;
+		if (where.name == 'keyarea') {
+			//update corresponding letter in plaintext
+			s = document.getElementById('plaintext').value
+			//document.debug.output_area.value= s;
+			if ( fire_fox) begin = where.selectionStart;
+			else begin = curs_pos;
+			//document.debug.output_area.value= x+"at "+begin;
+			//cic = ci.charAt(begin);
+			cic = code.charAt(begin);
+			ci = letters.indexOf(cic)
+			n = x-65;
+			//document.debug.output_area.value= n;
+			v = decrypt_symbol(ci,n,1);
+			t = s.slice(0,begin)+symbols.charAt(v)+s.slice(begin+1)
+			//document.debug.output_area.value= v;
+			document.getElementById('plaintext').value=t;
+		}
+		if (where.name == 'plainarea') {
+			//update corresponding letter in keytext
+			s = document.getElementById('keytext').value
+			if ( fire_fox) begin = where.selectionStart;
+			else begin = curs_pos;
+			//cic = ci.charAt(begin);
+			cic = code.charAt(begin);
+			ci = letters.indexOf(cic)
+			n = x-65;
+			v = decrypt_symbol(ci,n,0);
+			t = s.slice(0,begin)+symbols.charAt(v)+s.slice(begin+1)
+			document.getElementById('keytext').value=t;
+		}
+
+	}
+}
+
+function overwrite(where) {
+
+ if (document.selection) { //Internet explorer
+	where.focus();
+	sel = document.selection.createRange();
+	if(sel.text==""){
+		sel.text='???';
+		dummy = where.createTextRange();
+		dummy.findText('???');
+		dummy.select();
+		pos=where.value.indexOf('???');
+		//document.debug.output_area.value= "here";
+		curs_pos = pos;//global variable
+		//document.debug.output_area.value= curs_pos;
+		begin=pos;
+		document.selection.clear();
+		dummy.moveEnd('character',1);
+		dummy.select();
+		where.focus();
+	}
+ }
+ else if (where.selectionStart || where.selectionStart == '0') {//Firefox
+	begin = where.selectionStart;
+	end = where.selectionEnd;
+	//document.debug.output_area.value= where.name;
+	if(end==begin){
+		where.selectionEnd=end+1;
+		where.focus();
+	}
+ }
+}
+
+
+
+
+	
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Running Key Worksheet</span>  (also autokey & interruped key)</center><br>
+
+<form name="runform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Type or paste cipher into the box labeled cipher. Then click the Initialize button.<BR><br>
+</div>
+Cipher: <br>
+<div id = "controlArea"
+<!-- mark space for cipher -->
+<textarea id="cipher"  name = "cipherarea" cols=90; wrap="off" onscroll="scrolltheothers()"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+</div>
+Top Plaintext:<br>
+<!-- mark area for key-->
+<textarea  id="keytext" name = "keyarea" cols=91 wrap="off" onkeydown="process_key(event,this)"
+onclick="show_column(this)"
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+
+<br>
+Bottom Plaintext:<br>
+<!-- mark area for plaintext-->
+<textarea id="plaintext" name = "plainarea" cols=91 wrap="off" onkeydown="process_key(event,this)"
+onclick="show_column(this)"
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+</form>
+<br>
+
+
+<div id="col_position">
+&nbsp
+</div>
+
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+
+<INPUT onclick=make_template(); type=button value="Initialize" >
+</div>
+
+<!-- container for crib dragging -->
+<div id="cribblock"
+style="float:left; margin-left:50px; margin-top:30px;">
+&nbsp
+<!--
+<INPUT onclick=drag_crib(); type=button value="Enter a crib" >
+<br>
+<INPUT onclick=drag_left(); type=button value="<- (crib left)" >
+<INPUT onclick=drag_right(); type=button value="(crib right) ->" >
+-->
+</div>
+
+
+<!--
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
+

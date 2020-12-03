@@ -1,0 +1,42 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Two-Square Key Search</title>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script src = "twosquare_key_search_main.js"></script>
+</head>
+<body bgcolor="Silver">
+<h3> Two-Square Key Word Search (unscramble key strings)</h3> 
+Directions: Fill in ciphertext, plaintext, and key input boxes ('-' for unknown is allowed in key boxes). Click "Key Search" button. (6x6 may take awhile)<br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows=5 cols=80>
+</textarea>
+<br>
+Plaintext:<br>
+<textarea id="plain_area" rows=3 cols=80>
+</textarea>
+<br>
+Left Key (input):<br>
+<input type = "text" id="key1_area" size = 50 >
+<br>
+Right Key (input):<br>
+<input type = "text" id="key2_area" size = 50 >
+
+<br>
+<input type="button" value="Key Search" id="do_calc" >
+<br>
+<div style="float:left; padding:10px;">
+Left Key (output):<br>
+<textarea id="output_area" rows=10 cols=50>
+</textarea>
+</div>
+<div style="float:left; padding:10px;">
+Right Key (output):<br>
+<textarea id="output2_area" rows=10 cols=60>
+</textarea>
+</div>
+
+</body>
+</html>

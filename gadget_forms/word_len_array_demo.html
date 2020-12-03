@@ -1,0 +1,357 @@
+<html>
+<!--- given a short string, show the number of words and their lengths at each position in the string -->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<!-- load word_list array, large list -->
+<!-- <script type="text/javascript" src="demo_list.js"> -->
+<script type="text/javascript" src="bigword.js">
+</script>
+
+<script type="text/javascript">
+var EMPTY = -1;
+var LETTER_INDEX = 0
+var END_OF_WORD_INDEX = 1
+var ALT_INDEX = 2;
+var NXT_INDEX = 3;
+var END_SYMBOL = 27;
+var trie = new Array();
+var max_trie_index;
+var alpha = "abcdefghijklmnopqrstuvwxyz";
+var plain_text = new Array();
+var buf_len;
+var CUT_OFF = 2;
+
+var backtrack_lengths = new Array();
+
+var reverse_trie_start = new Array();
+	
+function new_trie_element(indx){
+	var i;
+	
+	trie[indx] = new Array();
+	trie[indx][LETTER_INDEX]= EMPTY;
+	trie[indx][END_OF_WORD_INDEX]= 0;
+	trie[indx][ALT_INDEX]= EMPTY;
+	trie[indx][NXT_INDEX]= EMPTY;
+}
+
+function insert_word(wrd){
+	var i,j,c,n;
+	var current_index,next_index,next_letter;
+
+	c = wrd.charAt(0);
+	n = alpha.indexOf(c);
+	if ( n == -1) return;
+	current_index = n;
+	if (wrd.length == 1){
+		trie[n][END_OF_WORD_INDEX] = 1;
+		return;
+	}
+	next_index = trie[current_index][NXT_INDEX];	
+	for (i=1;i<wrd.length;i++){
+		c = wrd.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n == -1) continue; // skip dashes and apostophes, if they haven't already been removed
+		next_letter = n;
+		if (next_index == EMPTY){
+			new_trie_element(max_trie_index);
+			trie[current_index][NXT_INDEX] = max_trie_index;
+			trie[max_trie_index][LETTER_INDEX]=next_letter;
+			next_index = max_trie_index;
+			max_trie_index++;
+		}
+		else while(1){
+			if (trie[next_index][LETTER_INDEX] == next_letter) break;
+			current_index = next_index;
+			next_index = trie[current_index][ALT_INDEX];
+			if ( next_index == EMPTY){
+				new_trie_element(max_trie_index);
+				trie[current_index][ALT_INDEX] = max_trie_index;
+				trie[max_trie_index][LETTER_INDEX]=next_letter;
+				next_index = max_trie_index;
+				max_trie_index++;
+			}
+		}
+		current_index = next_index;
+		if ( i== wrd.length-1)
+			trie[current_index][END_OF_WORD_INDEX]=1;
+		else
+			next_index = trie[current_index][NXT_INDEX];
+	}
+
+}
+
+function insert_rev_word(wrd){
+	var i,j,c,n,le;
+	var current_index,next_index;
+
+	le = wrd.length;
+	c = wrd.charAt(le-1);// last char in word
+	n = alpha.indexOf(c);
+	if ( n == -1) return;
+	current_index = reverse_trie_start[n];
+	if (wrd.length == 1){
+		trie[current_index][END_OF_WORD_INDEX] = 1;
+		return;
+	}
+	next_index = trie[current_index][NXT_INDEX];	
+	for (i=1;i<wrd.length;i++){
+		c = wrd.charAt(le-1-i);
+		n = alpha.indexOf(c);
+		if ( n == -1) continue; // skip dashes and apostophes, if they haven't already been removed
+		next_letter = n;
+		if (next_index == EMPTY){
+			new_trie_element(max_trie_index);
+			trie[current_index][NXT_INDEX] = max_trie_index;
+			trie[max_trie_index][LETTER_INDEX]=next_letter;
+			next_index = max_trie_index;
+			max_trie_index++;
+		}
+		else while(1){
+			if (trie[next_index][LETTER_INDEX] == next_letter) break;
+			current_index = next_index;
+			next_index = trie[current_index][ALT_INDEX];
+			if ( next_index == EMPTY){
+				new_trie_element(max_trie_index);
+				trie[current_index][ALT_INDEX] = max_trie_index;
+				trie[max_trie_index][LETTER_INDEX]=next_letter;
+				next_index = max_trie_index;
+				max_trie_index++;
+			}
+		}
+		current_index = next_index;
+		if ( i== wrd.length-1)
+			trie[current_index][END_OF_WORD_INDEX]=1;
+		else
+			next_index = trie[current_index][NXT_INDEX];
+	}
+	
+}
+
+
+function make_trie(){ // both forward and reverse
+	var i;
+	
+	for (i=0;i<26;i++){
+		new_trie_element(i);
+		trie[i][LETTER_INDEX]=i;
+		new_trie_element(i+26);
+		trie[i+26][LETTER_INDEX]=i;		
+	}
+	for (i=0;i<26;i++)
+		reverse_trie_start[i] = i+26;
+	max_trie_index = 26*2;
+	for (i in word_list) {
+		insert_word(word_list[i]);
+		insert_rev_word(word_list[i]);
+	}
+
+}
+
+function initialize(){
+	var str,n;
+	
+	make_trie();
+	n = word_list.length;
+	str = "loaded "+n+" words using "+max_trie_index+" forward and reverse trie elements";
+	document.getElementById('output_area').value = str;		
+}
+
+function word_search(n){ // n is starting index in plain_text array
+	var i,c,current_index;
+	var cnt,len, numb_words,next_index, pos;
+
+	
+	numb_words = 0;
+	//backtrack_lengths[n][0]=0;
+	current_index = plain_text[n];
+	if ( current_index<0 || current_index > 25) return( [0,0]); // maybe parsing an aristocrat and hit blank
+	len = trie[current_index][END_OF_WORD_INDEX];
+	if ( len==1 || plain_text[n+1]==END_SYMBOL){
+		len=1;
+		numb_words = 1;
+		backtrack_lengths[n][numb_words]=len;
+	}
+	cnt = 1;
+	next_index = trie[current_index][NXT_INDEX];
+	pos= n+1;
+	while( pos< buf_len && next_index != EMPTY){
+		c = plain_text[pos];
+		if (c<0 || c>25) break; // maybe parsing an aristocrat and hit blank
+		if ( trie[next_index][LETTER_INDEX] == c){
+			cnt++;
+			if (trie[next_index][END_OF_WORD_INDEX] == 1 || plain_text[pos+1]==END_SYMBOL){
+				len = cnt;
+				numb_words++;
+				backtrack_lengths[n][numb_words]=len;
+			}
+			next_index = trie[next_index][NXT_INDEX];
+			pos++;
+		}
+		else
+			next_index = trie[next_index][ALT_INDEX];
+	}
+	//return length of longest word, and number of words (lengths stored in backtrack_lengths array)
+	return( [len,numb_words] );
+}
+
+function suffix_search(n,len){ // n is position in plain_text array, len is suffix length you are looking for
+	var i,c,current_index;
+	var cnt, numb_words,next_index, pos;
+
+	pos = n;
+	c = plain_text[n];
+	if ( c<0 || c>25) return(0); // not a letter
+	current_index = reverse_trie_start[c];
+	next_index = trie[current_index][NXT_INDEX];
+	cnt = 1;
+	if ( cnt >=len) return(len); // long enough suffix!
+	while( next_index != EMPTY){
+		if ( trie[next_index][LETTER_INDEX] == c){
+			cnt++;
+			if ( cnt >=len) return(len); // long enough suffix!
+			next_index = trie[next_index][NXT_INDEX];
+			pos--; // never negative because len is known to be OK, and you will never go past that
+			c = plain_text[pos]; 
+		}
+		else
+			next_index = trie[next_index][ALT_INDEX];
+	}
+	return(cnt);
+}
+			
+
+function rev_word_search(n){ // n is index of last letter from word in plain_text array
+	var i,c,current_index;
+	var cnt,len, numb_words,next_index, pos;
+
+	numb_words = 0;
+	i = plain_text[n];
+	if ( i<0 || i > 25) return( [0,0]); // maybe parsing an aristocrat and hit blank
+	current_index = reverse_trie_start[i];
+	len = trie[current_index][END_OF_WORD_INDEX];
+	if ( len==1){
+		numb_words = 1;
+	}
+	cnt = 1;
+	next_index = trie[current_index][NXT_INDEX];
+	pos= n-1;
+	while( pos>=0 && next_index != EMPTY){
+		c = plain_text[pos];
+		if (c<0 || c>25) break; // maybe parsing an aristocrat and hit blank
+		if ( trie[next_index][LETTER_INDEX] == c){
+			cnt++;
+			if (trie[next_index][END_OF_WORD_INDEX] == 1){
+				len = cnt;
+				numb_words++;
+			}
+			next_index = trie[next_index][NXT_INDEX];
+			pos--;
+		}
+		else
+			next_index = trie[next_index][ALT_INDEX];
+	}
+	//return length of longest word, and number of words (lengths stored in backtrack_lengths array)
+	return( [len,numb_words] );
+}
+
+
+
+function get_word_table(){
+	var i,n,str,result, numb_words, back_limit;
+	var parse_flag,pos;
+	var score, bad_count;
+	var extended_score;
+	var max_index, suffix_length;
+	var word_length = new Array();
+	var max_numb_words;
+	var backtrack = new Array();	
+	var previous_attempt = new Array();
+	var no_parses,j1,k1,l1,old_pos;
+	
+	back_limit = 20; // make this an option
+	
+	
+	// get input data into plain_text array
+	str = document.getElementById('input_area').value;
+	str = str.toLowerCase();
+	buf_len = 0;
+	for (i=0;i<str.length;i++){
+		n = alpha.indexOf( str.charAt(i) );
+		if ( n> -1)
+			plain_text[buf_len++] = n;
+	}
+	plain_text[buf_len] = END_SYMBOL; // to identify prefixes
+	for (i=0;i<buf_len;i++){
+		backtrack_lengths[i] = new Array();
+		for (n=0;n<back_limit;n++) backtrack_lengths[i][n]=0;
+	}
+	
+	pos = 0;
+	max_numb_words = 0;
+	while(pos<buf_len){
+		result = word_search(pos)
+		n = result[0];
+		numb_words = result[1];
+		backtrack[pos]=numb_words;
+		if (numb_words> max_numb_words) max_numb_words = numb_words;
+		pos++;
+	}
+	pos = 0;
+	str = '';
+	for (i=0;i<buf_len;i++){
+		str += alpha[plain_text[i]]+'  ';
+	}
+	str += '\n';
+	for (i=1;i<=max_numb_words;i++){ // i is row variable, n is column variable, backtrack lengths in row 0 always 0
+		for (n=0;n<buf_len;n++){
+			if ( i<=backtrack[n]){ // one of more words start at n
+				str += backtrack_lengths[n][i];
+				if (backtrack_lengths[n][i]<10)
+					str += ' '; // keep columns aligned
+			}
+			else if (i==1) str += '0 '; // no words start at n
+			else str += '..';
+			str += ' ';
+		}
+		str += '\n';
+	}
+					
+			
+	document.getElementById('output_area').value = str;			
+}
+
+
+
+
+function do_clear(){
+	document.getElementById('input_area').value = '';
+	document.getElementById('output_area').value = '';
+}
+
+</script>
+</head>
+<body bgcolor="Silver" >
+<h3> Word length table </h3>
+Directions: Type or paste a plaintext or trial decrypt into the top box. Click on button.<br><br>
+Plaintext or trial decrypt:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Table (includes lengths for prefixes):<br>
+<textarea id="output_area"  rows = 10 style="width:90%;"  wrap="off">
+</textarea>
+<br>
+<input type="button" value="show table of word lengths" onclick=get_word_table();>
+<input type="button" value="Clear" onclick=do_clear();>
+
+<br><br>
+<!---
+<input type="button" value="load" onclick=initialize();>
+-->
+<script type="text/javascript">
+initialize();
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,300 @@
+<html>
+<!--
+Four-square crib drag
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<TITLE>Four-square crib drag</TITLE>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var crib = [];
+var EMPTY = -1;
+
+var flag_6x6;
+var numb_symbols;
+var keysquare_width;
+
+var crib_len;
+var sq1 = [];
+var sq2  = [];
+var J_index;
+var used_let = [];
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('input_area').value;
+  data = data.toUpperCase();
+  data = data.replace(/Ø/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+	state=0;
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( !flag_6x6 && c =='J'){
+		    alert('Cipher has a J');
+			return(false);
+		}
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	if ( (cnt%2) != 0 ) {
+		alert("Cipher has odd number of symbols!");
+		return(false);
+	}
+	return(true);
+}
+
+
+function do_drag(){
+var result,s,n,c,i,cnt,crib_pos,out_str;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+
+  if (document.getElementById('play6').checked) {
+    flag_6x6 = true;
+    alpha = 'a1b2c3d4e5f6g7h8i9j0klmnopqrstuvwxyz';
+    symbols = "A1B2C3D4E5F6G7H8I9J0KLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 36; // global
+    keysquare_width = 6; //global
+  }
+  else {
+    flag_6x6 = false;
+    alpha = 'abcdefghijklmnopqrstuvwxyz';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 26; // global
+    keysquare_width = 5; //global
+  }
+	result = setup_code(); // get code and convert to numbers
+	if ( result == false)
+		return;
+	s = document.getElementById('crib').value;
+	s = s.toUpperCase();
+	if ( s==''){
+		alert("No crib entered!");
+		return;
+	}
+	crib = [];
+	cnt = 0;
+	for (i=0;i<s.length;i++) {
+		c = s.charAt(i);
+		if ( !flag_6x6 && c =='J') c = 'I'
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  crib[cnt++]=n
+		}
+	}
+    crib_len = cnt;
+    // set up sq arrays
+    for (i=0;i<keysquare_width;i++){
+        sq1[i] = [];
+        sq2[i] = [];
+    }
+    J_index = symbols.indexOf('J');
+
+	out_str = 'Crib positions (positions start at 0):\n';
+	for (crib_pos=0;crib_pos<code.length - crib.length+1;crib_pos++) {
+		result = test_pos(crib_pos);
+		if ( result != -1) {
+			out_str += "Position "+crib_pos+" OK\n";
+			// add crib string you can paste into hill-climber
+			cnt = 0;
+			for (i=0;i<crib_pos;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=0;i<crib.length;i++){
+				out_str += alpha.charAt(crib[i]);
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			for (i=crib_pos+crib.length;i<code.length;i++){
+				out_str += '-';
+				if (++cnt == 50){
+					out_str += '\n';
+					cnt = 0;
+				}
+			}
+			out_str += '\n\n';
+		}
+	}
+	document.getElementById('output_area').value = out_str;
+	
+}
+
+function test_pos(start_pos){
+        var j,k,index,x,y,i;
+        var c,c1,c2,c3,c4;
+        var row1,col1,row2,col2;
+        var flag;
+
+        /* intialize array */
+		for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)
+			sq1[i][j] = sq2[i][j] = -1;
+        /* start at even or odd pos?*/
+        if ( start_pos&1) {
+                index = 1;
+        }
+        else
+                index = 0;
+        /* find cipher text letters that correspond to the crib
+                at start_pos */
+        flag = 0;
+        for (j=index;j<crib_len;j=j+2) {
+                c1 = code[start_pos+j];
+                if ( j==crib_len-1) { /* can't test last pair */
+                        flag = 1;
+                        break;
+                } /* end if */
+                c2 = code[start_pos+j+1];
+                c3 = crib[j];
+                c4 = crib[j+1];
+                if ( !flag_6x6 && c3 > J_index)
+                        c3--;
+                row1 = Math.floor(c3/keysquare_width);
+                col1 = c3 % keysquare_width;
+                if ( !flag_6x6 && c4 > J_index)
+                        c4--;
+                row2 = Math.floor(c4/keysquare_width);
+                col2 = c4 % keysquare_width;
+             if( sq1[row1][col2] != -1 && c1 != sq1[row1][col2]) {
+//                        printf("Not 1-1 at %li\n",start_pos);
+                        return(-1);
+                }
+                sq1[row1][col2] = c1;
+              if( sq2[row2][col1] != -1 && sq2[row2][col1] != c2) {
+//                        printf("Not 1-1 at %li\n",start_pos);
+                        return(-1);
+                }
+                sq2[row2][col1] = c2;
+
+        }/* next j */
+        
+        /* check squares for duplicates */
+
+		for (i=0;i<numb_symbols;i++)
+			used_let[i] = 0;
+        for (j=0;j<keysquare_width;j++) for (k=0;k<keysquare_width;k++) {
+	        	if (sq1[j][k]== -1 ) continue;
+                if ( used_let[ sq1[j][k]] != 0) {
+//                         printf("Duplicate letters %i %i %c in square 1 at pos %li\n",
+//                                 j,k,sq1[j][k]+'a',start_pos);
+                        return(-1);
+                }
+                used_let[ sq1[j][k]] = 1;
+        }/* next k,j */
+
+		for (i=0;i<numb_symbols;i++)
+			used_let[i] = 0;		
+        for (j=0;j<keysquare_width;j++) for (k=0;k<keysquare_width;k++) {
+	        	if (sq2[j][k]== -1 ) continue;	        
+                if ( used_let[ sq2[j][k]] != 0) {
+//                         printf("Duplicate letters in square 2 at pos %li\n",
+//                                 start_pos);
+                                
+                        return(-1);
+                }
+                used_let[ sq2[j][k]] = 1;
+        }/* next k,j */
+        /* check start and end if not part of pair */
+
+        if ( index != 0) {// crib start not part of pair 
+                c1 = code[start_pos-1];
+                c2 = code[start_pos];
+                c4 = crib[0];
+                if ( !flag_6x6 && c4 > J_index)
+                        c4--;
+                row2 = Math.floor(c4/keysquare_width);
+                col2 = c4 % keysquare_width;
+                for (j=0;j<keysquare_width;j++) for (k=0;k<keysquare_width;k++) {
+                        if ( k == col2) continue;
+                        if ( sq1[j][k] == c1) {// not in correct column
+//                                 printf("Duplicate letters in square 1 at pos %li\n",
+//                                         start_pos);
+
+                                return(-1);
+                        }
+                }// next k,j
+                for (j=0;j<keysquare_width;j++) {
+                        if ( j== row2) continue;
+                        for (k=0;k<keysquare_width;k++)
+                                if ( sq2[j][k] == c2) {// not in correct row
+//                                         printf("Duplicate letters in sq 2 at pos %li\n",
+//                                         start_pos);
+                                        return(-1);
+                        }
+                }
+        } // end if 
+        if ( flag != 0) { // crib end not part of pair 
+                c1 = code[start_pos+crib_len-1];
+                c2 = code[start_pos+crib_len];
+                c3 = crib[crib_len-1];
+                if ( !flag_6x6 && c3 > J_index)
+                        c3--;
+                row1 = Math.floor(c3/keysquare_width);
+                col1 = c3 % keysquare_width;
+                for (j=0;j<keysquare_width;j++) for (k=0;k<keysquare_width;k++) {
+                        if ( k == col1) continue;
+                        if ( sq2[j][k] == c2) {// not in correct column
+//                                 printf("Duplicate letters in square 2 at pos %li\n",
+//                                         start_pos);
+                                return(-1);
+                        }
+                }// next k,j
+                for (j=0;j<keysquare_width;j++) {
+                        if ( j== row1) continue;
+                        for (k=0;k<keysquare_width;k++) 
+                                if ( sq1[j][k] == c1) {// not in correct row
+//                                         printf("Duplicate letters in sq 1 at pos %li\n",
+//                                                 start_pos);
+                                        return(-1);
+                        }
+                }
+        } // end if 
+		return(0);
+        
+} /* end test_pos */        
+
+	
+	
+</script>
+</head>
+<body bgcolor="Silver">
+<center><h3>Four Square crib drag</h3></center>
+Enter cipher and crib. If four-square is 6x6, check the 6x6 box. Click Drag button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows=10>
+</textarea>
+<br><br>
+Crib:
+<input type="text" size=25 id="crib">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Drag" onclick="do_drag()" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id="play6" > 6x6
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+
+<br>
+</body>
+</html>

@@ -1,0 +1,1706 @@
+<!-- Quagmire worksheet with crib dragging, in javascript -->
+<!-- Quagmire worksheet with crib dragging, in javascript -->
+<!-- allow periods up to 36 -->
+<!-- extended version, has double chaining/rectangle filling button -->
+<!-- extended version 2, includes frequency information -->
+<!-- version 3 allows multiple crib entries  -->
+<!-- version 4 allows additional key column moves  -->
+<!-- version 5 allows storing work in browser's local disk storage  -->
+<!-- version 6 edits instructions instructions  -->
+<!-- version 7 adds word list -->
+<!-- version 8 adds undo-redo -->
+<!--- version 9 adds get maximum chain option -->
+<!-- added vig family keyblock extend -->
+<!-- split off vig family from quagmire -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<TITLE> Vigenere family Worksheet </TITLE>
+<!-- load word_list array -->
+<script type="text/javascript" src="bigword.js">
+</script>
+
+<script type="text/javascript">
+
+var code,code_array,crib_pos,cribtext;
+var symbols="abcdefghijklmnopqrstuvwxyz-?"
+var c_symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ-?"
+var digits="0123456789";
+var period_row = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 10;
+var line_len = 90;
+var crib_entered=0;
+var pair_line_limit=28;
+var last_cell,numb_repeats;
+var period, data;
+var old_xlation;
+var pair_setup=0;
+var cpos;
+var q3_flag;
+
+//try associative array for key
+var quag_key = new Array();
+var inv_key = new Array();
+var plain_key = new Array();
+var columns_selected = new Array();
+var inv_code_key = new Array(); // for double chaining, inverse position within code keys
+var saved_key = new Array();
+var saved_plain_key = new Array();
+var freq = new Array();
+
+// multiple crib entries
+var temp_key = new Array();
+var temp_plain_key = new Array();
+var keep_key_flag=0;
+
+// trie stuff
+var EMPTY = -1;
+var END_OF_WORD_INDEX = 26;
+var trie = new Array();
+var max_trie_index;
+var alpha = "abcdefghijklmnopqrstuvwxyz";
+var fitting_words = new Array();
+var numb_fitting_words;
+var fitting_strings = new Array();
+var numb_fitting_strings;
+var TOO_MANY_WORDS = 1000;
+
+// undo and redo routines and variables
+
+var undo_array = []; // for quag key
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+var undo_array2 = []; // for plain key
+var redo_array2 = [];
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+    redo_array2[redo_index] = [];
+	for (i=0;i<=period;i++) for (j=0;j<26;j++)
+		redo_array[redo_index][c_symbols.charAt(j)+period_row.charAt(i)] = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+    for (i=0;i<26;i++)
+        redo_array2[redo_index][i] =plain_key[ i ];
+	
+    redo_index++;
+    undo_index--;
+	for (i=0;i<=period;i++) for (j=0;j<26;j++)
+		quag_key[c_symbols.charAt(j)+period_row.charAt(i)] = undo_array[undo_index][ c_symbols.charAt(j)+period_row.charAt(i) ];
+    for (i=0;i<26;i++)
+        plain_key[i] = undo_array2[undo_index][i];
+    document.getElementById('redo_button').disabled = false;
+    restore_original();
+    temp_save();
+
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<=period;i++) for (j=0;j<26;j++)
+		quag_key[c_symbols.charAt(j)+period_row.charAt(i)] = redo_array[redo_index][ c_symbols.charAt(j)+period_row.charAt(i) ];
+    for (i=0;i<26;i++)
+        plain_key[i] = redo_array2[redo_index][i];
+    restore_original();
+    temp_save();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+    undo_array2[undo_index] = [];
+	for (i=0;i<=period;i++) for (j=0;j<26;j++)
+		undo_array[undo_index][c_symbols.charAt(j)+period_row.charAt(i)] = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+    for (i=0;i<26;i++)
+        undo_array2[undo_index][i] =plain_key[ i ];
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+function new_trie_element(indx){
+	var i;
+	
+	trie[indx] = new Array();
+	for ( i=0;i<26;i++)
+		trie[indx][i] = EMPTY;
+	trie[indx][END_OF_WORD_INDEX] = 0;
+}
+
+function insert_word(wrd){
+	var i,j,c,n;
+	var current_index,next_index;
+
+	c = wrd.charAt(0);
+	n = alpha.indexOf(c);
+	if ( n == -1) return;
+	current_index = n;
+	if (wrd.length == 1){
+		trie[n][END_OF_WORD_INDEX] = 1;
+		return;
+	}
+	for (i=1;i<wrd.length;i++){
+		c = wrd.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n == -1) continue; // skip dashes and apostophes, if they haven't already been removed
+		next_index = n;
+		if (trie[current_index][next_index] == EMPTY){
+			new_trie_element(max_trie_index);
+			trie[current_index][next_index] = max_trie_index;
+			max_trie_index++;
+		}
+		current_index = trie[current_index][next_index];
+	}
+	trie[current_index][END_OF_WORD_INDEX] = 1;
+}
+
+function make_trie(){ // both forward and reverse
+	var i;
+	
+	for (i=0;i<26*2;i++)
+		new_trie_element(i);
+	max_trie_index = 26;
+	for (i in word_list) {
+		insert_word(word_list[i]);
+	}
+
+}
+
+function trie_initialize(){
+	var str,n;
+	
+	make_trie();
+	n = word_list.length;
+	str = "loaded "+n+" words using "+max_trie_index+" trie elements";
+	//document.getElementById('cipher_place').value = str;
+	//alert(str);
+}
+
+function get_trie_index(str){ // get index of last trie element in the string str, already verified that str is in trie
+	var i,c,current_index;
+	var cnt,len;
+
+	len = str.length;
+	c = str.charAt(0);
+	current_index = alpha.indexOf(c);
+	cnt = 1;
+	//if (cnt == len) return(current_index);
+	while(cnt < len){
+		c = str.charAt(cnt);
+		n =  alpha.indexOf(c);
+		current_index = trie[current_index][n];
+		cnt++;
+	}
+	return(current_index);
+}
+	
+
+function get_fitting_strings(s,len){ // get fitting strings of length len starting at position s
+	// extend from previous fitting strings array if len >1
+	var pos,letter,cell,c,c1;
+	var temp_strings, numb_temp;
+	var i,j,n,str,trie_index;
+	var inv_plain = new Array();
+    var row,c2,k,index,n2;
+	
+	pos = parseInt(s); // starting position in cipher
+	//temp_save(); // get current key into temp_key array so you can restore key when needed
+    for (i=0;i<26;i++) inv_plain[plain_key[i]]=i; //note: plain_key only changes when you swap columns in the key
+	if (len == 1) { // at start, no strings stored yet
+        get_inverse_key();
+		cell = code_array[pos]; // code symbol
+		letter = inv_key[cell]; // plaintext letter, or '-' if not filled in yet
+		if (letter == '-') { // all non used starting letters are possible
+            index=0;
+            row = code_array[pos].charAt(1);
+            c1 = code_array[pos].charAt(0);
+			for (i=0;i<26;i++) { // neither key nor inverse key changed in this loop
+				c = alpha.charAt(i);// is this letter unused in current row?
+                n = inv_plain[symbols.indexOf(c)];
+                c2 = c_symbols.charAt(n)+row;
+                k = quag_key[c2];
+                if ( k != '-' && k != c1)
+                    continue; // letter already taken
+                if (document.getElementById('por_type').checked){
+                    n2 = c_symbols.indexOf(c1);
+                    if ( (i<13 && n2< 13) || (i>=13 && n2>=13) )
+                        continue;
+                }                    
+                fitting_strings[index++]=c;
+            }
+			numb_fitting_strings = index;
+		}
+		else { //only one letter possible, consistency already checked, any letter can begin a word, so its ok
+			fitting_strings[0] = letter;
+			numb_fitting_strings = 1;
+		}
+	}
+	else { // fitting_strings array is set up
+		temp_strings = new Array(); // set up next fitting strings array
+		numb_temp = 0;
+		for (i=0;i<numb_fitting_strings;i++){
+			str = fitting_strings[i];
+			trie_index = get_trie_index(str);
+			if (trie[trie_index][END_OF_WORD_INDEX] == 1) // found word
+				fitting_words[numb_fitting_words++] = str;
+			if ( pos+len >= code_array.length) continue; // note: final entry in code array not a cipher symbol
+            reset_key();
+			for (j=0;j<len-1;j++){ // add letters from current fitting string to quag_key array
+				c = str.charAt(j);
+                row = code_array[pos+j].charAt(1);
+                c1 = code_array[pos+j].charAt(0);
+                n = inv_plain[symbols.indexOf(c)];
+                c2 = c_symbols.charAt(n)+row;
+				quag_key[c2]=c1;
+			}
+            get_inverse_key();
+			cell = code_array[pos+len-1]; // last code symbol
+			letter = inv_key[cell]; // plaintext letter, or '-' if not filled in yet
+            row = cell.charAt(1);
+            c1 = cell.charAt(0);
+			if ( letter == '-') { // not decoded yet;
+				for (j=0;j<26;j++){
+					if (trie[trie_index][j] != EMPTY) {// this is a possibility, check j for consistency
+                        c = alpha.charAt(j);// is this letter unused in current row?
+                        n = inv_plain[symbols.indexOf(c)];
+                        c2 = c_symbols.charAt(n)+row;
+                        k = quag_key[c2];
+                        if ( k != '-' && k != c1)
+                            continue; // letter already taken
+                        if (document.getElementById('por_type').checked){
+                            n2 = c_symbols.indexOf(c1);
+                            if ( (j<13 && n2< 13) || (j>=13 && n2>=13) )
+                                continue;
+                        }                              
+						temp_strings[numb_temp++] = str+c;
+                    }
+				}
+			}
+			else { // just one possibility, already consistent
+				j = alpha.indexOf(letter);
+				if (trie[trie_index][j] != EMPTY) // this is a possibility
+					temp_strings[numb_temp++] = str+letter;
+			}
+		}
+		// transfer new srings to fitting strings array
+		numb_fitting_strings = numb_temp;
+		for (i=0;i<numb_fitting_strings;i++)
+			fitting_strings[i] = temp_strings[i];
+	}
+    reset_key(); // back to position before this function called, position was saved in temp_key
+	return(numb_fitting_strings);
+}
+
+function show_choice(s){
+	var newword,str,pos,insert_pos;
+	var i,j;
+    var row,c,c1,c2,n;
+	var inv_plain = [];
+    
+	insert_pos = parseInt(s);
+	pos = document.getElementById('wordlist')
+	newword = pos.options[pos.selectedIndex].text
+    for (i=0;i<26;i++) inv_plain[plain_key[i]]=i; //note: plain_key only changes when you swap columns in the key
+	//str = "Choice is "+newword+"  at position "+insert_pos;
+	//alert(str);
+    for (j=0;j<newword.length;j++) {
+		c = newword.charAt(j);
+        row = code_array[insert_pos+j].charAt(1);
+        c1 = code_array[insert_pos+j].charAt(0);
+        n = inv_plain[symbols.indexOf(c)];
+        c2 = c_symbols.charAt(n)+row;
+		quag_key[c2]=c1;
+	}
+    // check that new word is consistent using double chaining
+    if ( !extend()) {
+        str = '"'+newword+'" is inconsistent with original array. Insertion canceled'
+        alert(str);
+        reset_key(); // quag array was inconsistent return to original key
+        get_inverse_key();
+        xlate();
+        restore_keyblock(0);
+    }
+}
+	
+
+function undo_key(){
+    reset_key();
+	xlate();
+	restore_keyblock(0);
+
+}
+
+
+function show_filtered_words(spos) {
+	var x;
+	if ( numb_fitting_words==0) {
+		alert("No words in list!");
+		return;
+	}
+	temp_save(); // so can undo
+	alts=["even","odd"];
+	str= 'Fitting words:<br><SELECT  size="5" id="wordlist">';
+	
+	state=0;
+	for (var i=0;i<numb_fitting_words;i++) {
+		str += '<OPTION class="'+alts[state]+'">'+fitting_words[i];
+		state ^=1 ;
+	}
+	str += '</select><br><input type="button" value="Insert and extend" onclick="show_choice('+spos+')">'
+	str += '<input type="button" value="Undo" onclick=undo_key()>';
+    display_message(str)
+
+}
+
+function get_fitting_words(s){
+	var str,n,m,le;
+	
+    temp_save();
+	numb_fitting_words = 0;
+	n = get_fitting_strings(s,1);
+	le = 2;
+	while( n>0){
+		n = get_fitting_strings(s,le);
+		le++;
+		if (numb_fitting_words > TOO_MANY_WORDS) break; // too many to use!
+	}
+	str = "There are "+numb_fitting_words+" fitting words at position: "+s+" . Show them?";
+	var show_words=confirm(str);
+	if ( show_words==true)
+		show_filtered_words(s);
+	//alert(str);
+}
+
+
+function save_pos(){
+	var v;
+	
+	for (v in quag_key)
+		saved_key[v] = quag_key[v];
+	for (v in plain_key)
+		saved_plain_key[v] = plain_key[v];
+	alert("key saved");
+}
+
+function restore_pos(){
+	var do_restore,v;
+	do_restore = confirm("restore key?")
+		if ( do_restore == true) {
+		keep_key_flag = 0;
+		for (v in saved_key)
+			quag_key[v] = saved_key[v];
+		for (v in saved_plain_key)
+			plain_key[v] = saved_plain_key[v];
+		//xlate();
+		//restore_keyblock(0);
+		restore_original();
+	}
+	
+}
+
+function temp_save(){
+	var v;
+	
+	keep_key_flag = 1;
+	for (v in quag_key)
+		temp_key[v] = quag_key[v];
+	for (v in plain_key)
+		temp_plain_key[v] = plain_key[v];
+}
+
+
+
+function freq_color_display(){
+	var i,j,s;
+	
+	s='';
+	s += '<b>Frequency Legend:</b> ';
+	for (i=0;i<5;i++){
+		if (i>=4)
+			co = 'white';
+		else if (i==3)
+			co = 'yellow';
+		else if (i==2)
+			co = 'pink';
+		else if (i==1)
+			co = 'orange';
+		else
+			co = 'silver'
+
+		s = s+'<span width="75" height="75" style="border: 2px solid black; padding:2px;background:'+co+';"  >';
+		s=s+'&nbsp<span width="75" height = "75" style="color:blue">';
+		s=s+i+'</span> ';
+		if ( i==4)
+			s += '+';
+		s +='</span>';
+	}
+	s=s+'&nbsp <br>';
+	document.getElementById('freq_legend').innerHTML= s;
+}
+
+function extend(){
+	var s,c,chain_flag,rect_flag;
+	var flag, total_changes,i,j;
+
+    if (document.getElementById('bea_type').checked)
+        flag = bea_extend();
+    else if (document.getElementById('por_type').checked)
+        flag = por_extend();
+    else
+        flag = vig_extend();
+    return(flag);
+        
+}
+
+function do_extend(){
+    var str;
+    
+    update_undo();
+    temp_save(); // in case we need to undo extension
+    if (!extend()){
+        str = ' Inconsistent with original array. Extension canceled'
+        alert(str);
+        reset_key(); // quag array was inconsistent return to original key
+        get_inverse_key();
+        xlate();
+        restore_keyblock(0);
+    }
+}
+
+function reset_key() {
+    var i,j;
+    
+	if (keep_key_flag==1 ) {
+		for (v in temp_key)
+			quag_key[v] = temp_key[v];
+		for (v in temp_plain_key)
+			plain_key[v] = temp_plain_key[v];
+	}
+	else {
+		period = parseInt(document.ciphertext.period_entry.value);
+		for (i=0;i<=period;i++) for (j=0;j<26;j++) {
+			quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ] = '-';
+		}
+		for (i=0;i<26;i++)
+			plain_key[i]= i;
+	}
+}
+
+function get_inverse_key() {
+	period = parseInt(document.ciphertext.period_entry.value);
+	for (i=0;i<period;i++) for (j=0;j<26;j++) {
+		inv_key[ c_symbols.charAt(j)+period_row.charAt(i) ] = '-';
+	}
+	for (i=0;i<period;i++) for (j=0;j<26;j++) {
+		if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-')
+		  inv_key[quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]+period_row.charAt(i) ]
+		  	= symbols.charAt( plain_key[j] );
+	}
+}
+
+
+function input_ok() {
+	var s='Ciphertext: (Put cipher into this box, select cipher type, then enter the period and press the ENTER key)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;
+    undo_index = redo_index = 0;
+}
+
+
+function setup_code_pairs() {
+	data = document.ciphertext.cipher_place.value;
+	if (data.length<2){
+		alert("No ciphertext entered!");
+		return;
+	}
+	data = data.toUpperCase();
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( c_symbols.indexOf(c) >-1 && c_symbols.indexOf(c)< 26) {
+				code = code+c;
+		code = code+period_row.charAt(state)+' ';
+		if ( ++state == period) state = 0;
+		}
+	}
+	//solving_flag=1;
+	code_array = code.split(' ');
+	old_xlation = ['-'];
+	for (i = 0;i<code_array.length-1;i++)
+		old_xlation[i]= '-';
+	pair_setup = 1;
+	document.body.style.cursor = 'crosshair';
+	// get ciphertext frequencies
+	for (i=0;i<26;i++) for (j=0;j<period;j++)
+		freq[ c_symbols.charAt(i)+period_row.charAt(j) ] = 0;
+	for (i in code_array)
+		freq[ code_array[i] ]++;
+    undo_index = redo_index = 0;
+}
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_pairs;
+	if (pair_setup ==0) {
+		setup_code_pairs();
+	}
+	get_inverse_key();
+	// next 3 lines for debugging
+	//s = "quag key at A1 is "+quag_key["A1"]+" ";
+	//s += "inv key at D1 is "+inv_key['D1'];
+	//document.debug.output_area.value= s;
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=pair_line_limit;
+	numb_pairs=code_array.length-1;//final entry not a code pair
+	if (numb_pairs<limit)
+		limit = numb_pairs;
+	pos=0;
+	cnt=0;
+	pl='';
+	while (pos<numb_pairs ) {
+		ce=code_array[pos];
+		str += ce+' '
+		c = inv_key[ce];
+		if ( old_xlation[pos] != c){
+			old_xlation[pos]=c;
+			pl = pl+'<font color="red"><span class = "plain'+pos+'">'+c+'&nbsp;&nbsp;</span></font>';
+		}
+		else
+			pl = pl+'<span class = "plain'+pos+'">'+c+'&nbsp;&nbsp;</span>';
+		//pl = pl+c+'&nbsp;&nbsp;';
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+			//str=str+'\n'+pl+'\n';
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			cnt=0;
+			if (pos+pair_line_limit>numb_pairs)
+				limit = numb_pairs-pos;;
+		}
+	}
+	//document.ciphertext.cipher_place.value=str;
+	document.getElementById('outputblock').innerHTML=str;
+	restore_keyblock(0);
+}
+	
+
+function selectmouse(e)
+{
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  var col_letter, col_index, new_cell;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = c_symbols.indexOf(dobj.className.charAt(0));
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s;
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  keep_key_flag = 0;
+	  dobj = fobj;
+	  letter=c_symbols.charAt(cpos);
+	  if ( letter == '?') // query doesn't apply to key table, should click on plaintext for query
+	  	return
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  row = dobj.className.charAt(1);
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;      
+      if (document.getElementById('por_type').checked){// must have reciprocal alphabet
+        col_letter = dobj.className.charAt(0);
+        col_index = c_symbols.indexOf(col_letter);
+        if ( (cpos < 13 && col_index<13) || (cpos >=13 && col_index>=13)) {
+            alert("Impossible choice. range a-m can only go to n-z and vice versa");
+            letterblock_setup();
+            do_undo();
+            return;
+        }
+        new_cell = letter+row;
+      }
+      
+	  if (letter != '-') {
+	  	// if letter appears someplace else in row remove it
+	  	for (i=0;i<26;i++){
+		  	c = c_symbols.charAt(i)+row;
+		  	if (c== cell) continue;
+		  	if (quag_key[c] == letter){
+			  	s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	  			s=s+'-'+'</span>';
+	  			document.getElementById(c+'keymatrix').innerHTML= s;
+	  			quag_key[c]='-';
+  			}
+            if (document.getElementById('por_type').checked){
+                if (quag_key[c] == col_letter){
+                    s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+                    s=s+'-'+'</span>';
+                    document.getElementById(c+'keymatrix').innerHTML= s;
+                    quag_key[c]='-';                
+                }
+            }
+		}
+	  }
+	  quag_key[ cell] = letter;
+      if (document.getElementById('por_type').checked)
+        quag_key[new_cell] = col_letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  //xlate();
+	  restore_original(); // dump green boxes
+      //next 3 lines for debugging
+	  //s = "you put it in row "+row+"\n";
+	  //s = s+quag_key;
+	  //document.debug.output_area.value= s;
+      return false;
+  }
+  else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
+	  keep_key_flag = 0;
+	  dobj = fobj;
+	  x = fobj.className.slice(5);
+	  p_letter=c_symbols.charAt(cpos);
+	  if ( p_letter == '?'){ // query, find fitting words
+	  	get_fitting_words(x);
+	  	//reset letter block
+	  	letterblock_setup();
+	  	return;
+      }
+	  cell = code_array[ parseInt(x)];
+	  row = cell.charAt(1);
+	  letter = cell.charAt(0);
+      update_undo();
+      document.getElementById('redo_button').disabled = true;
+      if (document.getElementById('por_type').checked){// must have reciprocal alphabet
+        //col_letter = dobj.className.charAt(0);
+        col_letter = letter;
+        col_index = c_symbols.indexOf(col_letter);
+        if ( (cpos < 13 && col_index<13) || (cpos >=13 && col_index>=13)) {
+            alert("Impossible choice. range a-m can only go to n-z and vice versa");
+            letterblock_setup();
+            do_undo();
+            return;
+        }
+        new_cell = letter+row;
+      }
+     
+      //next 3 lines for debugging
+	  //s = "using letter "+p_letter+" You clicked on pos "+x+" , which is below the codepair\n";
+	  //s = s+code_array[ parseInt(x)];
+	  //document.debug.output_area.value= s;
+	  letter_selected=0;
+	  //remove any previous copy of the cipher letter in this row
+      for (i=0;i<26;i++){
+		  	c = c_symbols.charAt(i)+row;
+		  	if (quag_key[c] == letter){
+			  	s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	  			s=s+'-'+'</span>';
+	  			document.getElementById(c+'keymatrix').innerHTML= s;
+	  			quag_key[c]='-';
+  	         }
+            if (document.getElementById('por_type').checked){
+                if (quag_key[c] == p_letter){
+                    s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+                    s=s+'-'+'</span>';
+                    document.getElementById(c+'keymatrix').innerHTML= s;
+                    quag_key[c]='-';                
+                }
+            }             
+      }
+	  if ( p_letter != '-') {// find column with this plaintext letter and insert cipher letter there
+	  	for (n=0;n<26;n++)
+	  		if (plain_key[n] == cpos) break;
+		cell = c_symbols.charAt(n)+row;
+	    quag_key[ cell] = letter;
+	    s= '<span width="75" height = "75" id ="'+cell+'keymatrix" class="'+cell+'keyblock" style="color:blue">';
+	    s=s+letter+'</span>';
+	    document.getElementById(cell+'keymatrix').innerHTML= s;
+        if (document.getElementById('por_type').checked){
+            quag_key[new_cell] = p_letter;
+            s= '<span width="75" height = "75" id ="'+new_cell+'keymatrix" class="'+cell+'keyblock" style="color:blue">';
+            s=s+p_letter+'</span>';
+            document.getElementById(new_cell+'keymatrix').innerHTML= s;            
+        }
+        
+      }
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  //xlate();
+	  restore_original();
+      return false;
+	}	  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = c_symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}
+	s=s+'<br>';
+	document.getElementById('letterblock').innerHTML=s;
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+
+	period = parseInt(document.ciphertext.period_entry.value);
+    s='';
+	s = s+'&nbsp'+'&nbsp';
+	//letters across the top
+	for (i=0;i<26;i++) {
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" >';
+			s=s+symbols.charAt( plain_key[i] )+'</span> </span>';
+	}
+	s=s+'<br>';
+	for (i=0;i<period;i++) {
+		cr = period_row.charAt(i);
+		//digit on the side
+		s = s+cr+'&nbsp';
+		//row of cells
+		for (j=0;j<26;j++) {
+			cc=c_symbols.charAt(j);
+			c = cc+cr;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'-'+'</span> </span>';
+		}
+		s=s+'&nbsp <br>';
+	}
+	s=s+'<br>';
+	document.getElementById('keyblock').innerHTML=s;
+
+}
+
+function restore_keyblock(flag) { // flag always 0 for Vig family
+	var s,i,c,co,v,j,c2;
+
+	period = parseInt(document.ciphertext.period_entry.value);
+	s='';
+	s = s+'&nbsp'+'&nbsp';
+	//letters across the top
+	for (i=0;i<26;i++) {
+			s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+			s=s+'&nbsp<span width="75" height = "75" >';
+			s=s+symbols.charAt( plain_key[i] )+'</span> </span>';
+	}
+	s=s+'<br>';
+	for (i=0;i<period;i++) {
+		cr = period_row.charAt(i);
+		//digit on the side
+		s = s+cr+'&nbsp';
+		//row of cells
+		for (j=0;j<26;j++) {
+			cc=c_symbols.charAt(j);
+			c = cc+cr;
+			v = quag_key[c];
+			c2 = v+cr;
+			if (freq[ c2 ]>=4)
+				co = 'white';
+			else if (freq[ c2 ]==3)
+				co = 'yellow';
+			else if (freq[ c2 ]==2)
+				co = 'pink';
+			else if (freq[ c2 ]==1)
+				co = 'orange';
+			else
+				co = 'silver'
+			
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background:'+co+';"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+v+'</span> </span>';
+		}
+		s=s+'&nbsp <br>';
+	}
+	
+	s=s+'<br>';
+	document.getElementById('keyblock').innerHTML=s;
+
+}
+
+
+function checkEnter(e){ //e is event object passed from function invocation by entering a new period
+	var characterCode //literal character code will be stored in this variable
+
+	//next 2 lines for debuging
+	//s = "you pressed a key";
+	//document.debug.output_area.value= s;
+		
+	if(e && e.which){ //if which property of event object is supported (NN4)
+		e = e
+		characterCode = e.which //character code is contained in NN4's which property
+	}
+	else{
+		e = event
+		characterCode = e.keyCode //character code is contained in IE's keyCode property
+	}
+	
+	if(characterCode == 13){ //reset period
+		//next 2 lines for debugging
+		period = parseInt(document.ciphertext.period_entry.value);
+		//s = "you pressed enter for period"+period;
+		//document.debug.output_area.value= s;
+		s = '<br>Period: <input type = text name=period_entry value =' +period+' size = 3 onKeyPress="checkEnter(event)">'
+		document.getElementById('periodblock').innerHTML=s;
+		start_over();
+		xlate();
+        update_undo();
+		return false
+	}
+	else{
+		return true
+	}
+
+}
+
+
+
+function start_over() {
+	if (pair_setup==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+	keep_key_flag = 0;
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+//	input_ok();
+	document.ciphertext.cipher_place.value=code;
+	xlate();
+    undo_index = redo_index = 0;
+    document.getElementById('redo_button').disabled = true;
+	//solving_flag=0;
+}
+	
+
+function redo() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		keep_key_flag = 0;
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		//solving_flag=0;
+		crib_entered=0;
+		pair_setup=0;
+	}
+}
+
+function ck_crib_pos() {
+	var c,pr,k,r,c1,c2,i,n,flag,j,k;
+    var c_start, n_start,n1,n2;
+	var inv_plain = new Array();
+	
+	//also set up quag_key and keyblock
+	//for speed, check consistency first
+	for (i=0;i<26;i++) inv_plain[plain_key[i]]=i;
+	keep_key_flag = 0;
+	reset_key();
+	get_inverse_key();
+	for (i=0;i<cribtext.length;i++) {
+		c = cribtext.charAt(i);
+		pr =code_array[crib_pos+i];
+		k = inv_key[pr];
+		if ( k != '-' && k != c) {
+			/* for speed,only reset at end, if not found!
+			reset_key();
+			keyblock_setup();
+			*/
+			return(0);
+		}
+		inv_key[code_array[crib_pos+i]]=c;
+		r = code_array[crib_pos+i].charAt(1);
+		c1 = code_array[crib_pos+i].charAt(0);
+        if (document.getElementById('por_type').checked){
+            n1 = symbols.indexOf(c);
+            n2 = c_symbols.indexOf(c1);
+            if ( (n1<13 && n2< 13) || (n1>=13 && n2>=13) )
+                return(0);
+        }
+		//c2 = c.toUpperCase() + r;
+		n = inv_plain[symbols.indexOf(c)];
+		c2 = c_symbols.charAt(n)+r;
+		k = quag_key[c2];
+		if ( k != '-' && k != c1) {
+			return(0);
+		}
+		quag_key[c2] = c1;
+	}
+    // check vig family key table
+    if (document.getElementById('bea_type').checked){
+        for (i=0;i<period;i++) {
+            flag = false;
+            for (j=0;j<26;j++) {
+                if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                    flag = true;
+                    c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                    n_start = c_symbols.indexOf(c_start);
+                    
+                }
+                if ( flag) break;
+            }
+            if (!flag) continue; // empty row, go to next row
+            n = n_start;
+            for (k = j+1;k<26;k++){ // fill row to right, check consistency
+                //n = (n+1)%26;
+                n = (25+n)%26; // fill in reverse alpha order
+                c = c_symbols.charAt(n)
+                c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+                if ( c1 != '-' && c1 != c){
+                    //c2 = i+1;
+                    //s = "Key inconsistent! Row "+c2+" not in reversed alphabetical order.";
+                    //alert(s);
+                    /*
+                    // restore original key block
+                    reset_key(); // quag array was inconsistent return to original key
+                    get_inverse_key();
+                    xlate();
+                    restore_keyblock(0);
+                    */
+                    return(0);
+                }
+                
+            }
+        }
+    
+    }
+    else if (document.getElementById('por_type').checked){
+// extend key block rows in alphabetical order.
+        for (i=0;i<period;i++) {
+            flag = false;
+            for (j=0;j<26;j++) { // key entries are reciprocals so they come in pairs, one <13 and one >= 13
+                if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                    flag = true;
+                    c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                    n_start = c_symbols.indexOf(c_start);
+                }
+                if ( flag) break;
+            }
+            if (!flag) continue; // empty row, go to next row
+            n = n_start;
+            for (k = j+1;k<26;k++){ // fill row to right, check consistency
+                n = (n+1)%26;
+                if ( k<13 && n==0) n = 13;
+                if ( k==13) break; // don't need to test the rest
+                c = c_symbols.charAt(n)
+                c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+                if ( c1 != '-' && c1 != c){
+                    /*
+                    c2 = i+1;
+                    s = "Key inconsistent! Row "+c2+" not in porta order.";
+                    alert(s);
+                    // restore original key block
+                    reset_key(); // quag array was inconsistent return to original key
+                    get_inverse_key();
+                    xlate();
+                    restore_keyblock(0);
+                    */
+                    return(0);
+                }          
+            }
+        }
+    }
+    else {
+        for (i=0;i<period;i++) {
+            flag = false;
+            for (j=0;j<26;j++) {
+                if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                    flag = true;
+                    c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                    n_start = c_symbols.indexOf(c_start);
+                    
+                }
+                if ( flag) break;
+            }
+            if (!flag) continue; // empty row, go to next row
+            n = n_start;
+            for (k = j+1;k<26;k++){ // fill row to right, check consistency
+                n = (n+1)%26;
+                //n = (25+n)%26; // fill in reverse alpha order
+                c = c_symbols.charAt(n)
+                c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+                if ( c1 != '-' && c1 != c){
+                    //c2 = i+1;
+                    //s = "Key inconsistent! Row "+c2+" not in reversed alphabetical order.";
+                    //alert(s);
+                    /*
+                    // restore original key block
+                    reset_key(); // quag array was inconsistent return to original key
+                    get_inverse_key();
+                    xlate();
+                    restore_keyblock(0);
+                    */
+                    return(0);
+                }
+                
+            }
+        }
+    
+    }
+	//it's consistent, update keyblock and screen
+	keyblock_setup();
+	for (i=0;i<cribtext.length;i++) {
+		c = cribtext.charAt(i);
+		c = c.toUpperCase();
+		pr =code_array[crib_pos+i];
+		c1 = pr.charAt(0);
+		r = pr.charAt(1);
+		pr = c+r;
+        s= '<span width="75" height = "75" id ="'+pr+'keymatrix" class="'+pr+'keyblock" style="color:blue">';
+	    s=s+c1+'</span>';
+	    document.getElementById(pr+'keymatrix').innerHTML= s;
+	}
+	return(1); //OK at crib_pos!
+}
+
+
+function drag_right() {
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}
+	not_found=1;
+	crib_pos++;
+	if (crib_pos>=code_array.length-cribtext.length+1)
+		crib_pos=0;
+	while(crib_pos< code_array.length-cribtext.length+1) {
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();
+	}
+
+	//fill in plaintext
+	xlate();
+	extend();
+}
+
+function drag_left(){
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}
+	not_found=1;
+	crib_pos--;
+	if (crib_pos<0)
+		crib_pos=code_array.length-cribtext.length;
+	while(crib_pos>=0) {
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+		crib_pos--;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();
+	}
+
+	//fill in plaintext
+	xlate();
+	extend();
+}
+
+function drag_crib() {
+	var flag;
+	var crib= prompt('Enter crib');
+	if (crib==' ' || crib==null)
+		return;
+
+
+	if (pair_setup ==0) {
+		setup_code_pairs();
+	}
+	flag = 0;
+	for (i=0;i<code_array.length-1;i++)
+		if(old_xlation[i] != '-') {
+			flag = 1;
+			break;
+	}
+	if (flag){
+		ck=confirm('Include current key table?');
+		if (ck == true)
+			temp_save();
+		else
+			keep_key_flag = 0;
+	}
+	
+	cribtext='';
+	crib = crib.toLowerCase();
+	for (i=0;i<crib.length;i++) {
+		c = crib.charAt(i);
+		if (symbols.indexOf(c) !=-1 ) {//allow '-' chars in crib!
+			cribtext = cribtext+c;
+		}
+	}
+	crib_pos=0;
+	not_found=1;
+	while(crib_pos< code_array.length-cribtext.length+1) {
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();
+	}
+	//fill in plaintext
+	xlate();
+	extend();
+	crib_entered=1;
+	//solving_flag = 1;
+}
+
+
+function redirect() {
+	window.location="quagmire_lowres.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+	//make sure browser size is maximized
+	top.window.moveTo(0,0);
+	if (!fire_fox)
+	    top.window.resizeTo(screen.availWidth,screen.availHeight);
+	else if (document.layers || document.getElementById){
+	   if (top.window.outerHeight < screen.availHeight || top.window.outerWidth <
+			screen.availWidth) {
+	      top.window.outerHeight = top.screen.availHeight;
+	      top.window.outerWidth = top.screen.availWidth;
+	   }
+	}
+}
+
+function restore_original(){
+	restore_keyblock(0);
+	xlate();
+
+}
+
+
+function save_to_disk(){
+	var i,j, str;
+	
+	period = parseInt(document.ciphertext.period_entry.value);
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	}
+	else {
+		try {
+			localStorage.setItem("vig_family.cipher", data); //saves to the database, �key�, �value�
+			localStorage.setItem("vig_family.period", period);
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn�t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+	str = '';
+	for (i=0;i<=period;i++) for (j=0;j<26;j++) {
+		str += quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+	}
+	localStorage.setItem("vig_family.key", str);
+	str = '';
+	for (i=0;i<26;i++) {
+		str += plain_key[i];
+		if (plain_key[i]<10)
+			str += ' ';
+	}
+	localStorage.setItem("vig_family.plain.key", str);
+    if (document.getElementById('vig_type').checked)
+        localStorage.setItem("vig_family.c_type", "vig_type");
+    else if (document.getElementById('var_type').checked)
+        localStorage.setItem("vig_family.c_type", "var_type");
+    else if (document.getElementById('por_type').checked)
+        localStorage.setItem("vig_family.c_type", "por_type");
+    else
+        localStorage.setItem("vig_family.c_type", "bea_type");    
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k;
+
+	data = localStorage.getItem("vig_family.cipher");
+	if (data == undefined){
+		alert("No cipher stored");
+		return
+	}
+	keep_key_flag = 0;
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+	input_ok();
+	document.ciphertext.cipher_place.value=data;
+	solving_flag=0;
+	crib_entered=0;
+	pair_setup=0;
+	period = parseInt(localStorage.getItem("vig_family.period"));
+	s = '<br>Period: <input type = text name=period_entry value =' +period+' size = 3 onKeyPress="checkEnter(event)">'
+	document.getElementById('periodblock').innerHTML=s;
+	start_over();
+	xlate();
+	s = localStorage.getItem("vig_family.key");
+	k=0;
+	for (i=0;i<=period;i++) for (j=0;j<26;j++) {
+		quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ] = s.charAt(k);
+		k++;
+	}
+	s = localStorage.getItem("vig_family.plain.key");
+	for (i=0;i<26;i++)
+		plain_key[i] = parseInt(s.slice(2*i,2*i+2));
+    s = localStorage.getItem("vig_family.c_type");
+    document.getElementById('vig_type').checked = false;
+    document.getElementById('var_type').checked = false;
+    document.getElementById('por_type').checked = false;
+    document.getElementById('bea_type').checked = false;
+    document.getElementById(s).checked = true;
+	restore_original();
+}
+
+function clear_disk(){
+	localStorage.removeItem("vig_family.cipher");
+	localStorage.removeItem("vig_family.period");
+	localStorage.removeItem("vig_family.key");
+	localStorage.removeItem("vig_family.plain.key");
+	localStorage.removeItem("vig_family.c_type");    
+	alert("work cleared from disk");
+}
+
+
+function display_message(message){
+	var s;
+	
+	s = '<span id="m_display">';
+	s += message;
+	s += '<br><br><center><input value="Close" onclick="hide_message()" type="button"></center>';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('m_display').style.visibility="visible";
+}
+
+function hide_message(){
+	document.getElementById('m_display').style.visibility="hidden";
+    document.getElementById('m_display').style.zIndex = -1; // so won't interfere with letterblock
+}
+
+function vig_extend(){
+var i,j,k,flag,c,c_start,n_start,c1,s,c2;
+//    temp_save();
+	period = parseInt(document.ciphertext.period_entry.value);
+// in vig family, plaintext key is 'a', so make sure plaintext row is in alphabetical order.
+    for (i=0;i<26;i++)
+        if (plain_key[i] != i){
+            alert("Plain key not in alphabetical order!")
+            return(false);
+    }
+// extend key block rows in alphabetical order.
+    for (i=0;i<period;i++) {
+        flag = false;
+        for (j=0;j<26;j++) {
+            if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                flag = true;
+                c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                n_start = c_symbols.indexOf(c_start);
+                if ( j>0){
+                    // fill backwards towards 0
+                    n = n_start;
+                    for (k = j-1;k>=0;k--){
+                        n = (25+n)%26;
+                        quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c_symbols.charAt(n);
+                    }
+                }
+                
+            }
+            if ( flag) break;
+        }
+        if (!flag) continue; // empty row, go to next row
+        n = n_start;
+        for (k = j+1;k<26;k++){ // fill row to right, check consistency
+            n = (n+1)%26;
+            c = c_symbols.charAt(n)
+            c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+            if ( c1 != '-' && c1 != c){
+                c2 = i+1;
+                s = "Key inconsistent! Row "+c2+" not in alphabetical order.";
+                alert(s);
+                // restore original key block
+                reset_key(); // quag array was inconsistent return to original key
+                get_inverse_key();
+                xlate();
+                restore_keyblock(0);
+                return(false);
+            }
+            quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c;
+            
+        }
+    }
+    restore_original();
+    return(true);
+}
+
+function por_extend(){
+var i,j,k,flag,c,c_start,n_start,c1,s,c2;
+//    temp_save();
+	period = parseInt(document.ciphertext.period_entry.value);
+// in vig family, plaintext key is 'a', so make sure plaintext row is in alphabetical order.
+    for (i=0;i<26;i++)
+        if (plain_key[i] != i){
+            alert("Plain key not in alphabetical order!")
+            return(false);
+    }
+// extend key block rows in alphabetical order.
+    for (i=0;i<period;i++) {
+        flag = false;
+        for (j=0;j<26;j++) { // key entries are reciprocals so they come in pairs, one <13 and one >= 13
+            if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                if ( j>= 13){ // must be crib drag, that's only way you don't get reciprocal pairs
+                    // insert reciprocal pair
+                    c1 = quag_key[c_symbols.charAt(j)+period_row.charAt(i) ];
+                    k = c_symbols.indexOf(c1);
+                    quag_key[c1+period_row.charAt(i) ] = c_symbols.charAt(j);
+                    j = k; // reset j
+                }
+                flag = true;
+                c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                n_start = c_symbols.indexOf(c_start);
+                if ( j>0){
+                    // fill backwards towards 0
+                    n = n_start;
+                    for (k = j-1;k>=0;k--){
+                        n = (25+n)%26;
+                        if (n==12) n = 25;
+                        quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c_symbols.charAt(n);
+                    }
+                }
+                
+            }
+            if ( flag) break;
+        }
+        if (!flag) continue; // empty row, go to next row
+        n = n_start;
+        for (k = j+1;k<13;k++){ // fill row to right, check consistency
+            n = (n+1)%26;
+            if ( n==0) n = 13;
+            c = c_symbols.charAt(n)
+            c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+            if ( c1 != '-' && c1 != c){
+                c2 = i+1;
+                s = "Key inconsistent! Row "+c2+" not in porta order.";
+                alert(s);
+                // restore original key block
+                reset_key(); // quag array was inconsistent return to original key
+                get_inverse_key();
+                xlate();
+                restore_keyblock(0);
+                return(false);
+            }
+            quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c;
+            
+        }
+       
+        // fill in reciprocal key
+        for (j=13;j<26;j++){
+            for (k=0;k<13;k++){
+                if (quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] == c_symbols.charAt(j) )
+                break;
+            }
+            c = c_symbols.charAt(k);
+            c1 = quag_key[c_symbols.charAt(j)+period_row.charAt(i) ];
+            if (c1 != '-' && c1 != c ){
+                c2 = i+1;
+                s = "Key inconsistent! Row "+c2+" not in porta order.";
+                alert(s);
+                // restore original key block
+                reset_key(); // quag array was inconsistent return to original key
+                get_inverse_key();
+                xlate();
+                restore_keyblock(0);
+                return(false);
+            }
+            quag_key[c_symbols.charAt(j)+period_row.charAt(i) ] = c;
+        }
+    }
+    restore_original();
+    return(true);
+}
+
+
+function bea_extend(){
+var i,j,k,flag,c,c_start,n_start,c1,s,c2;
+//    temp_save();
+	period = parseInt(document.ciphertext.period_entry.value);
+// in vig family, plaintext key is 'a', so make sure plaintext row is in alphabetical order.
+    for (i=0;i<26;i++)
+        if (plain_key[i] != i){
+            alert("Plain key not in alphabetical order!")
+            return(false);
+    }
+// extend key block rows in reverse alphabetical order.
+    for (i=0;i<period;i++) {
+        flag = false;
+        for (j=0;j<26;j++) {
+            if (quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ]!= '-'){
+                flag = true;
+                c_start = quag_key[ c_symbols.charAt(j)+period_row.charAt(i) ];
+                n_start = c_symbols.indexOf(c_start);
+                if ( j>0){
+                    // fill backwards towards 0
+                    n = n_start;
+                    for (k = j-1;k>=0;k--){
+                        //n = (25+n)%26;
+                        n = (n+1)%26;
+                        quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c_symbols.charAt(n);
+                    }
+                }
+                
+            }
+            if ( flag) break;
+        }
+        if (!flag) continue; // empty row, go to next row
+        n = n_start;
+        for (k = j+1;k<26;k++){ // fill row to right, check consistency
+            //n = (n+1)%26;
+            n = (25+n)%26; // fill in reverse alpha order
+            c = c_symbols.charAt(n)
+            c1 = quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ];
+            if ( c1 != '-' && c1 != c){
+                c2 = i+1;
+                s = "Key inconsistent! Row "+c2+" not in reversed alphabetical order.";
+                alert(s);
+                // restore original key block
+                reset_key(); // quag array was inconsistent return to original key
+                get_inverse_key();
+                xlate();
+                restore_keyblock(0);
+                return(false);
+            }
+            quag_key[ c_symbols.charAt(k)+period_row.charAt(i) ] = c;
+            
+        }
+    }
+    restore_original();
+    return(true);
+}
+
+function do_key(){
+    var i,j,k,s;
+    var n1,n2;
+    var s1,flag,pat,result;
+    if (document.getElementById('vig_type').checked){
+       s = "Vigenere key: ";
+       for (i=0;i<period;i++)
+        s += quag_key[ c_symbols.charAt(0)+period_row.charAt(i) ];
+       //alert(s);
+       display_message(s);
+    }
+    else if (document.getElementById('bea_type').checked){
+       s = "Beaufort key: ";
+       for (i=0;i<period;i++)
+        s += quag_key[ c_symbols.charAt(0)+period_row.charAt(i) ];
+       //alert(s);
+       display_message(s);
+    }
+    else if (document.getElementById('por_type').checked){
+       s = "Porta key range: ";
+       flag = true;
+       s1 = '^';
+       for (i=0;i<period;i++){
+        if (quag_key[ c_symbols.charAt(0)+period_row.charAt(i) ] == '-'){
+            s += '[--]';
+            flag = false;
+        }
+        else {
+            // get char in inital column's difference from 'N'
+            n1 = c_symbols.indexOf(quag_key[ c_symbols.charAt(0)+period_row.charAt(i) ].charAt(0) )-13; 
+            s += '['+c_symbols.charAt(2*n1)+c_symbols.charAt(2*n1+1)+']';
+            s1 += '['+symbols.charAt(2*n1)+symbols.charAt(2*n1+1)+']';
+        }
+       }
+       if ( flag){ // search for words that fit key range
+        s1 += '$';
+        pat = new RegExp(s1);
+        s1 = "<br>Possible words:<br>";
+        for (i=0;i<word_list.length;i++) {
+            result = word_list[i].match(pat);
+            if ( result == word_list[i])
+            s1 += result+'<br>';
+        }        
+        s += s1;
+       }
+       //alert(s);
+       display_message(s);
+    }    
+    else {
+        s = "Variant key: ";
+        get_inverse_key();
+        for (i=0;i<period;i++)
+            s += inv_key[c_symbols.charAt(0)+period_row.charAt(i) ].toUpperCase();
+        //alert(s);        
+        display_message(s);
+    }
+}
+
+</script>
+<style>
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:350px;
+	top:320px;
+	width:300px;
+	height:350px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+    font-weight:normal;
+	visibility:hidden;
+
+}
+
+option.even {background-color:#909090;color:#ffffff;}
+option.odd {background-color:#999999;color:#00008b;}
+select {width:150px; font-family:monospace;}
+
+</style>
+
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Vigenere family Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Put cipher into this box, select cipher type, then enter the period and press the ENTER key)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+<!-- place to enter period -->
+<span id="periodblock">
+<br>
+<span style="font-weight:bold;">Enter Period=></span>
+<input type = text name=period_entry value = "2" size = 3 onKeyPress="checkEnter(event)">
+</span>
+<INPUT onclick=drag_crib(); type=button value="crib" >
+<INPUT onclick=drag_left(); type=button value="<-" >
+<INPUT onclick=drag_right(); type=button value="->" >
+<INPUT onclick=do_undo(); type=button value="undo" >
+<INPUT onclick=do_redo(); type=button value="redo" id="redo_button" disabled>
+<span id="crib_repeats">
+&nbsp
+</span>
+
+<!---------
+ &nbsp &nbsp  &nbsp &nbsp  &nbsp &nbsp
+<INPUT onclick=start_over(); type=button value="start over" >
+--------->
+Type:
+<input type="radio" name="r_buttons" id = "vig_type" checked> Vigenere
+&nbsp;
+<input type="radio" name="r_buttons" id = "var_type"> Variant
+&nbsp;
+ <input type="radio" name="r_buttons" id = "bea_type"> Beaufort
+&nbsp;
+ <input type="radio" name="r_buttons" id = "por_type"> Porta 
+&nbsp;&nbsp;
+<INPUT onclick=do_extend(); type=button value="Extend key" >
+&nbsp;&nbsp;
+<INPUT onclick=do_key(); type=button value="Show key" >
+
+</form>
+
+
+
+<br>
+<!----  container for message display box  --->
+<div id = "cm_display" >
+</div>
+
+
+Click on one of the blue symbols below , then click on a cell in the key table or beneath a cipher pair in the box above.
+(? symbol for possible words)<BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black;
+	margin-right:20px; padding:10px">
+</div>
+<BR>
+Key Table:
+<span id="freq_legend" style = "float:right; padding:5px;">
+</span>
+<br>
+<br>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block" style="font-family:monospace; font-size: 15px; cursor: crosshair; padding:10px">
+</div>
+
+<!-- mark off space for swap -->
+<INPUT onclick=save_to_disk(); type=button value="save work to disk" >
+<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >
+<INPUT onclick=clear_disk(); type=button value="clear work from disk" >
+<script type="text/javascript">
+//screen_check();
+reset_key();
+letterblock_setup();
+keyblock_setup();
+freq_color_display();
+trie_initialize();
+</script>
+
+
+<!---------
+<Form name=debug>
+<BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+---------->
+
+</BODY>
+</HTML>

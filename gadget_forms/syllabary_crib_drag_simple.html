@@ -1,0 +1,613 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Syllabary crib drag</TITLE>
+<!-- specify ANSI encoding to handle Ø symbol -->
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+
+var SIMPLE = true; // whether or not to show the simplified substitution table
+
+var code,code_array,out_str,crib_str,data;
+var freq = new Array();
+var digits = '0123456789';
+var symbols = 'abcdefghijklmnopqrstuvwxyz0123456789';
+var EMPTY = '-1';
+var sub_table_flag = false;
+var known_keysquare_flag = false;
+var min_repeats = 0;
+
+var english_basic_key = ["a","1","al","an","and","ar","are","as","at","ate",
+"ati","b","2","be","c","3","ca","ce","co","com",
+"d","4","da","de","e","5","ea","ed","en","ent",
+"er","ere","ers","es","est","f","6","g","7","h",
+"8","has","he","i","9","in","ing","ion","is","it",
+"ive","j","0","k","l","la","le","m","me","n",
+"nd","ne","nt","o","of","on","or","ou","p","q",
+"r","ra","re","red","res","ri","ro","s","se","sh",
+"st","sto","t","te","ted","ter","th","the","thi","thr",
+"ti","to","u","v","ve","w","we","x","y","z"]
+
+var french_basic_key = ["a","1","ai","ais","ait","an","ans","ar","as","b",
+"2","c","3","ce","d","4","dan","de","del","des",
+"du","e","5","ed","ede","el","ell","em","eme","en",
+"ent","er","es","ese","est","eur","f","6","g","7",
+"ge","h","8","i","9","ie","ion","it","j","0",
+"k","l","la","le","les","lle","m","me","men","n",
+"ne","no","non","ns","nt","o","on","ont","ou","oui",
+"our","ous","p","par","q","qu","que","qui","r","re",
+"res","s","se","sse","t","te","ti","tio","tre","tte",
+"u","ui","un","une","ur","v","w","x","y","z"];
+
+var german_basic_key = ["a","1","ab","aht","als","am","an","au","auf","b",
+"2","be","ben","ber","c","3","ch","che","cht","d",
+"4","da","de","den","der","des","di","die","du","e",
+"5","ei","ein","el","en","end","er","f","6","g",
+"7","ge","gen","h","8","ha","he","hen","i","9",
+"ich","ie","in","isc","ist","it","j","0","k","l",
+"m","mi","mit","n","nd","nde","ne","no","ns","nur",
+"o","ob","p","q","r","rch","re","s","sch","se",
+"st","t","te","ten","u","ue","um","un","und","ung",
+"v","von","w","war","was","wo","x","y","z","zu"];
+
+var italian_basic_key = ["a","1","al","an","ar","ato","b","2","c","3",
+"ca","che","ci","co","d","4","da","de","di","e",
+"5","el","en","er","es","et","f","6","g","7",
+"gi","h","8","i","9","ia","ic","il","in","ion",
+"is","it","j","0","k","l","la","le","li","ll",
+"lo","m","ma","me","mi","mo","n","na","ne","ni",
+"no","nte","o","ol","on","or","os","p","pa","per",
+"pr","q","qu","r","ra","re","ri","ro","s","sa",
+"se","si","so","ss","st","t","ta","te","ti","to",
+"tr","tt","u","un","v","w","x","y","z","zio"];
+
+var spanish_basic_key = ["a","1","ad","ado","al","aqu","ar","ara","as","b",
+"2","c","3","ci","cio","co","con","d","4","de",
+"del","di","e","5","ede","el","en","er","es","est",
+"f","6","g","7","h","8","hay","i","9","io",
+"ist","j","0","k","l","la","las","lo","los","m",
+"mas","me","mi","muy","n","nei","no","non","nte","o",
+"on","or","os","osa","p","per","por","q","qu","que",
+"r","ra","re","res","s","sde","se","ser","si","sin",
+"son","st","su","sus","t","ta","te","ti","tu","u",
+"ue","un","una","uno","v","va","w","x","y","z"];
+
+var latin_basic_key = ["a", "1", "ad", "ae", "am", "ant", "as", "at", "ati", "atu",
+"b", "2", "bus", "c", "3", "con", "cum", "d", "4", "e",
+"5", "em", "ent", "equ", "er", "era", "eri", "es", "et", "ex",
+"f", "6", "g", "7", "h", "8", "i", "9", "ia", "ibu",
+"in", "io", "ion", "is", "iss", "it", "ita", "itu", "j","0",
+"k", "l", "m", "n", "ne", "nt", "o","os","p","per",
+"pro",'q', "qua", "que", "qui", "quo", "r", "ra", "rat", "re",
+"ri", "rum", "s", "se", "si", "sse", "str", "t", "ta", "tat",
+"te", "ter", "ti", "tis", "to", "tum", "tur", "u","ua", "ui",
+"um", "unt", "ur", "us", "ut", "v", "w", "x", "y", "z"];
+
+var basic_key = english_basic_key;
+
+function setup_code_pairs() {
+	var i,j,state;
+	
+	data = document.getElementById("cipher_area").value;
+    data = data.toUpperCase();
+    data = data.replace(/Ø/g,'0');
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( digits.indexOf(c) >-1) {
+			if (state==0) {
+				code = code+c;
+				state=1;
+			}
+			else {
+				code = code+c+' ';
+				state=0;
+			}
+		}
+	}
+	if (state==1) {
+		alert("Cipher has odd number of digits!");
+		return(false);
+	}
+    if (code == ''){
+		alert("No digits in ciphertext!");
+		return(false);
+	}
+	code_array = code.split(' ');
+    return(true);
+}
+
+function known_keysquare_check(keysquare){
+    var i,j,k,n,c,c1;
+    var b_row1,b_row2,b_col1,b_col2;
+    var k_row1,k_row2,k_col1,k_col2;
+    var n1,n2;
+    
+    for (n = 0;n<99;n++){
+        // find next non-eimpty keysquare entry
+        k_row1 = Math.floor(n/10);
+        k_col1 = n % 10;
+        c = ''+k_row1+k_col1;
+        if ( keysquare[c] == EMPTY)
+            continue;
+        // find entries to compare against this one.
+        for ( k = n+1;k<100;k++){
+            k_row2 = Math.floor(k/10);
+            k_col2 = k % 10;
+            c1 = ''+k_row2+k_col2;
+            if ( keysquare[c1] == EMPTY)
+                continue;
+            // OK have two non-empty key entries to compare with basic key
+            n1 = basic_key.indexOf( keysquare[c] );
+            n2 = basic_key.indexOf( keysquare[c1] );
+            b_row1 = Math.floor(n1/10);
+            b_col1 = n1 % 10;
+            b_row2 = Math.floor(n2/10);
+            b_col2 = n2 % 10;
+            if ( (k_row1 == k_row2) != (b_row1 == b_row2) )
+                return(false); // keysquare and basic key rows don't match
+            if ( (k_col1 == k_col2) != (b_col1 == b_col2) )
+                return(false); // keysquare and basic key columns don't match
+        } // next k
+    } // next n
+    return(true); // passed all matching tests
+}
+
+
+
+function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_keysquare){
+    var i,j,k,c,n, ct,pt;
+    var used_symbols, newsquare;
+    var temp_str,cnt,flag;
+    // code_array, crib_str, out_str are global
+    
+    if ( current_cipher_pos >= code_array.length-1) // past end of cipher!, last element in code_array is not a digit pair
+        return;
+    if ( known_keysquare_flag){
+      if (!known_keysquare_check(current_keysquare))
+        return; // inconsistent with basic key
+    }
+    ct = code_array[current_cipher_pos];
+    if ( current_keysquare[ct] != EMPTY){
+        pt = current_keysquare[ct];
+        if ( current_crib_pos+pt.length > crib_str.length ) { // pt sticks out past crib
+            var x = current_crib_pos+pt.length - crib_str.length; // reduce pt to fit within crib
+            pt = pt.slice(0,pt.length-x)
+        }
+        if ( pt != crib_str.slice(current_crib_pos,current_crib_pos+pt.length) )
+            return; // no match
+        if (current_crib_pos+pt.length >= crib_str.length) {// end of crib!
+            // check for repeats
+            cnt = 0;
+            for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                for (j=i+1;j<=current_cipher_pos;j++)
+                    if (code_array[i] == code_array[j])
+                        cnt++;
+            if ( cnt < min_repeats)
+                return;
+            out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
+            if ( cnt>0)
+                out_str += " with "+cnt+" repeats";
+            if ( sub_table_flag){
+              temp_str = '';
+              cnt = 0;
+              for (i=0;i<10;i++) for (j=0;j<10;j++){
+                c = ''+i+j; // convert to digit string
+                if (current_keysquare[c] != EMPTY){
+                  if (SIMPLE)
+                  temp_str +='\n'+c+' '+current_keysquare[c];
+                  else
+                  temp_str +='\n'+c+' '+basic_key.indexOf(current_keysquare[c])+' '+current_keysquare[c];
+                  cnt++;
+                }
+              }
+              out_str += '\n'+cnt+' substitutions'+temp_str;
+            }
+            return;
+        }
+        // not at end, make recursive call
+        do_check(cipher_start_pos,current_cipher_pos+1,current_crib_pos+pt.length,current_keysquare);
+        return;
+    } // end keysquare has entry at current position
+    // OK keysquare is empty at current code pos. which letters, digtraphs and trigraphs have been used?
+    used_symbols = {};
+    for (i=0;i<10;i++) for (j=0;j<10;j++){
+        c = ''+i+j; // convert to digit string
+        if (current_keysquare[c] != EMPTY)
+            used_symbols[ current_keysquare[c] ] = c;
+    }
+    // try using single letter at current crib pos
+    pt = crib_str.charAt(current_crib_pos);
+    if ( !(pt in used_symbols) ){
+        newsquare = [];
+        for (i=0;i<10;i++) for (j=0;j<10;j++){
+            c = ''+i+j; // convert to digit string
+            newsquare[c] = current_keysquare[c];
+        }
+        newsquare[ct] = pt; // adding single letter
+        // at end of crib?
+        if (current_crib_pos+ 1 >= crib_str.length) {// end of crib!
+            // check for repeats
+            cnt = 0;
+            for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                for (j=i+1;j<=current_cipher_pos;j++)
+                    if (code_array[i] == code_array[j])
+                        cnt++;
+            if ( cnt<min_repeats)
+                return;
+            out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
+            if ( cnt>0)
+                out_str += " with "+cnt+" repeats";
+            if ( sub_table_flag){
+              temp_str = '';
+              cnt = 0;
+              for (i=0;i<10;i++) for (j=0;j<10;j++){
+                c = ''+i+j; // convert to digit string
+                if (newsquare[c] != EMPTY){
+                  if (SIMPLE)
+                  temp_str +='\n'+c+' '+newsquare[c];
+                  else
+                  temp_str +='\n'+c+' '+basic_key.indexOf(newsquare[c])+' '+newsquare[c];
+                  cnt++;
+                }
+              }
+              //out_str += '\n'+cnt+' substitutions'+temp_str;
+              temp_str += '\nAlternatives for '+ct+' ...'
+              // may be digraphs and trigraphs stating with letter pt that can also be used at end of cipher instead
+              n = basic_key.indexOf(pt);
+              i = symbols.indexOf(pt);
+              if ( i<=9) n++; //skip over the number next to pt in basic key if pt is less than 'k'
+              n++;
+              while (n<100 &&basic_key[n].charAt(0) == pt ){
+                if (!(basic_key[n] in used_symbols))
+                  temp_str += ' '+basic_key[n];
+                n++;
+              }
+              out_str += '\n'+cnt+' substitutions'+temp_str;
+            };
+            return;
+        }
+        else // not at end of crib make recursive call
+            do_check(cipher_start_pos,current_cipher_pos+1,current_crib_pos+1,newsquare);
+    } // end pt not in used symbols
+    else if (current_crib_pos+ 1 >= crib_str.length) { // at end of crib'
+          // pt letter is used but maybe digraph or trigraph starting with same letter is free
+          flag = true; // nothing found yet
+          // may be digraphs and trigraphs stating with letter pt that can also be used at end of cipher instead
+          n = basic_key.indexOf(pt);
+          i = symbols.indexOf(pt);
+          if ( i<=9) n++; //skip over the number next to pt in basic key if pt is less than 'k'
+          n++;
+          while (n<100 && basic_key[n].charAt(0) == pt ){
+            if (!(basic_key[n] in used_symbols)) { // found one!
+                if (flag) {// first one found
+                    // check for repeats
+                    cnt = 0;
+                    for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                        for (j=i+1;j<=current_cipher_pos;j++)
+                            if (code_array[i] == code_array[j])
+                                cnt++;
+                    if ( cnt<min_repeats)
+                        return;
+                    newsquare = [];
+                    for (i=0;i<10;i++) for (j=0;j<10;j++){
+                        c = ''+i+j; // convert to digit string
+                        newsquare[c] = current_keysquare[c];
+                    }
+                    newsquare[ct] = basic_key[n]; // add it to table
+                    flag = false;                        
+                    out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                        
+                    if ( cnt>0)
+                        out_str += " with "+cnt+" repeats";
+                    if ( sub_table_flag){
+                        temp_str = '';
+                        cnt = 0;
+                        for (i=0;i<10;i++) for (j=0;j<10;j++){
+                            c = ''+i+j; // convert to digit string
+                            if (newsquare[c] != EMPTY){
+                                if (SIMPLE)
+                                temp_str +='\n'+c+' '+newsquare[c];
+                                else
+                                temp_str +='\n'+c+' '+basic_key.indexOf(newsquare[c])+' '+newsquare[c];
+                                cnt++;
+                            }
+                        }
+                        temp_str += '\nAlternatives for '+ct+' ...'
+                    }
+                }
+                else { // more than one alternative found
+                    temp_str += ' '+basic_key[n];
+                }
+            }
+            n++;
+        }
+        if ( !flag && sub_table_flag)
+            out_str += '\n'+cnt+' substitutions'+temp_str;
+        return;
+     }
+    // is a digraph possible
+    pt = crib_str.slice(current_crib_pos,current_crib_pos+2);
+    if ( basic_key.indexOf(pt) != -1 && !(pt in used_symbols) ){
+        newsquare = [];
+        for (i=0;i<10;i++) for (j=0;j<10;j++){
+            c = ''+i+j; // convert to digit string
+            newsquare[c] = current_keysquare[c];
+        }
+        newsquare[ct] = pt; // adding digraph
+        // at end of crib?
+        if (current_crib_pos+ 2 >= crib_str.length) {// end of crib!
+            // check for repeats
+            cnt = 0;
+            for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                for (j=i+1;j<=current_cipher_pos;j++)
+                    if (code_array[i] == code_array[j])
+                        cnt++;
+            if (cnt<min_repeats)
+                return;
+            out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
+            if ( cnt>0)
+                out_str += " with "+cnt+" repeats";
+            if ( sub_table_flag){
+              temp_str = '';
+              cnt = 0;
+              for (i=0;i<10;i++) for (j=0;j<10;j++){
+                c = ''+i+j; // convert to digit string
+                if (newsquare[c] != EMPTY){
+                  if (SIMPLE)
+                  temp_str +='\n'+c+' '+newsquare[c];
+                  else
+                  temp_str +='\n'+c+' '+basic_key.indexOf(newsquare[c])+' '+newsquare[c];
+                  cnt++;
+                }
+              }
+              temp_str += '\nAlternatives for '+ct+' ...'
+              // may be digraphs and trigraphs stating with letter pt that can also be used at end of cipher instead
+              n = basic_key.indexOf(pt);
+              //i = symbols.indexOf(pt);
+              //if ( i<=9) n++; //skip over the number next to pt in basic key if pt is less than 'k'
+              n++;
+              while ( n<100 && basic_key[n].slice(0,2) == pt ){
+                if (!(basic_key[n] in used_symbols))
+                  temp_str += ' '+basic_key[n];
+                n++;
+              }
+              out_str += '\n'+cnt+' substitutions'+temp_str;
+            }
+            return;
+        }
+        else // not at end of crib make recursive call
+            do_check(cipher_start_pos,current_cipher_pos+1,current_crib_pos+2,newsquare);
+    }
+    else if (current_crib_pos+ 2 >= crib_str.length) { // at end of crib'
+          // pt digraph is used but maybe  trigraph starting with same letters is free
+          flag = true; // nothing found yet
+          // may be trigraphs stating with digrqaph pt that can also be used at end of cipher instead
+          n = basic_key.indexOf(pt);
+          n++;
+          while (n<100 && basic_key[n].slice(0,2) == pt ){
+            if (!(basic_key[n] in used_symbols)) { // found one!
+                if (flag) {// first one found
+                    // check for repeats
+                    cnt = 0;
+                    for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                        for (j=i+1;j<=current_cipher_pos;j++)
+                            if (code_array[i] == code_array[j])
+                                cnt++;
+                    if ( cnt<min_repeats)
+                        return;
+                    newsquare = [];
+                    for (i=0;i<10;i++) for (j=0;j<10;j++){
+                        c = ''+i+j; // convert to digit string
+                        newsquare[c] = current_keysquare[c];
+                    }
+                    newsquare[ct] = basic_key[n]; // add it to table
+                    flag = false;
+                    out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                        
+                    if ( cnt>0)
+                        out_str += " with "+cnt+" repeats";
+                    if ( sub_table_flag){
+                        temp_str = '';
+                        cnt = 0;
+                        for (i=0;i<10;i++) for (j=0;j<10;j++){
+                            c = ''+i+j; // convert to digit string
+                            if (newsquare[c] != EMPTY){
+                                if (SIMPLE)
+                                temp_str +='\n'+c+' '+newsquare[c];
+                                else
+                                temp_str +='\n'+c+' '+basic_key.indexOf(newsquare[c])+' '+newsquare[c];
+                                cnt++;
+                            }
+                        }
+                        temp_str += '\nAlternatives for '+ct+' ...'
+                    }
+                }
+                else { // more than one alternative found
+                    temp_str += ' '+basic_key[n];
+                }
+            }
+            n++;
+        }
+        if ( !flag && sub_table_flag)
+            out_str += '\n'+cnt+' substitutions'+temp_str;
+        return;
+     }
+    
+    // is a trigraph possible
+    pt = crib_str.slice(current_crib_pos,current_crib_pos+3);
+    if ( basic_key.indexOf(pt) != -1 && !(pt in used_symbols) ){
+        newsquare = [];
+        for (i=0;i<10;i++) for (j=0;j<10;j++){
+            c = ''+i+j; // convert to digit string
+            newsquare[c] = current_keysquare[c];
+        }
+        newsquare[ct] = pt; // adding trigraph
+        // at end of crib?
+        if (current_crib_pos+ 3 >= crib_str.length) {// end of crib!
+            // check for repeats
+            cnt = 0;
+            for (i=cipher_start_pos;i<current_cipher_pos;i++)
+                for (j=i+1;j<=current_cipher_pos;j++)
+                    if (code_array[i] == code_array[j])
+                        cnt++;
+            if ( cnt<min_repeats)
+                return;
+            out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
+            if ( cnt>0)
+                out_str += " with "+cnt+" repeats";
+            if ( sub_table_flag){
+              temp_str = '';
+              cnt = 0;
+              for (i=0;i<10;i++) for (j=0;j<10;j++){
+                c = ''+i+j; // convert to digit string
+                if (newsquare[c] != EMPTY){
+                  if (SIMPLE)
+                  temp_str +='\n'+c+' '+newsquare[c];
+                  else
+                  temp_str +='\n'+c+' '+basic_key.indexOf(newsquare[c])+' '+newsquare[c];
+                  cnt++;
+                }
+              }
+              out_str += '\n'+cnt+' substitutions'+temp_str;
+            }
+        }
+        else // not at end of crib make recursive call
+            do_check(cipher_start_pos,current_cipher_pos+1,current_crib_pos+3,newsquare);
+    }
+    
+} // end do_check
+
+function do_drag(){
+    var s,i,j,k,c,n,c1;
+    var cipher_start_pos, keysquare;
+    
+    if ( !setup_code_pairs() ) return;
+    s = document.getElementById("crib_area").value;
+    s = s.toLowerCase();
+    crib_str = ''; //global var
+    for (i=0;i<s.length;i++){
+        c = s.charAt(i);
+        if ( symbols.indexOf(c) != -1)
+            crib_str += c;
+    }
+    if ( crib_str == ''){
+        alert("No crib entered!");
+        return;
+    }
+    if (document.getElementById("show_subs").checked)
+      sub_table_flag = true; // global var
+    else
+      sub_table_flag = false;
+    if (document.getElementById("known_key").checked)
+      known_keysquare_flag = true; // global var
+    else
+      known_keysquare_flag = false;
+    min_repeats = parseInt(document.getElementById("min_rep").value); // global var  
+    out_str = ''; // global
+    out_str += 'Crib is: '+crib_str;
+    for (cipher_start_pos = 0;cipher_start_pos<code_array.length-Math.floor(crib_str.length/3)+1;cipher_start_pos++){
+        //cipher_start_pos = 43; // for testing
+        keysquare = [];
+        for (i=0;i<10;i++) for (j=0;j<10;j++){
+            c = ''+i+j; // convert to digit string
+            keysquare[c] = EMPTY
+        }
+        do_check(cipher_start_pos,cipher_start_pos,0,keysquare);
+        //break; // for testing
+        // check for inital letter as suffix of digraph or trigraph
+        for (n in basic_key){
+          k = basic_key[n].length;
+          c1 = basic_key[n].charAt(k-1); // last char in string
+          if (k>1 && c1 == crib_str.charAt(0)) { // found key string with first crib char as suffix
+            keysquare = [];
+            for (i=0;i<10;i++) for (j=0;j<10;j++){
+               c = ''+i+j; // convert to digit string
+                keysquare[c] = EMPTY
+            }
+            keysquare[ code_array[cipher_start_pos] ] = basic_key[n];
+            do_check(cipher_start_pos,cipher_start_pos+1,1,keysquare);
+          }
+        }
+        // check for intial digraph as suffix for trigraph
+        for (n in basic_key){
+          k = basic_key[n].length;
+          if(k<3) continue;
+          c1 = basic_key[n].slice(1); // second digraph in string
+          if (k>2 && c1 == crib_str.slice(0,2) ){ // found key string with first crib digraph as suffix
+            keysquare = [];
+            for (i=0;i<10;i++) for (j=0;j<10;j++){
+               c = ''+i+j; // convert to digit string
+                keysquare[c] = EMPTY
+            }
+            keysquare[ code_array[cipher_start_pos] ] = basic_key[n];
+            do_check(cipher_start_pos,cipher_start_pos+1,2,keysquare);
+          }
+        }
+    }
+    document.getElementById("output_area").value = out_str;
+
+}
+
+
+function switch_basic_block(){
+    if (document.getElementById('english').checked)
+        basic_key = english_basic_key;
+    else if (document.getElementById('french').checked)
+        basic_key = french_basic_key;
+    else if (document.getElementById('german').checked)
+        basic_key = german_basic_key;
+    else if (document.getElementById('italian').checked)
+        basic_key = italian_basic_key;
+    else if (document.getElementById('spanish').checked)
+        basic_key = spanish_basic_key;
+    else if (document.getElementById('latin').checked)
+        basic_key = latin_basic_key;
+}
+
+</script>
+</head>
+<body bgcolor="Silver" >
+<h3>Syllabary Crib drag</h3>
+Note: Due to alternate ways of breaking up the crib, there may be more than one output for each cipher-pair position.
+<br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" cols=90 rows = 5>
+</textarea><br><br>
+Crib:<br>
+<textarea id="crib_area" cols=90 rows = 2>
+</textarea><br><br>
+
+Output (positions start at 0):<br>
+<textarea id="output_area" cols=90 rows = 8>
+</textarea>
+<br>
+<br><br>
+Key Table:
+<input type="radio" onclick="switch_basic_block()" id="english" name="lang"  checked > English
+<input type="radio" onclick="switch_basic_block()" id="french" name="lang"  > French
+<input type="radio" onclick="switch_basic_block()" id="german" name="lang"  > German
+<input type="radio" onclick="switch_basic_block()" id="italian" name="lang"  > Italian
+<input type="radio" onclick="switch_basic_block()" id="spanish" name="lang"  > Spanish
+<input type="radio" onclick="switch_basic_block()" id="latin" name="lang"  > Latin
+
+<br><br>
+Keysquare:
+<input type="radio"  id="known_key" name="key_info"  > Known
+<input type="radio"  id="unknown_key" name="key_info"  checked > Unknown
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;
+Minimum cipher-pair repeats: 
+<input type="text" id="min_rep" size=3 value='0'>
+<br><br>
+<input type="button" value="Drag!" id="do_drag" onclick="do_drag()">
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id="show_subs" >
+output substitution tables
+<!----
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>
