@@ -1,0 +1,694 @@
+<!-- Baconian scratchpad in javascript -->
+<!-- add  undo and redo -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Baconian Worksheet</TITLE>
+<script type="text/javascript">
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+var undo_array2 = [];
+var redo_array2 = [];
+
+
+var baconian_table = [ 0,0,0,0,0,/* A */
+0,0,0,0,1,/*B*/
+0,0,0,1,0,/*C*/
+0,0,0,1,1,/*d*/
+0,0,1,0,0,/*e*/
+0,0,1,0,1,/*f*/
+0,0,1,1,0,/*g*/
+0,0,1,1,1,/*h*/
+0,1,0,0,0,/*i*/
+0,1,0,0,0,/*j same as i*/
+0,1,0,0,1,/*k*/
+0,1,0,1,0,/*l*/
+0,1,0,1,1,/*m*/
+0,1,1,0,0,/*n*/
+0,1,1,0,1,/*o*/
+0,1,1,1,0,/*p*/
+0,1,1,1,1,/*q*/
+1,0,0,0,0,/*r*/
+1,0,0,0,1,/*s*/
+1,0,0,1,0,/*t*/
+1,0,0,1,1,/*u*/
+1,0,0,1,1,/*v same as u*/
+1,0,1,0,0,/*w*/
+1,0,1,0,1,/*x*/
+1,0,1,1,0,/*y*/
+1,0,1,1,1/*z*/
+];
+
+function get_trial_decrypt(){
+        var i,j,k, index,x;
+        var c1,c2,c3,c4,c5;
+        var key = [];
+        var plain_text = [];
+        var top_work = [];
+        var key_entry = ['a','b'];
+        
+        for (i=0;i<26;i++)
+          if (bac_key[i]=='a') key[i] = 0;
+          else key[i] = 1;
+        /* do encryption/decryption */
+        index = 0;
+        for (j=0;j<buf_len;j=j+5) {
+            c1 = key[buffer[j]];
+            c2 = key[buffer[j+1]];
+            c3 = key[buffer[j+2]];
+            c4 = key[buffer[j+3]];
+            c5 = key[buffer[j+4]];
+            top_work[j] = key_entry[c1];
+            top_work[j+1]= key_entry[c2];
+            top_work[j+2]= key_entry[c3];
+            top_work[j+3]= key_entry[c4];
+            top_work[j+4]= key_entry[c5];
+            plain_text[index] = '?'; /* assume letter not found*/
+            for (k=0;k<26;k++) {
+                x = 5*k;
+                if ( c1 == baconian_table[x] &&
+                        c2 == baconian_table[x+1] &&
+                        c3 == baconian_table[x+2] &&
+                        c4 == baconian_table[x+3] &&
+                        c5 == baconian_table[x+4] ) {
+                        plain_text[index] = letters.charAt(k).toLowerCase();
+                        break;
+                }
+            } /* next k */
+            index++;
+        } /* next j */
+        plain_len = index;
+        return[plain_text,top_work]
+}
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+    redo_array2[redo_index] = [];
+	for (i=0;i<26;i++)  {
+		redo_array[redo_index][i] = bac_key[ i ];
+        redo_array2[redo_index][i] = crib_key[ i ];
+	}
+    redo_index++;
+    undo_index--;
+	for (i=0;i<26;i++)  {
+		bac_key[ i ] = undo_array[undo_index][i];
+        crib_key[ i ] = undo_array2[undo_index][i];
+	}
+    document.getElementById('redo_button').disabled = false;
+    keyblock_setup();
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<26;i++)  {
+		bac_key[ i ] = redo_array[redo_index][i];
+        crib_key[ i ] = redo_array2[redo_index][i];
+	}
+    keyblock_setup();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+    undo_array2[undo_index] = [];
+	for (i=0;i<26;i++)  {
+		undo_array[undo_index][i] = bac_key[ i ];
+        undo_array2[undo_index][i] = crib_key[ i ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,crib_pos,cribtext;
+var symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var digits="0123456789";
+var wdigits=".123456789"; // put in dot for (index = -1) +1, =0, slot to show nothing entered yet
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var line_limit;
+var last_cell;
+var old_xlation;
+// multiple crib entries
+var temp_crib_key = [];
+var keep_key_flag=0;
+
+//try associative array for key
+var bac_key = new Array();
+var old_bac_key = [];
+
+var buf_len;
+var code_array=[];
+var period = 5;
+var buffer = [];
+
+var crib_key = [];
+var crib_coordinates;
+
+function reset_key() {
+	if (keep_key_flag==1 ) {
+        for (i=0;i<26;i++){
+            crib_key[i] = temp_crib_key[i];
+            if (crib_key[i] != '-')
+                bac_key[i] = crib_key[i];
+            else
+                bac_key [i] = 'a';
+        }
+    }
+    else {
+        for (i=0;i<26;i++)  {
+            bac_key[ i ] = old_bac_key[ i ] = 'a';
+            crib_key[ i ] = '-';
+        }
+        //undo_index = redo_index = 0;
+    }
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box, then click initialize)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;
+  s = '<input type= "button" value = "Initialize" onclick = "setup_display()">';
+	document.getElementById('key_lenblock').innerHTML=s;
+	document.getElementById('caption1').style.display="none";
+	document.getElementById('caption2').style.display="none";
+	document.getElementById('keyblock').style.display="none";
+	document.getElementById('letterblock').style.display="none";
+    document.getElementById('button_actions').style.display="none";
+    document.getElementById('cribblock').style.display="none";
+    keep_key_flag = 0;
+    
+}
+
+
+function setup_code() {
+    var data;
+    var i,n;
+    var digit_flag;
+    
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+    data = data.replace(/Ø/g,'0');    
+	code = '';
+    buf_len = 0;
+    code_array = [];
+  digit_flag = false;
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		// change any digits to letters
+		n = digits.indexOf(c);
+		if ( n != -1) {
+		  c = letters.charAt(n);
+		  digit_flag = true;
+		}
+		n = letters.indexOf(c);
+		if ( n >-1 && n < 26) {
+            code += c;
+            buffer[buf_len]=n;
+            code_array[buf_len++]=c;
+		}
+	}
+	solving_flag=1;
+	old_xlation = ['-'];
+	for (i = 0;i<code_array.length/5;i++)
+		old_xlation[i]= '-';
+  line_limit = period*Math.floor( 40/(period));
+  undo_index = redo_index = 0;
+  if ( digit_flag)
+    alert("Changed digits 0-9 to letters A-J");
+}
+
+
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_chars,n;
+    var plaintext,top_work,bot_work,result,w1,w2;
+    var flag;
+    var p_index, crib_letter_flag;
+    
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;
+	}
+    result = get_trial_decrypt();
+    plaintext = result[0];
+    top_work = result[1];
+
+    flag = document.getElementById('show_work').checked;
+	str='';
+
+	limit=line_limit;
+	numb_chars=code_array.length;
+	if (numb_chars<limit)
+		limit = numb_chars;
+	pos=0;
+	cnt=0;
+	pl='';
+    w1='';
+    w2='';
+    p_index = 0;
+	while (pos<numb_chars ) {
+        n = buffer[pos];
+        if (crib_key[n] != '-'){
+            str = str+'<span style="background:yellow;">'+code_array[pos]+'</span> ';
+            crib_letter_flag = true;
+        }
+        else {
+            str = str+code_array[pos]+' ';
+            crib_letter_flag = false;
+        }
+        w1 += top_work[pos]+'&nbsp;';
+		pos++;
+		cnt++;
+        if ( (cnt%period)==0){
+            str += '&nbsp';
+            w1 += '&nbsp';
+            c = plaintext[p_index];
+            if ( crib_letter_flag && p_index>= crib_pos && p_index<crib_pos+cribtext.length)
+			    c = '<span style="background:yellow;">'+c+'</span>';
+		    if ( old_xlation[p_index] != c){
+			    old_xlation[p_index]=c;
+			    c = '<font color="red">'+c+'</font>';
+		    }
+          p_index++;
+          pl += '&nbsp;&nbsp;&nbsp;&nbsp;'+c+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ';
+        }
+		if (cnt>=limit) {
+            str += '<br>';
+            if (flag)
+                str += w1+'<br>';
+            str += '<font color="blue">'+pl+'</font><br>'
+    		pl='';
+            w1='';
+            //w2='';
+			cnt=0;
+			if (pos+line_limit>numb_chars)
+				limit = numb_chars-pos;;
+		}
+	}
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function selectmouse(e){
+  var c,n;
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	c=dobj.className.charAt(0);
+	 update_undo();
+	 document.getElementById('redo_button').disabled = true;
+     keep_key_flag = 0;
+	 // toggle key
+	 n = symbols.indexOf(c);
+	 if (bac_key[n] == 'a') bac_key[n] = 'b';
+	 else bac_key[n] = 'a';
+	 xlate();
+	 keyblock_setup();
+    return false;
+  }
+
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		c = symbols.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}
+	s=s+'<br>';
+	document.getElementById('letterblock').innerHTML=s;
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c,s1;
+	
+    s = '';
+    s1 = '';
+	for (i=0;i<26;i++) {
+        c = bac_key[i];
+        if (c != old_bac_key[i]){
+            old_bac_key[i] = c;
+            c = '<font color="red">'+c+'</font>';
+        }
+        s += c;
+        if (crib_key[i] != '-')
+            s1 += '<span style="background:yellow;">'+symbols.charAt(i)+'</span>';
+        else
+            s1 += symbols.charAt(i);
+    }
+	s=s+'<br>';
+    s1 += '<br>';
+    s =  s1 +'<font color="blue">'+s+'</font>';
+	document.getElementById('keyblock').innerHTML=s;
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+    keep_key_flag = 0;
+    crib_entered = 0;
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+    xlate();
+}
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+        keep_key_flag = 0;
+        crib_entered=0;
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+	}
+}
+
+
+
+function redirect() {
+	window.location="playfair_lowres.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+}
+
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" >';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+    str += '<br><br><br>';
+	document.getElementById('button_actions').innerHTML= str;
+}
+
+function restore_original() {
+	set_original_buttons();
+	keyblock_setup();
+}
+
+
+
+function setup_display(){
+	var s;
+	
+	s = '<br><span style="font-family:monospace;">';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    s += '</span><input type="checkbox" id = "show_work" onclick="xlate()" > Show coordinates';
+
+	document.getElementById('key_lenblock').innerHTML=s;
+	document.getElementById('caption1').style.display="block";
+	document.getElementById('caption2').style.display="block";
+	document.getElementById('keyblock').style.display="block";
+	document.getElementById('letterblock').style.display="block";
+    document.getElementById('button_actions').style.display="block";
+    document.getElementById('cribblock').style.display="block";
+    reset_key();
+    xlate();
+	
+}
+
+function ck_crib_pos() {
+    var i,j,k,n,c,b;
+    var b_str = ['a','b'];
+
+	reset_key();
+	for (i=0;i<cribtext.length;i++) {
+        for (k=0;k<5;k++) {
+            b = crib_coordinates[5*i+k]; // 0 or 1
+            n = buffer[5*(crib_pos+i)+k];
+            if (crib_key[n] == '-')
+                crib_key[n] = b_str[b];
+            else if ( crib_key[n] != b_str[b])
+                return(false) ; // crib can't be consistently placed here
+        }
+	}
+	return(true); //OK at crib_pos!
+}
+
+
+function drag_crib() {
+    var not_found,i,j,n,c,k;
+	var crib= prompt('Enter crib');
+	if (crib==' ' || crib==null)
+		return;
+    var alpha = 'abcdefghijklmnopqrstuvwxyz-';
+	if (solving_flag && crib_entered==1){
+		ck=confirm('Include current (=yellow) crib letters?');
+		if (ck == true)
+			temp_save();
+		else
+			keep_key_flag = 0;
+	}
+	if (solving_flag ==0) {
+		setup_code_pairs();
+		if (solving_flag==0) return;
+	}
+	cribtext='';
+	crib = crib.toLowerCase();
+	for (i=0;i<crib.length;i++) {
+		c = crib.charAt(i);
+		if (alpha.indexOf(c) !=-1 ) {//allow '-' chars in crib!
+			cribtext = cribtext+c;
+		}
+	}
+    crib_coordinates = []; // global so can also use in drag right and drag left
+    j = 0;
+    for (i=0;i<cribtext.length;i++){
+        c = cribtext.charAt(i);
+        n = alpha.indexOf(c);
+        for (k=0;k<5;k++)
+            crib_coordinates[j++] = baconian_table[5*n+k];
+    }
+    update_undo();
+	document.getElementById('redo_button').disabled = true;
+	crib_pos=0;
+	not_found=true;
+	while(crib_pos< code_array.length/5-cribtext.length+1) {
+		if ( ck_crib_pos() ) {
+            // insert crib key values into display key
+            for (i=0;i<26;i++)
+                if ( crib_key[i] != '-') bac_key[i] = crib_key[i];
+			not_found=false;
+			break; // OK!
+		}
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+	}
+    crib_entered = 1;
+	xlate();
+    keyblock_setup();
+
+}
+
+function drag_left() {
+    var not_found,i,j,n,c,k;
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}
+	not_found=true;
+	crib_pos--;
+	if (crib_pos<0)
+		crib_pos=code_array.length/5-cribtext.length;
+	while(crib_pos>=0) {
+		if ( ck_crib_pos() ) {
+            for (i=0;i<26;i++)
+                if ( crib_key[i] != '-') bac_key[i] = crib_key[i];
+			not_found=false;
+			break; // OK!
+		}
+		crib_pos--;
+	}
+	if ( not_found ){
+		reset_key();
+	}
+    // insert crib key values into display key
+	xlate();
+    keyblock_setup();
+}
+function drag_right() {
+    var not_found,i,j,n,c,k;
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}
+	not_found=true;
+	crib_pos++;
+	if (crib_pos>=code_array.length/5-cribtext.length+1)
+		crib_pos=0;
+	while(crib_pos< code_array.length/5-cribtext.length+1) {
+		if ( ck_crib_pos() ) {
+            // insert crib key values into display key
+            for (i=0;i<26;i++)
+                if ( crib_key[i] != '-') bac_key[i] = crib_key[i];
+			not_found=false;
+			break; // OK!
+		}
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+	}
+	xlate();
+    keyblock_setup();
+}
+
+function temp_save(){
+	var v;
+	
+	keep_key_flag = 1;
+	for (var i=0;i<26;i++) {
+		temp_crib_key[ i ] = crib_key[ i ];;
+	}
+}
+
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Baconian Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box, then click initialize)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+
+
+<span id="key_lenblock">
+<br>
+<input type= "button" value = "Initialize" onclick = "setup_display()">
+</span>
+</form>
+<div id="caption1" style="display:none;">
+To toggle a key letter between 'a' and 'b' click on one of the blue symbols below.<BR>
+</div>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black;
+	margin-right:20px; padding:10px; display:none;">
+</div>
+<BR>
+<div id="caption2" style="display:none;">
+Key Array:<br>
+</div>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px; display:none;">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px; display:none;">
+</div>
+<div id="cribblock"
+style="float:left; margin-left:50px; margin-top:30px; display:none">
+<INPUT onclick=drag_crib(); type=button value="Enter a crib" >
+<span style="background:yellow;"> (Yellow cells fixed by crib) </span>
+<br>
+<INPUT onclick=drag_left(); type=button value="<- (crib left)" >
+<INPUT onclick=drag_right(); type=button value="(crib right) ->" >
+	
+</div>
+
+<div style="clear:left;">
+CODES:<br>
+A=aaaaa B=aaaab C=aaaba D=aaabb E=aabaa F=aabab G=aabba H=aabbb I/J=abaaa K=abaab L=ababa M=ababb N=abbaa<br>
+O=abbab P=abbba Q=abbbb R=baaaa S=baaab T=baaba U/V=baabb W=babaa X=babab Y=babba Z=babbb <br>
+</div>
+<script type="text/javascript">
+screen_check();
+reset_key();
+letterblock_setup();
+keyblock_setup();
+set_original_buttons();
+</script>
+
+
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
