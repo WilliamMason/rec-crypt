@@ -1,0 +1,39 @@
+<html>
+<head>
+<TITLE>Interrupted Key Search</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script src="Intkey_search_main.js" ></script>
+
+</head>
+<body bgcolor="Silver">
+
+<h3>Search word/phrase list for Interrupted Key solution</h3>
+Ttpe or paste ciphertext, choose word/phrase file, choose cipher type, click Search button.
+<br>
+<br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows = 10>
+</textarea>
+<br><br>
+Word/Phrase list: <input type="file" id="input2" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Maximum key length: <input type = "text" id="max_key_len" value = '8' size=2 >
+
+<br>
+<br>
+<input type="button" id="search_for_pattern" value = "Search">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" name="r_buttons" id = "vig" checked> Vigenere 
+&nbsp;&nbsp;
+ <input type="radio" name="r_buttons" id = "var"> Variant
+&nbsp;&nbsp;
+ <input type="radio" name="r_buttons" id = "bea"> Beaufort
+
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows = 10>
+</textarea>
+</body>
+</html>

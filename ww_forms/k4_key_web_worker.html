@@ -1,0 +1,63 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>K4/K3 key solver</title>
+<script src="k4_key_main.js"></script>
+
+</head>
+<body bgcolor="Silver" >
+<h3>K4 Key solver using Web Workers</h3> (or K3 shifted by 13) <br><br>
+
+Encrypting alphabet (order: cipher letter for 'a', cipher letter for 'b', etc. dashes '-' for unknown letters): <br>
+<input type = "text" id = "encrypting_alpha" size = 60 >
+<br><br>
+Best trial keys: <br>
+<textarea id="output_area" cols=80 rows = 12>
+</textarea>
+<br>
+Max Plain Key Length: 
+<input type="text" id="max_key1" size = 3 value = "10">
+&nbsp; &nbsp; &nbsp; &nbsp;
+Max Code Key Length: 
+<input type="text" id="max_key2" size = 3 value = "10">
+&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="radio" name="r_buttons" id = "k4_key" checked>
+K4 key
+&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="radio" name="r_buttons" id = "k3_key" >
+K3 key, shift 13
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="10000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 checked > 2
+<input type="radio" id="ww3" name="nww" value=3 > 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.05" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.04" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.06" size = 3>
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>

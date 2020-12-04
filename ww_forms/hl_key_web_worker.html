@@ -1,0 +1,64 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script src="hl_key_main.js"></script>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Headline Key solver using Web Workers</h3> <br><br>
+
+
+Enter slidable alphabet, transposed Gromark key or first 13-link chain =>
+<input type = "text" id = "slidable_alpha" size = 50 >
+<br><br>
+Enter second 13-link chain (if needed) =>
+<input type = "text" id = "chain2" size = 50 >
+<br><br>
+
+Best trial key (perfect score is 26):<br>
+<textarea id="output_area" cols=80 rows = 12>
+</textarea>
+<br>
+Max Hat Length: 
+<input type="text" id="max_hat" size = 3 value = "10">
+&nbsp; &nbsp; &nbsp; &nbsp;
+Max Key Length: 
+<input type="text" id="max_key" size = 3 value = "15">
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="radio" id="one_chain" name="a_type" checked  > Slidable alphabet
+<input type="radio" id="two_chain" name="a_type" > Two chains
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="10000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 checked > 2
+<input type="radio" id="ww3" name="nww" value=3 > 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.2" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.05" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.15" size = 3>
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>

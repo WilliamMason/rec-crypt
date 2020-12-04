@@ -1,0 +1,259 @@
+<html>
+<!-- 
+app for getting numerical hat pattern from tranposition block, slidable alphabet, and starting letter.
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">  
+<title>Numerical hat pattern</title>
+<script type="text/javascript">
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function error_check(){
+    var i,j,n,c;
+    var lets;
+	var str = document.getElementById('input_area').value; // tranposition block
+    if ( str == ''){
+        alert("No transposition block entered!");
+        return(true);
+    }
+    n = str.indexOf('\n');
+    if ( n== -1){
+        alert("Transposition block has no line breaks!");
+        return(true);
+    }
+    str = str.toLowerCase();
+    lets = [];
+    for (i=0;i<26;i++)
+        lets[i] = 0;
+    for (i=0;i<str.length;i++){
+        n = alpha.indexOf(str.charAt(i));
+        if ( n==-1) continue;
+        lets[n]++;
+    }
+    for (i=0;i<26;i++){
+        if (lets[i]==0){
+            str = "Letter "+alpha.charAt(i)+" missing from tranposition block";
+            alert(str);
+            return(true);
+        }
+        if ( lets[i]>1){
+            str = "Letter "+alpha.charAt(i)+" repeated in transposition block";
+            alert(str);
+            return(true);
+        }
+        
+    }    
+    str = document.getElementById('start_letter').value;
+    if (str == ''){
+        alert("No starting hat letter entered");
+        return(true);
+    }
+    str = document.getElementById('slidable_area').value;
+    if (str == ""){
+        alert("No slidable alphabet entered!");
+        return(true);
+    }
+    str = str.toLowerCase();
+    lets = [];
+    for (i=0;i<26;i++)
+        lets[i] = 0;
+    for (i=0;i<str.length;i++){
+        n = alpha.indexOf(str.charAt(i));
+        if ( n==-1) continue;
+        lets[n]++;
+    }
+    for (i=0;i<26;i++){
+        if (lets[i]==0){
+            str = "Letter "+alpha.charAt(i)+" missing from slidable alphabet";
+            alert(str);
+            return(true);
+        }
+        if ( lets[i]>1){
+            str = "Letter "+alpha.charAt(i)+" repeated in slidable alphabet";
+            alert(str);
+            return(true);
+        }
+        
+    }
+    return(false); // no errors
+    
+}
+
+function do_processing(){
+    var out_str,s,str;
+    var block_array;
+    var i,j,n,c;
+    var row_numb,col_numb;
+    var start_letter;
+    var slidable_alpha;
+    var start_col;
+    var shift = [1,3,5,7,9,11,15,17,19,21,23,25];
+    var hat_index, slide_index;
+    var hat_pattern, slide_str, divided_str;
+    var base_row;
+    
+    if( error_check() ) return;
+	out_str="";
+	str = document.getElementById('input_area').value; // tranposition block
+	block_array = [];
+	row_numb = 0;
+	col_numb = 0;
+	block_array[row_numb]= [];
+	str = str.toLowerCase();
+	for (i=0;i<str.length;i++){
+	  c = str.charAt(i);
+	  if ( c == '\n'){
+	    row_numb++;
+	    block_array[row_numb] = [];
+	    col_numb = 0;
+	  }
+	  else {
+	    n = alpha.indexOf(c);
+	    if (n == -1) continue;
+	    block_array[row_numb][col_numb++] = c;
+	  }
+	}
+    while (block_array[row_numb].length == 0) row_numb--;
+	//if (block_array[row_numb].length>0) row_numb++;
+    while (block_array[row_numb].length != block_array[0].length) { // fill out final row with dashes
+        block_array[row_numb][ block_array[row_numb].length] = '-';
+    }
+    row_numb++; // now is number on non-empty rows
+	s = document.getElementById('start_letter').value;
+	s = s.toLowerCase();
+	for (i=0;i<s.length;i++){
+	  c = s.charAt(i);
+	  n = alpha.indexOf(c);
+	  if (n==-1) continue;
+	  start_letter = c;
+	  break;
+	}
+	s = document.getElementById('slidable_area').value;
+	s = s.toLowerCase();
+	slidable_alpha = '';
+	for (i=0;i<s.length;i++){
+	  c = s.charAt(i);
+	  n = alpha.indexOf(c);
+	  if (n==-1) continue;
+	  slidable_alpha += c;
+	}
+	// get tranposition block column with start letter at top
+  if (document.getElementById('top_row').checked){
+	n = block_array[0].indexOf(start_letter);
+    if ( n== -1){
+        alert("Start letter is not in top row of transposition block!");
+        return;
+    }
+	start_col = start_letter;
+	for (i=1;i<row_numb;i++){
+	  if (block_array[i][n] == '-') break;
+	  start_col += block_array[i][n];
+    }
+    base_row = block_array[0];
+  }
+  else { // base row along bottom, read start column up from bottom
+    base_row = [];
+    for (i = 0;i<block_array[0].length;i++){
+        for (j= row_numb-1;j>=0;j--)
+            if (block_array[j][i] != '-') break;
+        base_row[i] = block_array[j][i];
+    }
+    start_col = '';
+    n = base_row.indexOf(start_letter);
+    if ( n== -1){
+        alert("Start letter is not in bottom row of transposition block!");
+        return;
+    }    
+	for (i=row_numb-1;i>=0;i--){
+	  if (block_array[i][n] == '-') continue;
+	  start_col += block_array[i][n];
+    }
+  }
+  // find the slidable alphabet decimation that has the starting column as consecutive letters
+  
+    for(j=0;j<shift.length;j++){
+      n = shift[j];
+      s = '';
+      for (i=0;i<26*n;i = i+n)
+        s += slidable_alpha.charAt( i%26 );
+      s = s+s; // in case of wrap around
+      n = s.indexOf(start_col);
+      if ( n != -1) break;
+    }
+    if ( n == -1){
+        s = "Starting column "+start_col+" is not in any decimation of the slidable alphabet!";
+        alert(s);
+        return;
+    }
+    divided_str = start_letter;
+    slide_str = s;
+    slide_index = n;
+    hat_index = 0;
+    //n = block_array[0].indexOf(start_letter);
+    n = base_row.indexOf(start_letter);
+    hat_pattern = [];
+    hat_pattern[n] = digits.charAt(hat_index++);
+    for ( i = slide_index+1;i<s.length;i++){
+        c = slide_str.charAt(i);
+        if ( c == start_letter) break;
+        //n = block_array[0].indexOf(c);
+        n = base_row.indexOf(c);
+        if ( n== -1) {
+            divided_str += c;
+            continue;
+        }
+        hat_pattern[n] = digits.charAt(hat_index++);
+        divided_str += ' ';
+        divided_str += c;
+    }
+/*	
+	out_str += "The input string was:\n"+str;
+	out_str += '\nnumber of rows is: '+row_numb;
+	out_str += '\ntop row is: '+block_array[0];
+	out_str += '\nstarting letter is: '+start_letter;
+	out_str += '\nStart letter in slidable alphabet is in position: '+n;
+	out_str += '\ntranspo starting block column is: '+start_col;
+	//out_str += '\ndecimation is: '+s;
+    out_str += '\ndecimation is: '+ divided_str;
+    out_str += '\nnumerical hat pattern: ';
+    for (i=0;i<hat_pattern.length;i++)
+        out_str += hat_pattern[i];
+*/   
+
+    out_str += 'Numerical hat pattern:\n';
+    for (i=0;i<hat_pattern.length;i++)
+        out_str += hat_pattern[i];
+    out_str += '\n\n';
+    out_str += str; // transpo block
+    out_str += '\ncolumn order: '+divided_str.toUpperCase()+'\n';
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Get numerical hat pattern</h3>
+<br><br>
+Transposition block (include line feeds):<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+<br>
+Slidable alphabet:<br>
+<textarea id="slidable_area" cols=80 rows = 2>
+</textarea><br>
+<br>
+Starting hat letter:
+<input type = text id="start_letter" size = 3>
+&nbsp;&nbsp;
+Letter on: top row <input type="radio" name="r_buttons" id = "top_row" checked>
+&nbsp;&nbsp;
+Bottom row <input type="radio" name="r_buttons" id = "bottom_row">
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=5>
+</textarea>
+<br>
+<input type="button" value="Get hat pattern" onclick=do_processing();>
+<br><br>
+</body>
+</html>
