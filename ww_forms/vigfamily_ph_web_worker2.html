@@ -1,0 +1,86 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Vig Family Solver</title>
+<script src="vigfamily_ph_main.js" ></script>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Vig Family PH solver using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<br>
+<form name="myform" >
+Cipher Type:
+<select size=1 name="vtype">
+<option value='2@Vigenere ' >Vigenere </option>
+<option value='3@Variant'>Variant </option>
+<option value='4@Beaufort '>Beaufort </option>
+<option value='8@Porta '>Porta </option>
+<option value='7@Vigenere autokey'>Vigenere Autokey </option>
+<option value='5@Variant Autokey'>Variant Autokey </option>
+<option value='6@Beaufort Autokey'>Beaufort Autokey </option>
+<option value='9@Porta Autokey'>Porta Autokey </option>
+<option value='0@Vigenere Slidefair'>Vigenere Slidefair </option>
+<option value='1@Beaufort Slidefair'>Beaufort Slidefair </option>
+</select>
+
+&nbsp; &nbsp; &nbsp; &nbsp; 
+Period:
+<input type="text" id="b_period" size = 3>
+&nbsp; &nbsp; &nbsp; &nbsp; 
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="checkbox" id = "prog_key"  > Progressive Key
+&nbsp; &nbsp; &nbsp; &nbsp; 
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="checkbox" id = "nicodemus"  > Nicodemus
+
+</form>
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="200000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 checked > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 > 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.2" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.25" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.15" size = 3>
+
+<br><br>
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+
+<!-----------
+<script type="text/javascript">
+initialize();
+</script>
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+---------->
+
+</body>
+</html>

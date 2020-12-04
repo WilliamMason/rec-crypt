@@ -1,0 +1,75 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Syllabary Solver</TITLE>
+<script src="syllabary_ph_main.js" ></script>
+</head>
+<body bgcolor="Silver" >
+<h3>Syllabary PH solver using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=90 rows = 5>
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=90 rows = 8>
+</textarea>
+<br>
+<input type="button" value="Solve" id="do_solve1">
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="3000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked> 3
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.1" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.2" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.3" size = 3>
+<br><br>
+Key Table:
+<input type="radio" onclick="switch_basic_block()" id="english" name="lang"  checked > English
+<input type="radio" onclick="switch_basic_block()" id="french" name="lang"  > French
+<input type="radio" onclick="switch_basic_block()" id="german" name="lang"  > German
+<input type="radio" onclick="switch_basic_block()" id="italian" name="lang"  > Italian
+<input type="radio" onclick="switch_basic_block()" id="spanish" name="lang"  > Spanish
+<input type="radio" onclick="switch_basic_block()" id="latin" name="lang"  > Latin
+
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+<br><br>
+Keysquare: 
+<input type="radio"  id="known_key" name="key_info"  checked > Known
+<input type="radio"  id="unknown_key" name="key_info"  > Unknown
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type=button id = "float_crib" value = "floating crib">
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type=button id = "fixed_crib" value = "fixed crib" disabled >
+<br><br>
+<b>Fixed crib format. </b>Fields separated by commas. First field is number of crib entries, followed by optional comment. Rest of fields are: cipher symbol (digit pair) followed by blank followed by basic working key symbol (digit pair) optionally followed by blank and letter(s) represented by key symbol.
+
+<!-----------
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>

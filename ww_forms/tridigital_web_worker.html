@@ -1,0 +1,69 @@
+<!-- Tridigital scratchpad with column/row swapping, in javascript -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Tridigital Worksheet & Web Worker solver</TITLE>
+<script src="tridigital_main.js"></script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Tridigial Worksheet & Web Worker solver</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 17px; height:200px; margin-right:100px; padding: 10px; background:white; cursor: crosshair;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+</form>
+<!---
+Click on one of the blue symbols below , then click on a cell inside the key table<BR>
+--->
+<span id="directions">
+Enter cipher and digit for word separator, then click initialize button.
+</span>
+<!-- mark off space for letter block -->
+<div id="holdletterblock" class="hold_letter_block">
+</div>
+<!-----------
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px">
+</div>
+--->
+
+<!---
+Key Table:<br>
+-->
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+Word Separator: <input type="text" id="word_separator" size=3>
+<input type = "button" value="Initialize"; id="initialize" >
+</div>
+<div id = "diskops" style="clear:left;" >
+<br>
+<INPUT id="get_from_disk" type=button value="retrieve work from disk" >
+</div>
+<div id="computerblock"
+style="clear:left; margin-left:5px; margin-top:20px;">
+</div>
+
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
