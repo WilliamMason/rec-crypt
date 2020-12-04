@@ -1,0 +1,109 @@
+<html>
+<!-- Test quag4 algorihm of SMWS  
+Example this will solve is so14e23
+
+RJRXP EULAY XLDPR JRMMV PLCEZ IBJCJ YXPPG KEEGM OQBVR ELBXK PNUNO
+VKPNU RSUQA YJURH IWRLT BNIVY HFBUY ADUQB EQSNU EGJEV YHLBF JBAQK
+CFKCE ZIEQW PKUJJ WJPZJ JJUOR UAVBX RRYXE SLBCQ EPEQW ALSMB FJBZX
+NOVJB ZXHCQ ZRBWM UNZAD JKVEL RPUIR QMDRQ LBLUV LRZBG Q
+
+crib:
+------e-ti-t--------------eo--i------------r--te--
+-re-----re--esti---------e--rindeedthemeasureofour
+intellectual----------e---l-----e-----e---i-o-----
+-----t---elle-----le---a---------th-u-a---e------t
+te--r---e-s
+
+Indicator Key: SCIENCE (goes under a )
+
+Code Key: QUERIES
+
+Plain Key: DISPUTE
+
+Plaintext:
+thescientistbytheverynatureofhiscommitmentcreatesmoreandmorequestionsneverfeweri
+ndeedthemeasureofourintellectualmaturityonephilosophersuggestsisourcapacitytofee
+llessandlesssatisfiedwithouranswerstobetterproblems
+
+
+code key len = 6, plain key len = 7
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>SMWS Quag 4 solver</TITLE>
+
+<script src="quag4_smws_main.js" ></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+</style>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Quagmire 4 Hill-climb using Web Workers (SMWS's algorithm)</h3> (scoring by logs of tetragraphs plus crib matching)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
+</textarea><br>
+Crib (dashes for unknowns):<br>
+<textarea id="crib_area" cols=80 rows = 5 spellcheck="false" >
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8 spellcheck="false" >
+</textarea>
+<br>
+<b>Period:</b>
+<input type="text"  id="period" size = 5  >
+<br><br>
+<input type="button" value="Solve" id="do_solve1">
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of web workers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1  > 1
+<input type="radio" id="ww2" name="nww" value=2  checked> 2
+<input type="radio" id="ww3" name="nww" value=3  > 3
+
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+--------->
+<br><br>
+
+Code key length: <input type="text" value="7" id="max_c_len" size = 3>
+&nbsp;&nbsp;&nbsp;&nbsp;
+Plain key length: <input type="text" value="7" id="max_p_len" size = 3>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id = "crib_bonus"> Add bonus score for matching crib
+<br><br>
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+
+<div id = "cm_display" >
+</div>	
+
+</body>
+</html>
