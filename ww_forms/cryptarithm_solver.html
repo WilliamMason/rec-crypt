@@ -1,0 +1,791 @@
+<!-- cryptarithm solver  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Cryptarithm Solver</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+
+<script type="text/javascript">
+var fire_fox=!document.all;
+var data, starting_puzzle;
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
+var current_symbols, current_puzzle;
+var symbol_used = new Array();
+var total_solutions;
+var matrix = new Array();
+var numb_cols, numb_rows;
+var numb_base;
+var FREE = -1;
+var numb_val = new Array();
+var used_numbers = new Array();
+var sol_type;
+var col_type = new Array();
+var all_solutions;
+var cut_off;
+
+function reset(){	
+	var s;
+			
+	do_reset = confirm("Clear puzzle?")
+	if ( do_reset == true) {
+		//s='Directions: Type or paste the sudoku into box below using letters or digits, and dashes (-) for unknowns.';
+		//s += '<br> Then click the solve button.<BR>';
+		//document.getElementById('directions').innerHTML=s;	
+		document.getElementById('orig_puzzle').value='';
+	}
+}		
+
+//sol types: 0 (0,base-1), 1 (0,1), 2 (base-1,0),3 (1,0)
+function show_solution(){
+	var s,i,j;
+	
+	total_solutions++;
+	if (total_solutions > cut_off) return; // probably need more data!
+	j = numb_base-1;
+	if (total_solutions == 1)
+		s= data+"\nsolution # "+total_solutions+"\n";
+	else
+		s= "\nsolution # "+total_solutions+"\n";	
+	if ( sol_type == 0) {
+		for (i=0;i<numb_base;i++)
+			s+= symbols.charAt(used_numbers[i]);
+		s += ' (0-'+j+')';
+	}
+	else if (sol_type == 1)	{
+		s += symbols.charAt(used_numbers[0]);
+		for (i=numb_base-1;i>0;i--)
+			s+= symbols.charAt(used_numbers[i]);
+		s += ' (0-1)';		
+	}
+	else if (sol_type == 2){
+		for (i=numb_base-1;i>=0;i--)
+			s+= symbols.charAt(used_numbers[i]);
+		s += ' ('+j+'-0)';
+	}	
+	else if (sol_type == 3)	{
+		for (i=1; i<numb_base;i++)
+			s+= symbols.charAt(used_numbers[i]);
+		s += symbols.charAt(used_numbers[0]);			
+		s += ' (1-0)';		
+	}
+	s += '\n';
+	all_solutions += s;
+		
+	document.getElementById('orig_puzzle').value = s;
+}
+function do_calc(row,col,col_sum,col_carry){
+	var c,typ,n,i,v,carry;
+	
+	c = matrix[row][numb_cols-1-col]// go from right to left
+	if (c=='?') {// reset and go to next column.
+		do_calc(0,col+1,0,0);	
+		return;
+	}
+	typ = col_type[numb_cols-1-col] //M, A or blank
+	n = symbols.indexOf(c)// index of letter in alphabet
+	if (row == numb_rows-1 && col == numb_cols-1){ //everything filled up
+		col_sum += col_carry;
+		if (numb_val[n] != FREE && numb_val[n] != col_sum)
+			return; // not a solution
+		if (used_numbers[col_sum] != FREE && used_numbers[col_sum] != n)
+			return;
+		if (used_numbers[col_sum] == FREE){
+			numb_val[n] = col_sum;
+			used_numbers[col_sum]=n;
+			show_solution();
+			used_numbers[col_sum]=FREE;
+			numb_val[n] = FREE;
+		}
+		else
+			show_solution();
+	}
+	else if (row == numb_rows-1){ //numbers in this row are sums or products of numbers above them
+		col_sum += col_carry;
+		if (c == '-'){
+			if (col_sum != 0)
+				return;
+			do_calc(0,col+1,0,0);
+		}
+		else {
+			carry = Math.floor(col_sum/numb_base);
+			v = col_sum % numb_base;
+			if (numb_val[n] != FREE && numb_val[n] != v)
+				return; // not a solution
+			if (used_numbers[v] != FREE && used_numbers[v] != n )
+				return;
+			if (used_numbers[v] == FREE){
+				numb_val[n] = v;
+				used_numbers[v]=n;
+				do_calc(0,col+1,0,carry);
+				used_numbers[v]= FREE;
+				numb_val[n] = FREE;
+			}
+			else
+				do_calc(0,col+1,0,carry);
+		}
+	}
+	else { //in midst of column
+		if (c == '-'){
+			do_calc(row+1,col,col_sum,col_carry);
+			return;
+		}
+		else if (numb_val[n] != FREE) {
+			if (typ == 'M' && row != 0)
+				do_calc(row+1,col,col_sum*numb_val[n],col_carry);
+			else
+				do_calc(row+1,col,col_sum+numb_val[n],col_carry);
+		}
+		else { //only place needing to loop through possibilities
+			for (i=0;i<numb_base;i++) {
+				if (used_numbers[i] != FREE) continue;
+				used_numbers[i] = n;
+				numb_val[n]=i;
+				if (typ == 'M' && row!= 0)
+					do_calc(row+1,col,col_sum*i,col_carry);
+				else
+					do_calc(row+1,col,col_sum+i,col_carry);
+				used_numbers[i]=FREE;
+				numb_val[n] = FREE;
+			}
+		}
+	}
+}
+
+function do_solve() {
+	var c,s,cnt,i,j;
+	var state;
+
+	
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+	// set up puzzle from data
+	for (i=0;i<symbols.length;i++) symbol_used[i]=0;	
+	starting_puzzle = '';
+	cnt = 0;
+	numb_cols = -1;
+	numb_rows = 0;
+	state = 0;
+	for (var i = 0;i<data.length;i++){
+		c = data.charAt(i);
+		if ( c =='@') {// separator for line of M's and A's
+			state = 1;
+			continue;
+		}
+		if ( c == '\n') {// end of line
+			if ( state == 1){// line of M's and A's follows
+				cnt = 0;
+				state = 2; 
+				continue;
+			}
+			if (numb_cols == -1)  // first line
+				numb_cols = cnt;
+			else if (numb_cols != cnt) {
+				alert("Columns not aligned!");
+				return;
+			}
+			if ( state == 2){
+				for (var j = 0;j<numb_cols;j++)
+					col_type[j] = starting_puzzle.charAt(j);
+				break;
+			}
+			matrix[numb_rows] = new Array(numb_cols);
+			for (var j = 0;j<numb_cols;j++)
+				matrix[numb_rows][j] = starting_puzzle.charAt(j);
+			numb_rows++;
+			cnt = 0;
+			starting_puzzle = '';
+			continue;
+		}			
+		if( symbols.indexOf(c) == -1 && c != '?') continue;
+		starting_puzzle += c;
+		cnt++;
+		if ( state==0 && c!= '?') symbol_used[ symbols.indexOf(c) ]=1;
+	}
+	current_symbols = ''
+	for (i=0;i<symbols.length;i++){
+		if (symbol_used[i] == 1)
+			current_symbols += symbols.charAt(i);
+	}
+	if ( state == 0){ // no line indicating M or A, use all A's
+		for (var j = 0;j<numb_cols;j++)
+			col_type[j] = 'A';
+	}
+	
+	if (current_symbols.indexOf('-') != -1)
+		numb_base = current_symbols.length-1; // don't count dash
+	else numb_base = current_symbols.length;
+	/*
+	s = 'base is '+numb_base;
+	s += ' number of rows: '+numb_rows;
+	s += ' number of columns: '+numb_cols;
+	s += '\ncurrent symbols '+current_symbols;
+	alert(s);
+	*/
+	
+	for (var i = 0;i<document.typearea.stype.length;i++) 
+		if (document.typearea.stype[i].checked){
+			sol_type = document.typearea.stype[i].value;
+			break;
+	}
+	total_solutions = 0;
+	all_solutions = '';
+	cut_off = 100;
+	for (i=0;i<26;i++)
+		numb_val[i] = FREE;
+	for (i=0;i<numb_base;i++)
+		used_numbers[i] = FREE;
+	do_calc(0,0,0,0);
+	if (total_solutions == 0){
+		s = data+"No solutions\n";
+		document.getElementById('orig_puzzle').value = s;		
+	}
+	else if (total_solutions > cut_off){
+		s = data+"More than "+cut_off+" solutions!\n";
+		document.getElementById('orig_puzzle').value = s;		
+	}
+	else if (document.typearea.all_sols.checked)
+		document.getElementById('orig_puzzle').value = all_solutions
+
+}
+
+function format_multiply(){
+	var c,i,n,state,index,k,cs,d,ltemp,numb_pluses;
+	var mult1,mult2,sum,l1,l2,ll,le1,le2,le3,tl,dis;
+    
+	var pp = new Array()
+		
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+	// initialize
+	state = 0;
+	index = 0;
+	mult1='';
+	mult2='';
+	sum = '';
+	numb_pluses = 0;
+	for (i=0;i<10;i++)
+		pp[i] = '';
+	for (k=0;k<data.length;k++){
+		c = data.charAt(k);
+		if (upperC.indexOf(c) != -1){
+			if (state==0) mult1 += c;
+			else if (state==1) mult2+=c;
+			else if (state==10) sum += c;
+			else pp[index] += c;
+		}
+		else if ( c=='*'){
+				state = 1;
+				//mult2='';
+		}
+		else if (c == '='){
+			if (state == 1){
+				state = 2;
+				//pp[0] = '';
+			}
+			else {
+				state = 10;
+				//sum = '';
+			}
+		}
+		else if ( c=='+'){
+			numb_pluses++;			
+			state++;
+			index++;
+			//pp[index]='';
+		}
+	}
+	// finished initializing
+	// set up lines to be multiplied
+	l1='';
+	l2='';
+	ll='';
+	tl = '';
+	le1 = mult1.length;
+	le2 = mult2.length;
+	if (numb_pluses+1 != le2) {
+        var s = "Warning, incorrect number of + signs\nMay need to insert one of:\n";
+        for (i=0;i<le2-1;i++){
+            if (i>0)
+                s += '+';
+            c = mult2.charAt(le2-1-i);
+            for (n=0;n<le1;n++)
+                s += c;
+            s += ';\n';
+        }
+		//alert("Warning, incorrect number of + signs");
+        alert(s);
+    }
+	for (n=0;n<le2;n++){
+		c = mult2.charAt(le2-1-n);
+		cs='';
+		for (i=0;i<le1;i++)
+			cs += c;
+		ll += pp[n];
+		for (i=0;i<pp[n].length;i++)
+			tl += 'M';
+		for (i=0;i<pp[n].length-le1;i++){
+			l1 += '-';
+			l2 += '-';
+		}
+		l1 += mult1;
+		l2 += cs;
+		l1 += '-';
+		l2 += '-';
+		ll += '-';
+		tl += 'A';
+	} // next n
+	// set up lines to be added
+	le3 = sum.length;
+	dis = ''; // final matrix display goes here
+	for (n=0;n<le2;n++){	
+		ltemp = pp[n];
+		for (i=0;i<n;i++) ltemp += '-';
+		d = le3-ltemp.length;
+		if (n==0){
+			dis = l1;
+			for (i=0;i<d;i++) dis += '-';
+			dis += ltemp;
+			dis += '\n';
+		}				
+		else if (n==1){
+			dis += l2;
+			for (i=0;i<d;i++) dis += '-';
+			dis += ltemp;
+			dis += '\n';
+		}
+		else {
+			for (i=0; i<tl.length;i++) dis += '-';
+			for (i=0;i<d;i++) dis += '-';
+			dis += ltemp;
+			dis += '\n';
+		}
+	}// next n
+	dis += ll;
+	dis += sum;
+	dis += "\n@\n";
+	dis += tl;
+	for (i=0;i<le3;i++) dis += 'A'
+	dis += "\n"
+	document.getElementById('orig_puzzle').value = dis;
+}
+
+function format_divide(){
+	var c,i,n,state,index,k,cs,d1,d2,numb_equals;
+	var num,denom,quo,l1,l2,ll,le1,le2,le3,tl,dis;
+    var first_ll_len,d3;
+	var pp = new Array()
+	var dif = new Array()
+
+	data = document.getElementById('orig_puzzle').value.toUpperCase();	
+	// initialize
+	state = 0;
+	index = -1;
+	num='';
+	denom='';
+	quo = '';
+	numb_equals = 0;
+	for (i=0;i<10;i++){
+		pp[i] = '';
+		dif[i] = '';
+	}
+	for (k=0;k<data.length;k++){
+		c = data.charAt(k);
+		if (upperC.indexOf(c) != -1){
+			if (state==0) num += c;
+			else if (state==1) denom+=c;
+			else if (state==2) quo += c;
+			else if ((state%2)!=0)
+				pp[index] += c;
+			else
+				dif[index] += c;
+		}
+		else if ( c=='/'){
+				state = 1;
+		}
+		else if (c == '='){
+			numb_equals++;			
+			state++;
+		}
+		else if ( c=='-'){
+			state++;
+			index++;
+		}
+	}
+	// finished initializing
+	l1='';
+	l2='';
+	ll='';
+	tl = '';
+
+	le1 = num.length;
+	le2 = denom.length;
+	le3 = quo.length;
+	if (numb_equals-1 != le3){
+        var s = "Warning, incorrect number of = signs\npossible insertions:\n"
+        index = 0;
+        for (i=1;i<le3;i++){
+            s += '-';
+            c = quo.charAt(i);
+            for (n=0;n<dif[index].length-1;n++)
+                s += c;
+            if (i==le3-1) s += c;
+            s += '='+dif[index++]+';\n';
+        }
+        alert(s);
+		//alert("Warning, incorrect number of = signs");
+    }
+	//get multiplied lines
+	for (n=0;n<le3;n++) {
+		c = quo.charAt(n);
+		cs ='';
+		for (i=0;i<le2;i++)	cs += c;
+		ll += pp[n];
+		for (i=0;i<pp[n].length;i++) tl += 'M';
+		for (i=0;i< pp[n].length-le2;i++){
+			l1 += '-';
+			l2 += '-' ;
+		}
+		l1 += denom;
+		l2 += cs;
+		l1 += '-';
+		l2 += '-';
+		ll += '-';
+		tl += 'A';
+	}
+	
+	//get add lines
+	for (n=0;n<le3;n++) {
+		d1 = pp[n].length;
+		d2 = dif[n].length;
+		if (n>0){
+			for (i=0;i<dif[n-1].length-d1;i++){
+				l1 += '-';
+				l2 += '-';
+				tl += 'A';
+			}
+		}
+        else { // n == 0
+            first_ll_len = num.length-quo.length+1;
+			for (i=0;i<first_ll_len - d1;i++){
+				l1 += '-';
+				l2 += '-';
+				tl += 'A';
+			}            
+        }
+		l1 += pp[n];		
+		if (n != le3-1)	d2--;
+		for (i=0;i<d1-d2;i++) l2 += '-';
+		l2 += dif[n].slice(0,d2);
+		//if (n==0) ll += num.slice(0,d1);
+        if (n==0) ll += num.slice(0,first_ll_len);
+		else ll += dif[n-1];
+		for (i=0;i<d1;i++)	tl += 'A';
+		if (n != le3-1) {
+			l1 += '-';
+			l2 += '-';
+			ll += '-';
+			tl += 'A';
+		}
+	}
+	dis = '';
+	dis += l1+'\n';
+	dis += l2+'\n';
+	dis += ll+'\n';
+	dis += "@\n";
+	dis += tl+'\n';
+	document.getElementById('orig_puzzle').value = dis;
+}
+
+
+function format_general_root(){ // makes heavy use of the ' marks dividing first number into segments
+	var c,i,n,state,index,k,cs,d1,d2, root_size, root_flag,numb_equals;
+	var num,sroot,l1,l2,ll,le1,le2,le3,tl,dis,first_segment;
+	var pp = new Array();
+	var dif = new Array();
+	var li = new Array();
+	var apostrophe_flag;
+
+	data = document.getElementById('orig_puzzle').value.toUpperCase();	
+    data = data.replace('GIVES ROOT','~');
+	// initialize
+	state = 0;
+	apostrophe_flag = 0;
+	index = -1;
+	root_flag = 0;
+	root_size=0;
+	first_segment = 0;
+	num='';
+	sroot = '';
+	numb_equals = 0;
+	for (i=0;i<10;i++){
+		pp[i] = '';
+		dif[i] = '';
+		li[i]='';
+	}
+	for (k=0;k<data.length;k++){
+		c = data.charAt(k);
+		if (upperC.indexOf(c) != -1){
+			if (state==0) {
+				num += c;
+				if ( root_flag == 0) first_segment++;
+				else if ( root_flag==1) root_size++;
+			}
+			else if (state==1) sroot+=c;
+			else if ((state%2)==0)
+				pp[index] += c;
+			else
+				dif[index] += c;
+		}
+		else if ( c=='~'){ // ~ replaces phrase "gives root"
+				state = 1;
+		}
+		else if (c=="'" || c == "’") {// separates the number into root sized parts
+			root_flag++;
+			apostrophe_flag = 1;
+		}
+		else if (c == '='){
+			numb_equals++;
+			state++;
+		}
+		else if ( c=='-'){
+			state++;
+			index++;
+		}
+	}
+	if ( apostrophe_flag == 0)
+		alert("Warning: No separation by apostrophes");
+	// finished initializing
+	l1='';
+	l2='';
+	ll='';
+	tl = '';
+
+	le1 = num.length;
+	le2 = sroot.length;
+	if (numb_equals != le2)
+		alert("Warning, incorrect number of = signs");
+	//get multiplied lines, just square, cube, etc each char in sroot, and except for first, use rightmost digit only
+	for (n=0;n<le2;n++) {
+		c = sroot.charAt(n);
+		le3 = pp[n].length;
+		if ( n==0) { // first character so can use complete square power
+			ll += pp[n];
+			for (i=0;i<le3;i++) tl += 'M';	
+			for ( i=0;i<le3-1;i++){
+				l1 += '-';
+				l2 += '-';
+				for (k=2;k<root_size;k++)
+					li[k-2] += '-';
+			}
+			l1 += c;
+			l2 += c;
+			for (k=2;k<root_size;k++)
+				li[k-2] += c;
+		}
+		else { // just use last character, it's equal to right end of (root char)^ root size
+			ll += '-'+pp[n].charAt(le3-1);
+			tl += 'MM';
+			l1 += '?'+c; // '?' commands 'skip this column', just using rightmost char of pp[n]
+			l2 += '-'+c;
+			for (k=2;k<root_size;k++)
+				li[k-2] += '-'+c;
+		}
+		l1 += '-';
+		l2 += '-';
+		for (k=2;k<root_size;k++)
+			li[k-2] += '-';
+		ll += '-';
+		tl += 'A';
+	}
+	//get add lines
+	for (n=0;n<le2;n++) {
+		d1 = pp[n].length;
+		d2 = dif[n].length;
+		if (n>0){
+			d3 = dif[n-1].length;
+			for (i=0;i<d3-d1;i++){
+				l1 += '-';
+				l2 += '-';
+				tl += 'A';
+			}
+		}
+		if ( n==0) for (i=0;i<first_segment-d1;i++){
+			l1 += '-';
+			l2 += '-';
+			tl += 'A';			
+		}
+		l1 += pp[n];		
+		if (n != le2-1)	d2 -= root_size;		
+		for (i=0;i<d1-d2;i++) l2 += '-';
+		l2 += dif[n].slice(0,d2);
+		if (n==0) ll += num.slice(0,first_segment);
+		else ll += dif[n-1];
+		for (i=0;i<d1;i++)	tl += 'A';
+		if (n != le2-1) {
+			l1 += '-';
+			l2 += '-';
+			ll += '-';
+			tl += 'A';
+		}
+	}
+	if ( root_size>2) {
+		k = l1.length-li[0].length;
+		cs = '';
+		for (i=0;i<k;i++) cs += '-';
+	}
+	dis = '';
+	dis += l1+'\n';
+	dis += l2+'\n';
+	if ( root_size>2) {
+		for (i=2;i<root_size;i++)
+			dis += li[i-2] + cs+'\n';
+	}
+	dis += ll+'\n';
+	dis += "@\n";
+	dis += tl+'\n';
+	document.getElementById('orig_puzzle').value = dis;
+}
+
+function format_add() { // no minus signs allowed, plus signs onlyy allowed of left side of each equation
+	var c,i,j,n,state,index,k,cs,d,ltemp,numb_pluses, equation_index;
+	var le1,le2,le3,tl,dis, max_terms;
+	var ps = new Array(); //parital sums, need two dimensions
+	var ll = new Array(); // last line
+		
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+	// initialize
+	state = 0; // state 0 summing terms on left of = sign, 1 at = sign, 2 term on right of = sign, 3 finished term 2
+	index = 0;
+	numb_pluses = 0;
+	equation_index = 0;
+	max_terms = 0;
+	for (i=0;i<10;i++){ // probably never more than 10 things to be added per equation, or more than 10 equations
+		ll[i] = '';
+		ps[i] = new Array();
+		for (j=0;j<10;j++)
+			ps[i][j] = '';
+	}
+	for (k=0;k<data.length;k++){
+		c = data.charAt(k);
+		if ( state == 2 && c == ' '){ // finished current equation
+			state = 3;
+			continue;
+		}
+		if (upperC.indexOf(c) != -1){
+			if (state == 1) state = 2;
+			if (state==2) ll[equation_index] += c;
+			else if ( state == 3){
+				state = 0;
+				equation_index++;
+				index = 0;
+				ps[index][equation_index] += c;
+			}
+			else ps[index][equation_index] += c;
+		}
+		else if ( c=='+'){
+				if ( state >0) {
+					alert("No + signs allowed on right side of an equation. Rewrite equation!");
+					return;
+				}
+				index++;
+				if ( index > max_terms) max_terms = index;
+		}
+		else if ( c=='-'){
+			alert("No minus signs allowed. Rewrite equation!");
+			return;
+		}
+		else if (c == '='){
+			state = 1;
+		}
+	}
+	// finished initializing
+	// set up lines to be added
+
+	dis = ''; // final matrix display goes here
+	for (i=0;i <= max_terms;i++) {
+		for (j=0; j<= equation_index;j++){
+			le3 = ll[j].length; // length of sum for terms with index i
+			le2= ps[i][j].length;
+			for (n=0;n<le3-le2;n++)
+				dis += '-';
+			dis += ps[i][j];
+			if (j<equation_index) dis += '-';
+		}
+		dis += '\n';
+	}
+	for (j=0; j<= equation_index;j++){
+		dis += ll[j];
+		if (j<equation_index)
+			dis += '-';
+	}
+	dis += '\n';
+
+
+	//dis = "maximum term index "+max_terms+" equation index: "+equation_index;
+	document.getElementById('orig_puzzle').value = dis;
+}
+
+
+
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Cryptarithm Solver</span></center><br>
+
+<form name="entryform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:70px; padding: 5px; ">
+Directions: Use format buttons, or manually enter Cryparithm layout into box, use dash (-) for separator.
+<br> For mixed multiply and add, include last line of M/A's preceded by line with @ symbol.
+<br> Then click the Solve button. (Reminder: In root format use ~ in place of phrase 'gives root' )<BR>
+</div>
+
+<div id = "controlArea">
+
+Cryptarithm: <br>
+<!-- mark space for cipher -->
+<textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=15;
+background:white;">
+</textarea>
+</div>
+</form>
+<div id="button_actions" >
+
+<INPUT onclick=do_solve(); type=button value="Solve" >
+<INPUT onclick=format_add(); type=button value="Do + Format" >
+<INPUT onclick=format_multiply(); type=button value="Do * Format" >
+<INPUT onclick=format_divide(); type=button value="Do / Format" >
+<INPUT onclick=format_general_root(); type=button value="Do root (~) Format" >
+<INPUT onclick=reset(); type=button value="Clear" ><br>
+<form name="typearea">
+solution order: 
+<input type="radio" checked name="stype" value=0> (0-base)
+<input type="radio" name="stype" value=1> (0-1)
+<input type="radio" name="stype" value=2> (base-0)
+<input type="radio" name="stype" value=3> (1-0)
+&nbsp &nbsp &nbsp &nbsp
+<input type="checkbox" name="all_sols" value=false> Show all solutions
+</form>
+
+</div>
+
+
+<!--------
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+--->
+
+
+</BODY>
+</HTML>
+

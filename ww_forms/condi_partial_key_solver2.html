@@ -1,0 +1,304 @@
+<html>
+<!-- CONDI partial key solver
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>CONDI key solver</TITLE>
+
+<script type="text/javascript">
+
+var buf_len,crib_len;
+
+var key_array = [];
+alpha = "abcdefghijklmnopqrstuvwxyz";
+symbols = "abcdefghijklmnopqrstuvwxyz-";
+
+var buffer =[];
+var crib =[];
+
+var DASH = 26;
+var max_missing_letters;
+
+function do_processing(){
+    var out_str,s,str,j,i,n,c,x,y;
+    var inv_key;
+    var letter1,letter2,index1,index2;
+    var ciphertext,plaintext;
+    
+  ciphertext = document.getElementById('input_area').value;
+  plaintext = document.getElementById('input_area2').value;
+  buf_len= 0;
+  for (i=0;i<ciphertext.length;i++)  {
+      c = ciphertext.charAt(i).toLowerCase();
+      n = alpha.indexOf(c);
+      if (n != -1)
+        buffer[buf_len++] = n;
+  }
+
+
+  crib_len= 0;
+  for (i=0;i<plaintext.length;i++)  {
+      c = plaintext.charAt(i).toLowerCase();
+      n = symbols.indexOf(c); // allows '-'
+      if (n != -1)
+        crib[crib_len++] = n;
+  }
+  if (buf_len != crib_len){
+    out_str = "plaintext and ciphertext have different lengths";
+    document.getElementById('output_area').value = out_str;
+    return;
+  }
+  max_missing_letters = parseInt(document.getElementById('max_missing_letters').value);
+  var shift = [1,3,5,7,9,11,15,17,19,21,23,25];
+  var solved_flag = false;
+for(index1 = 0;index1<25;index1++) {
+ letter1 = alpha.charAt(index1)
+ for (index2 = index1+1;index2<26;index2++){
+      letter2 = alpha.charAt(index2)
+  var types_count = [0,0,0,0];
+  out_str = 'Keys that passed checks using starting letters '+letter1+' and '+letter2+'\n';
+  tv = 0;
+  for (ov=1;ov<26;ov++){
+            for (i=0;i<26;i++)
+                key_array[i] = -1;
+            key_array[index1] = tv;
+            key_array[index2] = ov;
+            n = check_current_setting();
+            if ( n==1){
+                inv_key = [];
+                for (i=0;i<26;i++)
+                    inv_key[i] = DASH;
+                for (i=0;i<26;i++)
+                  if (key_array[i] != DASH)
+                    inv_key[ key_array[i] ]=i;
+                out_str +="\n";
+                for (i=0;i<26;i++)
+                    out_str += symbols.charAt(inv_key[i]);
+                if (document.getElementById('show_decimations').checked) {
+                        out_str += "\nEquivalent Keys:";
+                        for (j=0;j<shift.length;j++){
+                            c = shift[j];
+                            out_str += '\n';
+                            s = '';
+                            y = 0;
+                            for (i=0;i<c*26; i=i+c){
+                                s += symbols.charAt(inv_key[i % 26]);
+                                if ( (i%26) == 25) x=y; // final key letter
+                                y++;
+                            }
+                            out_str += s.slice(x+1)+s.slice(0,x+1);
+                        }
+                }
+                solved_flag = true;
+            }
+            types_count[n]++;
+  }
+  ov = 0;
+  for (tv=1;tv<26;tv++){
+            for (i=0;i<26;i++)
+                key_array[i] = -1;
+            key_array[index1] = tv;
+            key_array[index2] = ov;
+            n = check_current_setting();
+            if ( n==1){
+                inv_key = [];
+                for (i=0;i<26;i++)
+                    inv_key[i] = DASH;
+                for (i=0;i<26;i++)
+                  if (key_array[i] != DASH)
+                    inv_key[ key_array[i] ]=i;
+                out_str +="\n";
+                for (i=0;i<26;i++)
+                    out_str += symbols.charAt(inv_key[i]);
+                if (document.getElementById('show_decimations').checked) {
+                        out_str += "\nEquivalent Keys:";
+                        for (j=0;j<shift.length;j++){
+                            c = shift[j];
+                            out_str += '\n';
+                            s = '';
+                            y = 0;
+                            for (i=0;i<c*26; i=i+c){
+                                s += symbols.charAt(inv_key[i % 26]);
+                                if ( (i%26) == 25) x=y; // final key letter
+                                y++;
+                            }
+                            out_str += s.slice(x+1)+s.slice(0,x+1);
+                        }
+                }
+                solved_flag = true;
+            }
+            types_count[n]++;
+  }
+  if (solved_flag ) break;
+ } // next index2
+ if(solved_flag) break;
+} // next index1
+
+    out_str +="\ndone.\nSolutions = "+types_count[1]+". Error types: not enough letters = "+types_count[0]+", inconsistent = "+types_count[3]+", not 1-1 = "+types_count[2];
+    /*
+    if ( types_count[0]+types_count[1] == 0)
+        out_str += "\nEnough letters but no solutions. Ciphertext or plaintext must have error!"
+  */
+	document.getElementById('output_area').value = out_str;
+}
+
+function check_current_setting(){
+    var i,j,n,change_flag;
+    var cnt;
+    
+    change_flag = 1;
+    while( change_flag == 1){
+        change_flag = 0;
+        for ( n = 1;n<buf_len;n++) {
+            if (crib[n-1] == DASH || crib[n] == DASH) continue; // dash in plaintext
+            if ( key_array[crib[n-1]] != -1 && key_array[crib[n]] != -1 && key_array[buffer[n]] != -1){
+                if ((key_array[crib[n-1]] +1 + key_array[ crib[n] ])%26 != key_array[buffer[n]]){
+                    return(3); // this key inconsistent
+                }
+            }
+            else if ( key_array[crib[n-1]] != -1 && key_array[crib[n]] != -1 ){
+                key_array[buffer[n]] = ((key_array[crib[n-1]]+1 + key_array[ crib[n] ])%26);
+                change_flag = 1;
+                //cnt++;
+            }
+            else if (key_array[crib[n-1]] != -1  && key_array[buffer[n]] != -1){
+                key_array[crib[n]] = (25+key_array[buffer[n]] - key_array[crib[n-1]] ) % 26;
+                change_flag = 1;
+                //cnt++;
+            }
+            else if (key_array[crib[n]] != -1  && key_array[buffer[n]] != -1){
+                key_array[crib[n-1]] = (25+key_array[buffer[n]] - key_array[crib[n]] ) % 26;
+                change_flag = 1;
+                //cnt++;
+            }
+        }
+    }
+    // check if not enough letters filled in
+    n = 0;
+    for (i=0;i<26;i++){
+        if (key_array[i] == -1){
+            n++;
+            if (n>max_missing_letters) return(0);
+        }
+    }
+    var used_let = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    var missing_let = -1;
+    // check no common values, and all -1's removed, except maybe 1
+    for (i=0 ;i<25;i++){
+        if (key_array[i] == -1) continue
+        for (j= i+1;j<26;j++) {
+            if (key_array[i] == key_array[j]) return(2);
+        }
+    }
+    return(1); // made it all the way through!
+}
+
+function s_compare(a,b) {
+		return b[1]-a[1]
+}
+
+function letter_count() {
+    var out_str,s,str,j,i,n,c,cnt;
+    var ciphertext,plaintext;
+    var l_count = [];
+    var s_count = [];
+    var pt = [];
+    var ct = [];
+
+
+    	
+	for (i=0;i<26;i++)
+		l_count[i] = 0;
+  ciphertext = document.getElementById('input_area').value;
+  plaintext = document.getElementById('input_area2').value;
+  cnt = 0;
+  for (i=0;i<ciphertext.length;i++)  {
+      c = ciphertext.charAt(i).toLowerCase();
+      n = alpha.indexOf(c);
+      if (n != -1)
+         //l_count[n]++;
+         ct[cnt++] = n
+  }
+  cnt = 0;
+  for (i=0;i<plaintext.length;i++)  {
+      c = plaintext.charAt(i).toLowerCase();
+      n = symbols.indexOf(c);
+      if (n != -1)
+         //l_count[n]++;
+         pt[cnt++] = n;
+  }
+	if ( ct.length != pt.length){
+	  alert("Ciphertext and plaintext have different lengths!")
+	  return;
+	}
+	for (i=0;i<ct.length;i++)
+	  if ( pt[i] != DASH) {
+	    l_count[pt[i] ]++;
+	    l_count[ct[i] ]++; // only count ciphertext that is opposite a real plaintext letter.
+	}
+	for (i=0;i<26;i++)
+		s_count[i] = [alpha.charAt(i),l_count[i] ]
+	s_count.sort(s_compare);
+	str = 'Combined plaintext & ciphertext letter count\n';
+	for (i=0;i<26;i++)
+		str += s_count[i][0]+"  "+s_count[i][1]+"\n";;;
+	alert(str)
+
+}
+
+
+
+
+function insert_empty_plaintext(){
+  var i,j,n,c;
+  var out_str;
+  var  ciphertext = document.getElementById('input_area').value;
+  
+  n= 0;
+  out_str = '';
+  for (i=0;i<ciphertext.length;i++)  {
+      c = ciphertext.charAt(i).toLowerCase();
+      n = alpha.indexOf(c);
+      if (n != -1)
+        out_str += '-';
+      else
+        out_str += c;
+  }
+  document.getElementById('input_area2').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> CONDI Partial Key Solver</h3>
+Enter Ciphertext string and corresponding Plaintext string (use dash for unknown letters in plaintext).  Click solve.
+<br><br>
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows=5 spellcheck="false" style="font-family:monospace;" >
+</textarea>
+<br>
+Plaintext (use dashes '-' for unknown letters):<br>
+<textarea id="input_area2" cols=80 rows=5  style="font-family:monospace;" >
+</textarea>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Letter count" onclick=letter_count();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Insert empty plaintext patterns" onclick=insert_empty_plaintext();>
+
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=100 rows=6>
+</textarea>
+<br>
+<input type="button" value="Solve" onclick=do_processing();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Number of allowable missing key letters:
+<input type="text" id = "max_missing_letters" size = 3 value = '10'>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id = "show_decimations" >
+Show equivalent keys.
+<br><br>
+</body>
+</html>

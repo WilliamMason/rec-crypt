@@ -1,0 +1,71 @@
+<html>
+<head>
+<TITLE>Double checkerboard pseudokeys</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script src="dbl_chkb_pseudokeys_main.js" ></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+</style>
+
+</head>
+<body bgcolor="Silver">
+
+<h3>Hill-climbing for double checkerboard keys</h3>
+Paste in ciphertext, click Search button. (scoring by log tets for keys and IC+DIC for simple subs.)
+<br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" cols=80 rows = 6>
+</textarea>
+<br>
+<br>
+<input type="button" id="search_for_pattern" value = "Search">
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type = "checkbox" id = "6x6" > 6x6 checkerboard
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type = "checkbox" id = "key_score" checked > include key score
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="radio" id="key_ic" name="ktp"  checked > IC+DIC scoring
+<input type="radio" id="key_hc" name="ktp"  > hill-climb scoring using  
+<input type="text" value="10000" id="numb_ss_trials" size = 6> trial decrypts per key.
+
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows = 10>
+</textarea>
+<br><br>
+Number of trial keys: 
+<input type="text" value="500000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop searching" >
+<input type="button" value="Clear" id="do_clear1" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<INPUT id="do_crib1" type=button value="crib" disabled>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+Keys searched: 
+<input type="text" value="(none)" id="keys_searched" size = 8>
+<br><br>
+
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+<div id = "cm_display" >
+</div>	
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+<html>
+<head>
+<script src="cm_smws_main.js" ></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+</style>
+
+</head>
+<body bgcolor="Silver" >
+<h3>CM Bifid SMWS key search using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8 spellcheck="false" >
+</textarea>
+<br>
+Period:
+<input type="text" id="b_period" size = 3>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+
+<input type="checkbox" id = "option6" disabled >
+6x6 keysquares (option not activated)
+<br><br>
+<input type="button" value="Solve" id="do_solve1">
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of web workers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked > 3
+
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+--------->
+<br><br>
+<!-- key names reversed for encode as opposed to decode -->
+Left Key length: <input type="text" value="10" id="right_key_len" size = 3>
+&nbsp; &nbsp; 
+Right Key length: <input type="text" value="10" id="left_key_len" size = 3>
+<!---
+Key file: 
+<input type="file" id="input" >
+&nbsp; &nbsp; 
+Max seeds: <input type="text" value="10" id="numb_seeds" size = 3>
+-->
+&nbsp; &nbsp; 
+Max routes: <input type="text" value="11" id="numb_routes" size = 3> (max possible = 40)
+<br><br>
+<INPUT id="do_crib1" type=button value="crib" >
+<div id = "cm_display" >
+</div>	
+
+</body>
+</html>

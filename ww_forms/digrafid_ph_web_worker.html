@@ -1,0 +1,77 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script src="dgf_ph_main.js" ></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+</style>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Digrafid PH solver using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<br>
+Period (for pairs):
+<input type="text" id="d_period" size = 3>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Max Key length:
+<input type="text" id="max_key_len" size = 3 value = 10>
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="3000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked> 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.2" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.25" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.15" size = 3>
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+<br><br>
+<INPUT id="do_crib1" type=button value="crib" >
+
+<div id = "cm_display" >
+</div>	
+
+</body>
+</html>
