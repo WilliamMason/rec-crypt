@@ -1,0 +1,474 @@
+<!-- automatic sudoku solver for 3x3, 4x4,5x5  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Sudoku Solver</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+
+<script type="text/javascript">var fire_fox=!document.all;
+var data, starting_puzzle,side_len,cell_len;
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
+var last_cell,letter_selected,cpos, query_flag;
+var current_symbols, current_puzzle;
+var symbol_used = new Array();
+var position_index;
+var saved_positions = new Array();
+var saved_layout, saved_index;
+var total_solutions;
+var solved_puzzle;
+
+
+function reset(){	
+	var s;
+			
+	do_reset = confirm("Clear puzzle?")
+	if ( do_reset == true) {
+		s='Directions: Type or paste the sudoku into box below using letters or digits, and dashes (-) for unknowns.';
+		s += '<br> Then click the solve button.<BR>';
+		document.getElementById('directions').innerHTML=s;	
+		document.getElementById('orig_puzzle').value='';
+        document.getElementById('forward_routes').disabled = true;
+        document.getElementById('reverse_routes').disabled = true;
+        
+	}
+}		
+
+
+function do_solve() {
+	var le,s,cnt,i,j,c;
+    var std_digits_only = true;
+	
+	data = document.getElementById('orig_puzzle').value.toUpperCase();
+	// set up puzzle from data
+	for (i=0;i<symbols.length;i++) symbol_used[i]=0;	
+	starting_puzzle = '';
+	for (var i = 0;i<data.length;i++){
+		c = data.charAt(i);
+		if( symbols.indexOf(c) == -1) continue;
+		starting_puzzle += c;
+		symbol_used[ symbols.indexOf(c) ]=1;
+        if (symbols.indexOf(c) <= 26)
+           std_digits_only = false; 
+	}
+	le = starting_puzzle.length;
+	if ( le != 9*9 && le != 16*16 && le != 25*25){
+		alert("wrong number of symbols for 3x3, 4x4 or 5x5 puzzle!");
+		return;
+	}
+	if (le == 9*9) {
+		side_len = 9;
+		cell_len = 3;
+	}
+	else if (le == 16*16) {
+		side_len = 16;
+		cell_len = 4;
+	}
+	else {
+		side_len = 25;
+		cell_len = 5;
+	}
+	current_symbols = ''
+	for (i=0;i<symbols.length;i++){
+		if (symbol_used[i] == 1)
+			current_symbols += symbols.charAt(i);
+	}
+	if (current_symbols.length > side_len+1){ // counting dash as a symbol
+		s="More than "+side_len+" different symbols!";
+		alert(s);
+		return;
+	}
+	if (current_symbols.length < side_len+1) {// some symbols not shown!
+        if ( std_digits_only && le == 9*9 && current_symbols.length==9) // traditional sudoku, can have a digit missing
+            current_symbols = '123456789-';
+        else {
+            s="Less than "+side_len+" different symbols!"; // counting dash as a symbol
+            alert(s);
+            return;
+        }
+	}
+	// use array for puzzle because you have to insert lots of stuff into the middle
+	current_puzzle = new Array(side_len);
+	for (i=0;i<side_len;i++)
+		current_puzzle[i] = new Array(side_len);
+	cnt = 0;
+	for (i=0;i<side_len;i++) for (j=0;j<side_len;j++)
+			current_puzzle[i][j] = starting_puzzle.charAt(cnt++);
+	cnt=check_consistent();
+	if (cnt==1) return; // inconsistent puzzle
+	//show_table(current_puzzle);
+	document.getElementById('directions').innerHTML='starting...';
+	do_extend();
+	//show_table(current_puzzle);	
+	document.getElementById('directions').innerHTML='first pass...';	
+	total_solutions = 0;
+	solve(0); // brute force if not already solved
+	s = "Done...Number of solutions: "+total_solutions;
+	document.getElementById('directions').innerHTML=s;
+    if (total_solutions == 1){
+        document.getElementById('forward_routes').disabled = false;
+        document.getElementById('reverse_routes').disabled = false;
+    }
+}
+
+
+function get_possibilities(c_row,c_col){
+	var i,j,s,base_row,base_col,c;
+	
+	for (i=0;i<current_symbols.length;i++)
+		symbol_used[i] = 0;
+	// letters in same row
+	for (i=0;i<side_len;i++) {
+		c = current_puzzle[c_row][i];
+		symbol_used[current_symbols.indexOf(c) ] = 1;
+	}
+	// letters in same column
+	for (i=0;i<side_len;i++) {
+		c = current_puzzle[i][c_col];
+		symbol_used[current_symbols.indexOf(c) ] = 1;		
+	}
+	// letters in same box
+	base_row = c_row-(c_row%cell_len);
+	base_col = c_col-(c_col%cell_len);
+	for (i=0;i<cell_len;i++) for (j=0;j<cell_len;j++) {	
+		c = current_puzzle[base_row+i][base_col+j];
+		symbol_used[current_symbols.indexOf(c) ] = 1;		
+	}
+	s = '';
+	for (i=0;i<current_symbols.length-1;i++){ // don't count dash at end
+		if ( symbol_used[i]==0)
+			s += current_symbols.charAt(i);
+	}
+	return(s);
+}
+
+function check_row(row,col,c){
+	var i,c1,s;
+	
+	for (i=0;i<side_len;i++){
+		if ( i==col) continue;
+		if ( current_puzzle[row][i] == '-'){
+			s=get_possibilities(row,i);
+			if (s.indexOf(c) != -1) // could fill in c here also
+				return(0);
+		}
+	}
+	return(1); // c can't occur anywhere else in this row
+}		
+		
+function check_col(row,col,c){
+	var i,c1,s;
+	
+	for (i=0;i<side_len;i++){
+		if ( i==row) continue;
+		if ( current_puzzle[i][col] == '-'){
+			s=get_possibilities(i,col);
+			if (s.indexOf(c) != -1) // could fill in c here also
+				return(0);
+		}
+	}
+	return(1); // c can't occur anywhere else in this column
+}		
+	
+function check_box(row,col,c){
+	var i,j,s,base_row,base_col;
+	
+	// letters in same box
+	base_row = row-(row%cell_len);
+	base_col = col-(col%cell_len);
+	for (i=0;i<cell_len;i++) for (j=0;j<cell_len;j++) {	
+		if ( base_row+i==row && base_col+j == col) continue;
+		if ( current_puzzle[base_row+i][base_col+j] == '-'){
+			s=get_possibilities(base_row+i,base_col+j);
+			if (s.indexOf(c) != -1) // could fill in c here also
+				return(0);
+		}
+	}
+	return(1); // c can't occur anywhere else in this box
+}		
+
+function extend(row,col){
+	var c, free_letters,i;
+	
+	c = current_puzzle[row][col];
+	if ( c !=  '-')
+		return(0); // already filled
+	free_letters = get_possibilities(row,col);
+	if (free_letters.length==0) return(0); //blocked!
+	if (free_letters.length==1) {// only one possibility
+		current_puzzle[row][col] = free_letters.charAt(0);
+		//document.debug.output_area.value= free_letters;
+		return(1);
+	}
+	// else more than one possibility
+	for (i=0;i<free_letters.length;i++) {
+		c = free_letters.charAt(i);
+		if ( check_row(row,col,c) == 1) { // c is the only possibilitiy
+			current_puzzle[row][col] = c;
+			return(1);
+		}
+	}
+	for (i=0;i<free_letters.length;i++) {
+		c = free_letters.charAt(i);
+		if ( check_col(row,col,c) == 1) { // c is the only possibilitiy
+			current_puzzle[row][col] = c;
+			return(1);
+		}
+	}
+	for (i=0;i<free_letters.length;i++) {
+		c = free_letters.charAt(i);
+		if ( check_box(row,col,c) == 1) { // c is the only possibilitiy
+			current_puzzle[row][col] = c;
+			return(1);
+		}
+	}
+	return(0);
+}
+
+function do_extend(){
+	var row,col,redo,change;
+	
+	redo = 1;
+	while (redo == 1) {
+		redo = 0;
+		for (row = 0;row<side_len;row++)
+			for (col = 0;col<side_len;col++){
+				if (extend(row,col)==1)
+					redo = 1; // at least one letter added
+		}
+	}
+	return(1); // OK
+}
+
+function check_consistent(){
+	var i,j,s,base_row,base_col;
+	var letter,c_col,c_row,k,l;
+	
+	for (k=0;k<current_symbols.length-1;k++){ // dont check for last symbol,the dash!
+		letter = current_symbols.charAt(k);
+		for (c_row = 0;c_row<side_len;c_row++){
+			// check for multiple letters in same row
+			j=0;
+			for (i=0;i<side_len;i++) {
+				if (current_puzzle[c_row][i] == letter){
+					j++;
+					if (j>1) {
+						s = "More than one copy of "+letter+" in same row!";
+						alert(s);
+						return(1);
+					}
+				}
+			}
+		}
+		for (c_col = 0;c_col<side_len;c_col++){
+			// check for multiple copies of letter in same column
+			j=0;
+			for (i=0;i<side_len;i++) {
+				if (current_puzzle[i][c_col] == letter){
+					j++;
+					if (j>1) {
+						s = "More than one copy of "+letter+" in same column!";
+						alert(s);
+						return(1);
+					}
+				}
+			}
+		}
+		for (base_row = 0;base_row<side_len; base_row = base_row+cell_len)
+			for (base_col = 0;base_col<side_len;base_col = base_col+cell_len) {
+			// check for multiple copies of letter in same box
+			l = 0;
+			for (i=0;i<cell_len;i++) for (j=0;j<cell_len;j++) {
+				if (current_puzzle[base_row+i][base_col+j] == letter){
+					l++;
+					if ( l>1) {
+						s = "More than one copy of "+letter+" in same box!";
+						alert(s);
+						return(1);
+					}
+				}
+			}
+		}
+	}// next letter
+	return(0);
+}
+			
+function show_table(puzzle){
+	var r,c,s;
+	
+	s='';
+	for (r=0;r<side_len;r++){
+		for (c=0;c<side_len;c++){
+			s += puzzle[r][c]+' ';
+			if ( (c%cell_len)== cell_len-1)
+				s += ' ';
+		}
+		s += ' \n';
+		if ( (r%cell_len)==cell_len-1)
+			s += '\n';
+	}
+	document.getElementById('orig_puzzle').value = s;
+    // record for route showing, copy element by element so won't change when puzzle array changes
+    solved_puzzle = [];
+    for (r=0;r<side_len;r++) {
+        solved_puzzle[r] = [];
+        for (c=0;c<side_len;c++)
+            solved_puzzle[r][c] = puzzle[r][c].toLowerCase();;
+    }
+}
+
+function show_routes(dir){
+    var r,c,s,base_r,base_c,n,i,j;
+    
+    // show original filled layout in lowercase, then routes
+	s='';
+	for (r=0;r<side_len;r++){
+		for (c=0;c<side_len;c++){
+			s += solved_puzzle[r][c]+' ';
+			if ( (c%cell_len)== cell_len-1)
+				s += ' ';
+		}
+		s += ' \n';
+		if ( (r%cell_len)==cell_len-1)
+			s += '\n';
+	}
+    
+    
+    if (dir == 0)
+        s += "\nForward routes.\n";
+     else
+        s += "\nReverse routes.\n";
+    s+='Rows:\n';
+    for (r=0;r<side_len;r++){
+        for (c=0;c<side_len;c++)
+            if (dir==0) s += solved_puzzle[r][c];
+            else s+= solved_puzzle[r][side_len-1-c];
+        s += '\n';
+    }
+    s+= '\nColumns:\n';
+    for (c=0;c<side_len;c++){
+        for (r=0;r<side_len;r++)
+            if (dir==0) s += solved_puzzle[r][c];
+            else s+= solved_puzzle[side_len-1-r][c];
+        s += '\n';
+    }
+    s+= '\nBoxes:\n';
+	// letters in same box
+    n = side_len/cell_len;
+	for (base_r = 0;base_r<n;base_r++) for (base_c = 0;base_c<n;base_c++){
+        for (i=0;i<cell_len;i++)for (j=0;j<cell_len;j++)
+            if (dir==0) s += solved_puzzle[cell_len*base_r+i][cell_len*base_c+j];
+            else s+= solved_puzzle[cell_len*base_r+cell_len-1-i][cell_len*base_c+cell_len-1-j];
+        s += '\n';
+    }
+    
+    document.getElementById('orig_puzzle').value = s;
+}
+
+function solve(index){
+	var i,j,c, row,col,hold;
+	var free_letters,s,k;
+	
+	row = Math.floor(index/side_len);
+	col = index % side_len;
+	
+	c = current_puzzle[row][col];
+	if ( index == side_len*side_len-1) { // last cell!
+		if (c != '-'){ // already filled in
+			total_solutions++;
+			show_table(current_puzzle);
+		}
+		else {
+			free_letters = get_possibilities(row,col);
+			if (free_letters.length == 0 ) // blocked!
+				return;
+			for (i=0; i<free_letters.length;i++){ // should be just one letter left
+				current_puzzle[row][col] = free_letters.charAt(i);
+				total_solutions++;
+				show_table(current_puzzle);
+                solved_puzzle = current_puzzle; // save in global variable for route showing
+			}
+		}
+	}
+	else { // haven't reached last cell yet
+		if ( c != '-') // already filled in
+			solve(index+1); // go directly to next cell
+		else {
+			free_letters = get_possibilities(row,col);
+			if (free_letters.length == 0 ) // blocked!
+				return;
+			// save current puzzle
+			hold = new Array(side_len);
+			for (i=0;i<side_len;i++) {
+				hold[i] = new Array(side_len);
+				for (k=0;k<side_len;k++)
+					hold[i][k] = current_puzzle[i][k];
+			}
+			for (i=0; i<free_letters.length;i++){ 
+				current_puzzle[row][col] = free_letters.charAt(i);
+				if ( do_extend() == 1) {// extension had no inconsistencies
+					solve(index+1);
+				}
+				// restore array for next letter in loop
+				for (j=0;j<side_len;j++)for (k=0;k<side_len;k++)
+					current_puzzle[j][k] = hold[j][k];
+				//show_table(current_puzzle);					
+			}
+			current_puzzle[row][col] = '-'; // reset
+		}
+	}
+}	
+				
+
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Sudoku Solver</span></center><br>
+
+<form name="entryform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Type or paste the sudoku into box below using letters or digits, and dashes (-) for unknowns.
+<br> Then click the Solve button.<BR>
+</div>
+
+<div id = "controlArea">
+
+Sudoku: <br>
+<!-- mark space for cipher -->
+<textarea id="orig_puzzle"  name = "puzzlearea" cols=90; rows=15;
+background:white;">
+</textarea>
+</div>
+</form>
+<div id="button_actions" >
+
+<INPUT onclick=do_solve(); type=button value="Solve" >
+<INPUT onclick=reset(); type=button value="Clear" >
+&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; 
+&nbsp;&nbsp; &nbsp;
+<INPUT onclick=show_routes(0); type=button value="Show forward routes" id="forward_routes" disabled >
+<INPUT onclick=show_routes(1); type=button value="Show reverse routes" id="reverse_routes" disabled >
+</div>
+
+
+<!--------
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+--->
+
+
+</BODY>
+</HTML>
+

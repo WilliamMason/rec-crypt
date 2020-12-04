@@ -1,0 +1,43 @@
+<!-- Solve an Aristo or Pat web worker version, three workers in this version ------------------------------ -->
+<!--- version three uses PH hill-climbing, and non-extended word list scoring. -->
+<HTML><HEAD><TITLE>Ratagram solver</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<SCRIPT language=JavaScript src="ratagram_solver_main.js"> </script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><H4>Ratagram solver</H4></center>
+
+
+<FORM name=puzzle>
+Cipher: 
+
+<BR><TEXTAREA id=ciphertext styLe="font-family:monospace" name=ciphertext rows=6 cols=90></TEXTAREA><BR>
+<br>
+<input type=button id="do_calc" value="Solve">
+<br>
+Best computer decrypt: &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp Status/Score:
+0<input type="text" value="idle" id="status" size=5>
+1<input type="text" value="idle" id="status2" size=5>
+2<input type="text" value="idle" id="status3" size=5>
+<INPUT id="do_stop" type=button value="Stop solving" >
+<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<br>
+
+Number of trial decrypts:
+<input type="text" value="340000" id="numb_trials">
+Fudge factor: <input type = text id="fudgefactor" value = "0.5" size = 3>
+<input type="checkbox"  checked id="word_scoring"> turn on word list scoring
+<br><br><br><br>
+<input type="checkbox" id = "custom_word_list" >
+Initialize custom word list.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Custom word list file: 
+<input type="file" id="input" >
+<br><br>
+
+</BODY></HTML>
+
+

@@ -1,0 +1,123 @@
+<html>
+<head>
+<script src="s2s4_conv_main.js" ></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+.largerCheckbox { 
+    width: 40px; 
+    height: 40px; 
+} 
+
+.wrapper {
+  display: grid;
+  /*grid-template-columns: 1fr 1fr 1fr 1fr;*/
+  grid-template-columns: repeat(10,75px) auto;
+  grid-gap: 10px;
+  grid-auto-rows: minmax(50px, auto);
+  padding: 10px;
+  max-width: 850px;
+}
+
+.wrapper > div { /* Note: "> div"  must mean: for div's inside of wrapper div */
+ border: 2px solid black;
+ padding: 5px;
+}
+
+.label{
+background-color: Chartreuse ;
+justify-items:center;
+}
+.entry{
+background-color: Yellow ;
+}
+
+.directions{
+background-color: Moccasin;
+}
+
+</style>
+
+</head>
+<body bgcolor="Silver" >
+<h3>S2-S4 Converging key search using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8 spellcheck="false" >
+</textarea>
+<br>
+<b>Cipher Type:</b>
+<input type="radio" id="s4t" name="ntp" value=4 checked > FourSquare
+<input type="radio" id="s2t" name="ntp" value=2 > TwoSquare
+<br><br>
+<input type="button" value="Solve" id="do_solve1">
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of web workers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked > 3
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+
+
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input2" >
+
+
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+--------->
+<br><br>
+Key file: 
+<input type="file" id="input" >
+&nbsp; &nbsp; 
+Max seeds: <input type="text" value="10" id="numb_seeds" size = 3>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="checkbox" id = "option6" >
+6x6 keysquares
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  <input type="checkbox" id="reverse_flag"> include reversed keys.
+<br><br>
+Check/uncheck routes to use in grid below
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="button" value="Select all routes" id="do_select_all" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="button" value="Clear all routes" id="do_clear_all" >
+<br>
+<div class="wrapper" id = "wrapper">
+</div> <!-- end wrapper -->
+
+<div id = "cm_display" >
+</div>	
+
+</body>
+</html>
