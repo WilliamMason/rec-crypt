@@ -1,0 +1,311 @@
+<html>
+<head>
+<title>Trifid minimum crib</title>
+<script type="text/javascript">
+// find crib of minimum length that has a unique property, default property: only one place it will fit
+
+//var digits="0123456789";
+//var symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#';
+var code = [];
+var plain = [];
+var crib = [];
+var freq = [];
+
+var skip_index; // number of letters at the beginning of plaintext to skip
+var min_crib_len, min_pos, min_rev;
+var starting_crib_len;
+
+var EMPTY = -1;
+var NUMB_SYMBOLS = 27;
+var period, buf_len;
+
+var crib_len;
+
+var cube = [];
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+	data = document.getElementById('cipher_area').value;
+  data = data.toUpperCase();
+	state=0;
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	buf_len = code.length;
+}
+
+
+function do_calc(){
+	var str, alpha,out_str,c,n,cnt,i,j;
+    var current_pos,crib_len,numb_positions,start_pos;
+    var  match_pos,nr;
+    var result, cov, min_coverage, current_coverage;
+    
+  setup_code();
+	alpha="abcdefghijklmnopqrstuvwxyz";
+	out_str="";
+	
+	str = document.getElementById('plain_area').value;
+	str = str.toLowerCase();
+  cnt = 0;
+  plain = [];
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			plain[cnt++] = n;
+	}
+	if ( code.length != plain.length){
+        alert("Plaintext and ciphertext have inconsistent lengths!");
+        return;
+  }
+  skip_index = parseInt(document.getElementById('skip_amount').value);
+  starting_crib_len = 5;
+  if ( document.getElementById('period').value == ''){
+	alert("No period entered");
+	return;
+  }
+  period = parseInt(document.getElementById('period').value);
+  min_crib_len = plain.length;
+  // set up cube array
+  for (i=0;i<27;i++){
+    cube[i] = [];
+  }
+  // test that period is consistent with the plaintext
+  crib = [];
+  for (j=0;j<plain.length;j++)
+   	crib[j] = plain[j];
+  result =test_pos(0,plain.length);
+  if ( result == -1){
+    str = 'period '+period+' is inconsistent with plaintext!';
+    alert(str)
+    return;
+  }
+  
+  for ( current_pos = skip_index; current_pos < plain.length-starting_crib_len+1;current_pos++){
+      for ( crib_len = starting_crib_len;crib_len< plain.length-current_pos+1; crib_len++) {
+          crib = [];
+	        for (j=0;j<crib_len;j++)
+        	crib[j] = plain[j+current_pos];
+          numb_positions = 0;
+        	for (start_pos=0;start_pos< plain.length -crib_len +1; start_pos++){
+                result =test_pos(start_pos,crib_len);
+                //n = result[0];
+                //cov = result[1];
+                if ( result>= 0 ){
+	                if (++numb_positions > 1 )// crib fits in more than one place
+	                	break;
+	                match_pos = start_pos;
+                  //current_coverage = Math.floor(cov);
+                }
+            }
+            if (numb_positions == 1 && match_pos == current_pos ){ // OK!
+            if (crib_len<=min_crib_len){ // include same minimum length, the nearer the end of the text the better
+		            min_crib_len = crib_len;
+		            min_pos = current_pos;
+		            min_rev = nr;
+	            	out_str += "New min crib length is "+min_crib_len+" at position "+min_pos+"\n==>  ";
+                    for (j=min_pos;j<min_pos+min_crib_len;j++)
+                        out_str += alpha.charAt(plain[j]);
+                    out_str += "\n";
+                    
+	            }
+	            break;
+            }
+      }
+  }
+  document.getElementById('output_area').value = out_str;
+    
+}
+
+function test_pos(start_pos,crib_len){
+	var j, count,nb,nc,n,k,i;
+	var numb_this_pass,b_start,c_start,nxt_label,bindex,cindex;
+	var bpos,cpos;
+	var x,y;
+	
+/* check for inconsistencies between crib and ciphertext in triffid */
+/* printf("Position %li ",start_pos); */
+/* crib positioned at start_pos */
+/* initialize */
+//printf("start pos %i\n",start_pos);
+numb_this_pass = period;
+b_start = Math.floor(start_pos / period);
+b_start *= period ;
+/* b_start is start of period boundary */
+if ( b_start + period > buf_len )
+	numb_this_pass = buf_len - b_start;
+nxt_label = 0;
+/* unmark the array of labels */
+for (j=0;j<NUMB_SYMBOLS;j++)
+	cube[j][0] = cube[j][1] = cube[j][2] = -1;
+
+/* count goes from 0 to 3 * numb_this_pass (=period usually).
+bindex and cindex  go from 0 to 2 */
+
+count = bindex = cindex = 0;
+bpos = b_start;
+/* initialize cpos so it gets to 0 at  start_pos. This is tricky!*/
+	cpos = c_start = -(start_pos % period);
+
+/* printf("count cpos cindex bpos bindex\n"); */
+/* ok, go */
+do {
+while( count < 3*numb_this_pass) {
+
+if ( cpos >=0 && cpos<crib_len) {
+	nb = cube[ code[bpos] ][ bindex];
+	nc = cube[ crib[cpos] ][ cindex];
+	if ( nb== -1 && nc == -1) /* both unlabeled, need new label*/
+		cube[ code[bpos] ][ bindex]=
+		 cube[ crib[cpos] ][ cindex] =
+		 nxt_label++;
+	else if ( nb == -1 )
+		cube[ code[bpos] ][ bindex]= nc;
+	else if ( nc == -1 )
+		 cube[ crib[cpos] ][ cindex] = nb;
+	else  /* join the two groups together under one label*/
+		for (j=0;j<NUMB_SYMBOLS;j++) for (k=0;k<3;k++)
+			if( cube[j][k] == nc)
+				cube[j][k] = nb;
+/*
+	printf("%li %li %li %li %li\n",count,cpos,cindex,bpos,bindex);  
+*/
+} /* end if */
+
+/* now advance the various indices. tricky! */
+count++;
+/* advance crib indices */
+cpos++;
+if( (count%numb_this_pass) == 0 ) {
+	cindex++;
+	cpos = c_start;
+}
+/* advance buffer indices */
+bindex = (bindex+1) % 3;
+if ( bindex == 0 )
+	bpos++;
+} /* end while */
+c_start += period;
+b_start += period;
+cpos = c_start;
+bpos = b_start;
+count = bindex = cindex = 0;
+if ( b_start + period > buf_len )
+	numb_this_pass = buf_len - b_start;
+else
+	numb_this_pass = period;
+} while( cpos<crib_len);
+/* ok the array of labels, cube, is marked */
+/* crib position inconsistent if for any label number, there are
+more than nine entries in cube array with the number, or if
+two different cube[j]'s have identical label numbers */
+/* check for more than nine */
+for (j=0;j<nxt_label;j++) {
+	n = 0;
+	for (k=0;k<NUMB_SYMBOLS;k++)
+		if ( cube[ k ][ 0] == j) {
+			n++;
+			if ( n>9) {
+/*				printf("inconsistent at 0\n"); */
+				return(-1);
+			}
+	}
+	n = 0;
+	for (k=0;k<NUMB_SYMBOLS;k++)
+		if ( cube[ k ][ 1] == j) {
+			n++;
+			if ( n>9) {
+/*				printf("inconsistent at 1\n"); */
+				return(-1);
+			}
+	}
+	n = 0;
+	for (k=0;k<NUMB_SYMBOLS;k++)
+		if ( cube[ k ][ 2] == j) {
+			n++;
+			if ( n>9) {
+/*				printf("inconsistent at 2\n"); */
+				return(-1);
+			}
+	}
+} /* next j */
+/* check for more than 3 with two labels in common */
+for (j=0;j<nxt_label;j++) for (k=0;k<nxt_label;k++) {
+	n = 0;
+	for (x=0;x<NUMB_SYMBOLS;x++)
+		if ( cube[ x ][ 0] == j && cube[x][1]==k ) {
+			n++;
+			if ( n>3) {
+/*				printf("inconsistent at 0,1\n");  */
+				return(-1);
+			}
+	}
+	n = 0;
+	for (x=0;x<NUMB_SYMBOLS;x++)
+		if ( cube[ x ][ 0] == j && cube[x][2]==k ) {
+			n++;
+			if ( n>3) {
+/*				printf("inconsistent at 0,2\n");  */
+				return(-1);
+			}
+	}
+	n = 0;
+	for (x=0;x<NUMB_SYMBOLS;x++)
+		if ( cube[ x ][ 1] == j && cube[x][2]==k ) {
+			n++;
+			if ( n>3) {
+/*				printf("inconsistent at 1,2\n");  */
+				return(-1);
+			}
+	}
+} /* next k,j */
+/* check for two chars with same label number */
+for (j=0;j<NUMB_SYMBOLS-1;j++)
+	for ( k= j+1; k<NUMB_SYMBOLS;k++)
+		if ( cube[j][0] !=-1 && cube[j][1]!= -1 && cube[j][2]!=-1
+			&& cube[j][0] == cube[k][0] &&
+			cube[j][1] == cube[k][1] &&
+			cube[j][2] == cube[k][2] ) {
+/*			printf("Two different letters with same labels\n"); */
+			return(-1);
+}
+//printf("Period %i OK at position %i\n",period,start_pos);
+return(0); /* OK */
+} /* end test_pos */
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Trifid minimum crib</h3> <br>
+Directions: Type or paste in ciphertext and plaintext strings. Set Period. Click Minimum crib button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 >
+</textarea><br>
+Plaintext:<br>
+<textarea id="plain_area" rows = 3 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Minimum crib" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Begining letters to skip:
+<input type = text id="skip_amount" value = "25" size = 2 >
+&nbsp;  &nbsp; &nbsp; Period:
+<input type = text id="period"  size = 2 >
+
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=8 cols=90>
+</textarea>
+
+
+</body>
+</html>
