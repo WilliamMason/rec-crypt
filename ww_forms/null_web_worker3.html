@@ -1,0 +1,75 @@
+<!-- Solve a null web worker version of nullkeyvl_pent_word.c, just one worker in this version ------------------------------ -->
+<!---------- version 2 allows zero letters from a word so czan skip words   --->
+<!---------- version 3 has escape code option   --->
+<HTML><HEAD><TITLE>Solve a Null</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<SCRIPT src="null_main.js"></SCRIPT>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><H4>Null solver using web worker, version 3</H4></center>
+<center>Log Pentagraph and word list scoring.</center>
+<BR> <B>Directions:</B> Paste cipher into top box, set options, click Solve button<br>
+
+
+Cipher:  &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+
+
+<BR><TEXTAREA id="input_area" styLe="font-family:monospace" name=ciphertext rows=6 cols=90></TEXTAREA><BR>
+
+
+<BR><BR>
+<INPUT id="do_clear1" type=button value="Clear" > 
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp <INPUT id="do_calc1" type=button value="Solve" >
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <INPUT id="do_stop1" type=button value="Stop solving" >
+<br>
+Best computer decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<br>
+
+Status: 
+<input type="text" value="idle" size=5 id="status">
+Number of trial decrypts: 
+<input type="text" value="1000000" size =8 id="numb_trials">
+
+Crib:
+<input type="text" id="crib">
+&nbsp; &nbsp;
+<input type="checkbox" id = "repeat_crib"  > Repeated Crib
+&nbsp; &nbsp; &nbsp;
+Max letters in plaintext: 
+<input type="text" value="40" size=3 id="plain_limit">
+<br>
+<br>
+<input type="radio" id="np" name="rule_type"  checked > Numerical Pattern:
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+Max number of words in pattern: 
+<input type="text" value="3" size=3 id="max_key_len">
+Max letters per word:
+<input type="text" value="1" size=3 id="max_letters">
+<br><br>
+<input type="radio" id="es" name="rule_type"  > Escape Codes:
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+Max distance from an escape code: 
+<input type="text" value="1" size=3 id="max_let_pos">
+Max escape codes to skip:
+<input type="text" value="0" size=3 id="max_skip">
+<br><br>
+<input type="radio" id="sk" name="rule_type"  > Skipping Pattern:
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+Key length: 
+<input type="text" value="3" size=3 id="pat_len">
+&nbsp;&nbsp;&nbsp; Max letters can skip:
+<input type="text" value="10" size=3 id="skip_len">
+
+<!---------
+<br>Debugging: 
+<textarea id="debug_area" cols=80 rows = 3>
+</textarea>
+-------->
+
+</BODY></HTML>
+
+

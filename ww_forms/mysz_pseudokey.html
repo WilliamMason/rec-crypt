@@ -1,0 +1,61 @@
+<html>
+<head>
+<title>Myszkowski  Key Solver </title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+
+<script src="mysz_pseudokey_main.js"></script>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Myszkowski Key solver using Web Workers</h3> <br><br>
+
+
+Enter Alphabetic Key pattern =>
+<input type = "text" id = "key_alpha" size = 50 >
+<br><br>
+
+Best trial key:<br>
+<textarea id="output_area" cols=80 rows = 12>
+</textarea>
+<br>
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts: 
+<input type="text" value="10000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 checked > 2
+<input type="radio" id="ww3" name="nww" value=3 > 3
+
+<br><br>
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+
+<!------
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.2" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.05" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.15" size = 3>
+----->
+<!------------
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>Keyphrase solver </title>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+
+<script src="keyphrase_main.js"></script>
+</head>
+<body bgcolor="Silver" >
+<center><span style="font-weight:bold;">Keyphrase Worksheet & Web worker solver</span></center><br>
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Enter cipher (no '-' symbols in ciphertext), click the Initialize button)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+<br>
+<div id="initial">
+<input type = "button" value="Initialize"; id="initialize" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT id="get_from_disk" type=button value="retrieve work from disk" >
+</div>
+
+<BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px; display:none;">
+</div>
+<BR>
+
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block" 
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
+	  padding:10px; float:left;">
+</div>
+<div id="undo_redo"
+style="font-family:monospace; font-size: 15px; 
+	  padding:10px; float:left;">
+</div>
+
+<div id="invkeyblock"
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
+	  padding:10px; clear:left;">      
+</div>
+<div id = "diskops" style="clear:left;" >
+</div>
+<div id="computerblock"
+style="clear:left; margin-left:5px; margin-top:20px;">
+</div>
+
+</body>
+</html>

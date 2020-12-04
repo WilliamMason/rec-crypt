@@ -1,0 +1,17 @@
+{
+  "name": "Transposition Ph hill climb 2.0",
+  "description": "PH Hill climbing to solve transposition ciphers, log tet scoring",
+  "version": "1.1.0",
+  "manifest_version": 2,    
+  "app": {
+    "launch": {
+      "local_path": "transposition_ph_web_worker2.html"
+    }
+  },
+  "offline_enabled": true,      
+  "icons": {
+    "16": "Bicon16_alt2.png",
+    "128": "transposition_ph_solver128.png"
+  }
+  
+}
