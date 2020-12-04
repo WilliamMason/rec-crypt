@@ -1,0 +1,110 @@
+<!-- work on batch of patristocrats/aristocrats in javascript, or just one, choice of from 1 to 3 web worker solvers-->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Xenocrypt Worksheets extended</TITLE>
+<style type="text/css">
+textarea {
+ font-family:monospace;	
+ font-size: 15px;
+}
+</style>
+
+<script src="bulk_xeno_main.js" ></script>
+</head>
+
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Xenocrypt Worksheets, extended</span></center><br>
+
+<form name="entryform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Paste a digital con file from the ACA website into box labeled ciphers. <br>
+ Then click the Initialize button. Or paste just one cipher and click the appropriate button<BR>
+</div>
+
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:150px; margin-right:100px; padding: 10px; background:white; margin-top:10px;">
+ Ciphers: <br>
+  <textarea id="ciphertext" style="font-family: monospace;" name="ciphertext" rows="6" cols="90"></textarea><br>
+</div>  
+
+
+<div id = "key_caption">
+</div>
+
+<div id="keySpace" style=" float:left; font-family:monospace; height:40px; width:210px;margin-top:5px; padding:5px;margin-bottom:5px;">
+
+</div>
+<div id="let_space"  style=" float:left; font-family:monospace; height:40px; width:630px; margin-top:5px; padding:5px; margin-left:10px;margin-bottom:5px;">
+</div>
+
+</form>
+
+<div  id="selection_buttons" 
+style="overflow:auto; clear:left; height:75px; margin-right:50px; padding: 10px; margin-top:10px;">
+ 
+</div>
+<div id="button_actions"  style="clear:left;">
+
+
+<INPUT id ="initialize0"  type=button value="Initialize digital cons" >
+<INPUT id="initialize1" type=button value="Single Aristo" >
+<INPUT id="initialize2" type=button value="Single Pat" >
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked> 3
+
+</div>
+
+
+<div id="keyblock_space" style="font-family:monospace; font-size: 15px; cursor: crosshair; padding:10px">
+<span style="font-weight:bold;">Making Your Own Digital Con File: </span> Use an ordinary text (.txt) file. <br>
+Put in any header information you wish: Title, date, etc.<br>
+Put in the Aristocrat ciphers. Precede each cipher with a line that begins: X-1 to X-7<br>
+Put in the Patristocrat ciphers. Precede each cipher with a line that begins: X-8<br>
+After the last Patristocrat, put in a line that begins: X-9<br>
+Put in any closing comments that you wish.
+</div>
+<div id="solution_space">
+</div>
+<div id = "web_worker_space" style="display:none;">
+Best computer decrypt:  &nbsp &nbsp &nbsp Status/Score: 
+0<input type="text" value="idle" id="status" size=5>
+1<input type="text" value="idle" id="status2" size=5>
+2<input type="text" value="idle" id="status3" size=5>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+ &nbsp; &nbsp; <INPUT id="do_calc1" type=button value="Computer: take it from here." >
+<INPUT id="xfer_sol1" type=button value="transfer to worksheet." > 
+<br>
+<textarea id="output_area" cols=80 rows = 8>
+Choose a book file and a word list file...
+</textarea>
+<br>
+
+Number of trial decrypts: 
+<input type="text" value="340000" id="numb_trials">
+Fudge factor: <input type = text id="fudgefactor" value = "0.5" size = 3>
+<input type="checkbox"  checked id="word_scoring"> turn on word list scoring
+<br>
+Number of hill-climbers to use:
+<input type="radio" id="xww1" name="xnww" value=1 > 1
+<input type="radio" id="xww2" name="xnww" value=2 > 2
+<input type="radio" id="xww3" name="xnww" value=3 checked> 3
+&nbsp; &nbsp;&nbsp; &nbsp; Log score weight: <input type = text id="log_weight" value = "1.0" size = 3>
+</div>
+
+<!---
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id="debug_place" styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+--->
+
+</BODY>
+</HTML>

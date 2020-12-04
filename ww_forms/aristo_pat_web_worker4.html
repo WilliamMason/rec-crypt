@@ -1,0 +1,499 @@
+<!-- Solve an Aristo or Pat web worker version, three workers in this version ------------------------------ -->
+<!--- version three uses PH hill-climbing, and non-extended word list scoring. -->
+<HTML><HEAD><TITLE>Solve an Aristocrat or Patristocrat</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<SCRIPT language=JavaScript>
+<!-- cxozzkthehoutpatkfkxulobk
+var code = "EMPTY"
+var lowerC="abcdefghijklmnopqrstuvwxyz"
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//substate values 0 =no choice,1 = cipher letter chosen, 2 = plain letter chosen, 3 = both letters chosen (use just 1 and 2?)
+var substate=0, pchoice=0,cchoice=0
+var key_array = '--------------------------'
+var inverse_key = new Array(26);
+
+var solving_flag = 0;
+var line_len = 80;
+var cipher_type = 0;
+
+var l_count = new Array(26),s_count = new Array(26)
+var hclimber, hclimber2, hclimber3;
+var stop_flag = 0;
+var current_channel = 0;
+var max_score = -10000.0;
+
+
+function initialize(){
+	//var str,i,score,s;
+	
+   hclimber = new Worker('hill_climb_aristo_pat3.js');
+   hclimber.onmessage = function (event) {
+	var str,i,score,s;	   
+	 str = event.data; 	 
+	 if (str.charAt(0) == '0') { // break up into score and display strings
+		 s = str.split('~'); // string separated by tilde ~
+		 score = parseFloat(s[0].slice(1));
+		 document.getElementById('status').value = s[0].slice(1);
+		 if ( score > max_score){
+		 	 max_score = score;
+		 	 current_channel = 0;
+		 }
+		
+		if ( current_channel == 0)
+     		document.getElementById('output_area').value = s[1]+" worker: 0";
+     	
+ 	}
+     else if (str.charAt(0) == '1'){
+     	//alert(str.slice(1));
+     		document.getElementById('status').value = str.slice(1);
+ 	}
+     else
+     	document.getElementById('output_area').value = str+" worker: 0";   
+   };
+   hclimber2 = new Worker('hill_climb_aristo_pat3.js');
+   hclimber2.onmessage = function (event) {
+	var str,i,score,s;	   
+	 str = event.data; 	 
+	 if (str.charAt(0) == '0') { // break up into score and display strings
+		 s = str.split('~'); // string separated by tilde ~
+		 score = parseFloat(s[0].slice(1));
+		 document.getElementById('status2').value = s[0].slice(1);		 
+		 if ( score > max_score){
+			 max_score = score;
+			 current_channel = 1;
+		 }
+		
+		if ( current_channel == 1)
+     		document.getElementById('output_area').value = s[1]+" worker: 1";
+     	
+ 	}
+     else if (str.charAt(0) == '1'){
+     	//alert(str.slice(1));
+     		document.getElementById('status2').value = str.slice(1);
+ 	}
+     else
+     	document.getElementById('output_area').value = str+" worker: 1";   
+   };
+   hclimber3 = new Worker('hill_climb_aristo_pat3.js');
+   hclimber3.onmessage = function (event) {
+	var str,i,score,s;	   
+	 str = event.data; 	 
+	 if (str.charAt(0) == '0') { // break up into score and display strings
+		 s = str.split('~'); // string separated by tilde ~
+		 score = parseFloat(s[0].slice(1));
+		 document.getElementById('status3').value = s[0].slice(1);		 
+		 if ( score > max_score){
+			 max_score = score;
+			 current_channel = 2;
+		 }
+		
+		if ( current_channel == 2)
+     		document.getElementById('output_area').value = s[1]+" worker: 2";
+     	
+ 	}
+     else if (str.charAt(0) == '1'){
+     	//alert(str.slice(1));
+     		document.getElementById('status3').value = str.slice(1);
+ 	}
+     else
+     	document.getElementById('output_area').value = str+" worker: 2";   
+   };
+
+  
+}
+
+
+function type_selected(){
+	get_cipher_type();
+	if (cipher_type == 1) // patristocrat
+		document.getElementById('fudgefactor').value="0.5"; // changed from 0.7
+	else // Aristoctat
+		document.getElementById('fudgefactor') = "0.5";
+	
+}
+
+function get_cipher_type() {
+	var i;
+
+	for (i = 0;i<document.puzzle.ctype.length;i++) 
+		if (document.puzzle.ctype[i].checked){
+			cipher_type = document.puzzle.ctype[i].value;
+			break;
+	}
+//	s = "cipher type is "+cipher_type
+//	alert(s)
+}		
+
+function letters_only(s){
+	var i,n;
+	
+	str = '';
+	for (i=0;i<s.length;i++) {
+			n = upperC.indexOf(s.charAt(i))
+			if ( n != -1)
+				str += s.charAt(i)
+	}
+	return(str);
+}
+
+function break_pt(c) {
+	switch(c) {
+		case ' ':
+		case ',':
+		case '"':
+			return 1
+	}
+	return 0
+}
+
+function get_inverse_key(){
+	var j;
+	
+	for (j=0;j<26;j++)
+		inverse_key[j] = '-';
+	for (j=0;j<26;j++)
+		if (key_array.charAt(j) != '-')
+			inverse_key[upperC.indexOf(key_array.charAt(j))] = lowerC.charAt(j)
+}	
+
+function xlate(sub_flag) {
+	var k,i,n,pl,pos,str,limit
+	// erase any previous values of cchoice
+	n = key_array.indexOf(upperC.charAt(cchoice))
+	if ( n != -1) {
+		k = key_array.slice(0,n)+'-';
+		if (n<25)
+			k = k+key_array.slice(n+1);
+		key_array=k
+	}
+	if (sub_flag) { //substitution, not erasure
+		k = key_array.slice(0,pchoice)+upperC.charAt(cchoice);	
+		if (pchoice<25)
+			k = k+key_array.slice(pchoice+1);
+		key_array=k
+	}
+	document.puzzle.key.value =key_array+"\n"+lowerC;
+	if (solving_flag == 0) {
+		get_cipher_type();
+		code = document.puzzle.ciphertext.value
+		code = code.toUpperCase()
+		if (cipher_type == 1)
+			// dump everything except letters
+			code = letters_only(code);
+		else
+			// global replace of line feeds and carriage returns with blank
+			code = code.replace(/[\n\r]/g,' ');
+		solving_flag = 1;
+	}
+	pos=0
+	str = ''
+	while ( pos < code.length ) {
+		limit = pos+line_len;
+		if ( limit >= code.length)
+			limit = code.length-1;
+		else {
+			while ( break_pt(code.charAt(limit))== 0 && limit>pos )
+				limit = limit -1;
+			if (limit == pos) //no place to split!
+				limit = pos+line_len;
+		}
+		str = str+code.slice(pos,limit+1)+"\n"
+		pl = ''
+		for (i=pos;i<=limit;i++) {
+			c = code.charAt(i);
+			n = key_array.indexOf(c)
+			if (n != -1 && c!='-') 
+				pl = pl+lowerC.charAt(n);
+			else {
+				n = upperC.indexOf(c);
+				if (n!= -1) c = '-';
+				pl = pl+c;
+			}
+		}
+		str = str+pl+"\n"
+		pos = limit+1
+	}
+	str += "\n\nK2 Key:\n"+lowerC+"\n"+key_array+"\n";	
+	get_inverse_key();
+	str += "\nK1 Key:\n"+upperC+"\n";
+	for (i=0;i<26;i++)
+		str += inverse_key[i];
+	str += "\n";
+	document.puzzle.ciphertext.value = str
+	substate=0
+	document.solver.halt_solver();
+}	
+
+function s_compare(a,b) {
+		return b[1]-a[1]
+}		
+
+function letter_count() {
+	var i,n,str,s;
+
+	
+	if (solving_flag == 0) {
+		code = document.puzzle.ciphertext.value
+		code = code.toUpperCase()
+		// global replace of line feeds and carriage returns with blank
+		code = code.replace(/[\n\r]/g,' ');
+		//solving_flag = 1;
+	}
+
+	for (i=0;i<26;i++)
+		l_count[i] = 0;
+		
+	for (i=0;i<code.length;i++) {
+			n = upperC.indexOf(code.charAt(i))
+			if ( n != -1)
+				l_count[n] = l_count[n]+1
+	}
+
+	for (i=0;i<26;i++)
+		s_count[i] = [upperC.charAt(i),l_count[i] ]		
+	s_count.sort(s_compare);
+	str = '';
+	for (i=0;i<26;i++)
+		str += s_count[i][0]+"  ";
+	str += '\n';
+	for (i=0;i<26;i++){
+		str += s_count[i][1].toString()+' ';
+		if (s_count[i][1]<10) str += ' ';
+	}
+	
+	//alert(str)
+	s = "Letter count:<br>";
+	s += '<TEXTAREA id=let_ct styLe="font-family:monospace" name=let_ct rows=2 cols=80></TEXTAREA> <BR>';
+	document.getElementById('let_space').innerHTML=s;	
+	document.getElementById('let_ct').value = str;
+
+}	
+	
+	
+function cletter_click(i) {
+	cchoice = i;
+	if (substate==0) {
+		substate = 1;
+	}
+}	
+
+function pletter_click(i) {
+	if (substate==1) {
+		pchoice = i;
+		xlate(1)
+		substate=0;
+	}
+}	
+
+
+function setup_key() {
+	var i
+	key_array = '--------------------------';
+	document.puzzle.key.value =key_array+"\n"+lowerC;	
+	substate = 0
+}		
+function start_over() {
+	var i
+	key_array = '--------------------------';
+	document.puzzle.key.value =key_array+"\n"+lowerC;	
+	if (solving_flag ==0) {
+		code = document.puzzle.ciphertext.value
+		code = code.toUpperCase()
+		// global replace of line feeds and carriage returns with blank
+		code = code.replace(/[\n\r]/g,' ');		
+		//solving_flag = 1; 
+	}
+	document.puzzle.ciphertext.value = code
+	substate=0
+	solving_flag = 0; //OK to edit ciphertext
+	document.solver.halt_solver();	
+}		
+
+function do_clear(){
+		do_erase = confirm("Erase the current cipher?")
+		if ( do_erase == true) {
+			setup_key()
+			document.puzzle.ciphertext.value = ''
+			solving_flag=0;
+			document.getElementById('let_space').innerHTML=' ';
+			document.getElementById('output_area').value = '';
+		}
+}	
+
+
+function do_calc(){
+	var s,str,n;
+	
+	if (solving_flag ==0){
+		code = document.puzzle.ciphertext.value
+		code = code.toUpperCase()
+		get_cipher_type();
+	}
+	if (stop_flag == 1){
+		initialize();
+		stop_flag = 0;
+	}
+	max_score = -10000.0;
+	max_trials = parseInt(document.getElementById('numb_trials').value);	
+	str = '@'+max_trials;
+	//ff = parseFloat(document.settings.fudgefactor.value);	
+	s = document.getElementById('fudgefactor').value;
+	str += ':'+s; // use colons to separate values
+	// use different random number seeds for different web workers
+	n = Math.floor( Math.random()*1000);
+	s = str+':'+n;
+	hclimber.postMessage(s); 
+	n = Math.floor( Math.random()*2000);
+	s = str+':'+n;
+	hclimber2.postMessage(s); 
+	n = Math.floor( Math.random()*3000);
+	s = str+':'+n;
+	hclimber3.postMessage(s); 
+	if (document.getElementById('word_scoring').checked == true)
+		s = '1';
+	else s = '0';
+	str = '~'+cipher_type+s+key_array;
+	hclimber.postMessage(str);  
+	hclimber.postMessage(code);  
+	hclimber2.postMessage(str);  		
+	hclimber2.postMessage(code);  
+	hclimber3.postMessage(str);  		
+	hclimber3.postMessage(code);  
+	
+}
+
+function do_stop(){
+	var str;
+	
+	hclimber.terminate();
+	hclimber2.terminate();
+	hclimber3.terminate();	
+	document.getElementById('status').value = "Stopped";
+	document.getElementById('status2').value = "Stopped";
+	document.getElementById('status3').value = "Stopped";
+	stop_flag = 1;
+}
+
+//-->
+</SCRIPT>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><H4>Solve an Aristocrat or Patristocrat (or let Web Workers do it)</H4></center>
+
+
+<FORM name=puzzle>
+Cipher:  &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp
+(Word 
+divisions: <input type="radio"  checked name="ctype" value=0 onclick="type_selected()" > Yes
+<input type="radio" name="ctype" value=1 onclick="type_selected()" > No)
+
+
+<BR><TEXTAREA id=ciphertext styLe="font-family:monospace" name=ciphertext rows=6 cols=90></TEXTAREA><BR>
+
+<table>
+<tr>
+<td>
+<BR>Key: 
+<BR><TEXTAREA id=key styLe="font-family:monospace" name=key rows=2 cols=30></TEXTAREA> <BR>
+<BR>
+</td>
+<td >
+<span id="let_space">
+</span>
+</td>
+</tr>
+</table>
+<SCRIPT language=JavaScript>
+setup_key( )
+</SCRIPT>
+Ciphertext letter=>
+<FONT SIZE=2>
+<INPUT onclick=cletter_click(0); type=button value=A  style="width: 25">
+<INPUT onclick=cletter_click(1); type=button value=B  style="width: 25">
+<INPUT onclick=cletter_click(2); type=button value=C  style="width: 25">
+<INPUT onclick=cletter_click(3); type=button value=D  style="width: 25">
+<INPUT onclick=cletter_click(4); type=button value=E  style="width: 25">
+<INPUT onclick=cletter_click(5); type=button value=F  style="width: 25">
+<INPUT onclick=cletter_click(6); type=button value=G  style="width: 25">
+<INPUT onclick=cletter_click(7); type=button value=H  style="width: 25">
+<INPUT onclick=cletter_click(8); type=button value=I  style="width: 25">
+<INPUT onclick=cletter_click(9); type=button value=J  style="width: 25">
+<INPUT onclick=cletter_click(10); type=button value=K  style="width: 25">
+<INPUT onclick=cletter_click(11); type=button value=L  style="width: 25">
+<INPUT onclick=cletter_click(12); type=button value=M  style="width: 25">
+<INPUT onclick=cletter_click(13); type=button value=N  style="width: 25">
+<INPUT onclick=cletter_click(14); type=button value=O  style="width: 25">
+<INPUT onclick=cletter_click(15); type=button value=P  style="width: 25">
+<INPUT onclick=cletter_click(16); type=button value=Q  style="width: 25">
+<INPUT onclick=cletter_click(17); type=button value=R  style="width: 25">
+<INPUT onclick=cletter_click(18); type=button value=S  style="width: 25">
+<INPUT onclick=cletter_click(19); type=button value=T  style="width: 25">
+<INPUT onclick=cletter_click(20); type=button value=U  style="width: 25">
+<INPUT onclick=cletter_click(21); type=button value=V  style="width: 25">
+<INPUT onclick=cletter_click(22); type=button value=W  style="width: 25">
+<INPUT onclick=cletter_click(23); type=button value=X  style="width: 25">
+<INPUT onclick=cletter_click(24); type=button value=Y  style="width: 25">
+<INPUT onclick=cletter_click(25); type=button value=Z  style="width: 25">
+</FONT>
+<BR><BR>Goes to plaintext letter=>
+<FONT size=2>
+<INPUT onclick=pletter_click(0); type=button value=a  style="width:25">
+<INPUT onclick=pletter_click(1); type=button value=b  style="width: 25">
+<INPUT onclick=pletter_click(2); type=button value=c  style="width: 25">
+<INPUT onclick=pletter_click(3); type=button value=d  style="width: 25">
+<INPUT onclick=pletter_click(4); type=button value=e  style="width: 25">
+<INPUT onclick=pletter_click(5); type=button value=f  style="width: 25">
+<INPUT onclick=pletter_click(6); type=button value=g  style="width: 25">
+<INPUT onclick=pletter_click(7); type=button value=h  style="width: 25">
+<INPUT onclick=pletter_click(8); type=button value=i  style="width: 25">
+<INPUT onclick=pletter_click(9); type=button value=j  style="width: 25">
+<INPUT onclick=pletter_click(10); type=button value=k  style="width: 25">
+<INPUT onclick=pletter_click(11); type=button value=l  style="width: 25">
+<INPUT onclick=pletter_click(12); type=button value=m  style="width: 25">
+<INPUT onclick=pletter_click(13); type=button value=n  style="width: 25">
+<INPUT onclick=pletter_click(14); type=button value=o  style="width: 25">
+<INPUT onclick=pletter_click(15); type=button value=p  style="width: 25">
+<INPUT onclick=pletter_click(16); type=button value=q  style="width: 25">
+<INPUT onclick=pletter_click(17); type=button value=r  style="width: 25">
+<INPUT onclick=pletter_click(18); type=button value=s  style="width: 25">
+<INPUT onclick=pletter_click(19); type=button value=t  style="width: 25">
+<INPUT onclick=pletter_click(20); type=button value=u  style="width: 25">
+<INPUT onclick=pletter_click(21); type=button value=v  style="width: 25">
+<INPUT onclick=pletter_click(22); type=button value=w  style="width: 25">
+<INPUT onclick=pletter_click(23); type=button value=x  style="width: 25">
+<INPUT onclick=pletter_click(24); type=button value=y  style="width: 25">
+<INPUT onclick=pletter_click(25); type=button value=z  style="width: 25">
+<INPUT onclick=xlate(0); type=button value=erase name=ebutton>
+</FONT>
+
+<BR><BR><INPUT onclick=start_over(); type=button value="start over" > 
+<INPUT onclick=do_clear(); type=button value="Clear" > <INPUT onclick=letter_count(); type=button value="Letter count" > 
+&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp <INPUT onclick=do_calc(); type=button value="Computer: take it from here." >
+<BR> <B>Directions:</B>
+Type or paste ciphertext into cipher box. Select word division Yes/No. Click on a cipher letter button and then click on its
+plaintext substitute. <br>Continue until cipher is solved. Or let computer try 
+it - computer will use any substitutions you may have made. <BR>
+
+Best computer decrypt: &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp Status/Score: 
+0<input type="text" value="idle" id="status" size=5>
+1<input type="text" value="idle" id="status2" size=5>
+2<input type="text" value="idle" id="status3" size=5>
+<INPUT onclick=do_stop(); type=button value="Stop solving" >
+<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<br>
+
+Number of trial decrypts: 
+<input type="text" value="340000" id="numb_trials">
+Fudge factor: <input type = text id="fudgefactor" value = "0.5" size = 3>
+<input type="checkbox"  checked id="word_scoring"> turn on word list scoring
+<script type="text/javascript">
+initialize();
+</script>
+
+</BODY></HTML>
+
+

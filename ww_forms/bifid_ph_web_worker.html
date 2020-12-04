@@ -1,0 +1,170 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<TITLE>Bifid PH solver</TITLE>
+<script src="bif_ph_main.js"></script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+.wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  /*grid-gap: 10px;*/
+  grid-auto-rows: minmax(50px, auto);
+  padding: 10px;
+  max-width: 750px;
+}
+
+.wrapper > div { /* Note: "> div"  must mean: for div's inside of wrapper div */
+ border: 2px solid black;
+}
+.status{
+  grid-column: 1 / 5;
+  grid-row: 1;
+  background-color: Chartreuse ;
+  padding: 5px;
+}
+.numb_decrypts{
+  grid-column: 1 / 3;
+  grid-row: 3;
+  background-color: Chartreuse ;
+  padding: 5px;
+}
+
+.crib{
+  grid-column: 1;
+  grid-row: 4;
+  background-color: Chartreuse ;
+  padding: 5px;
+}
+
+.period {
+  grid-column: 3/5;
+  grid-row: 4;
+  background-color: Aqua ;
+  padding: 5px;
+}
+
+
+.numb_climbers{
+  grid-column: 1 / 3;
+  grid-row: 2;
+  background-color: Chartreuse ;
+  padding: 5px;
+}
+
+.fudge_factors{
+  grid-column: 3 / 5;
+  grid-row: 2 / 4;
+  background-color: Chartreuse ;
+  padding: 5px;
+}
+
+.custom_area{
+  grid-column: 1 / 5;
+  grid-row: 5;
+  background-color: yellow;
+  padding: 5px;
+}
+
+.do_clear{
+  grid-column: 2;
+  grid-row: 4;
+  background-color: IndianRed;
+  padding: 10px;
+}
+
+</style>
+
+</head>
+<body bgcolor="Silver" >
+<h3>Bifid PH solver using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
+
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Best trial decrypt:<br>
+<textarea id="output_area" cols=80 rows = 8>
+</textarea>
+<div class="wrapper">
+
+<div class="period">
+Period:
+<input type="text" id="b_period" size = 3>
+</div>
+
+<div class="status">
+<input type="button" value="Solve" id="do_solve1" >
+Status 0: 
+<input type="text" value="idle" id="status" size = 5>
+Status 1: 
+<input type="text" value="idle" id="status1" size = 5>
+Status 2: 
+<input type="text" value="idle" id="status2" size = 5>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<INPUT id="do_stop1" type=button value="Stop solving" >
+</div>
+
+<div class="numb_decrypts">
+Number of trial decrypts: 
+<input type="text" value="3000000" id="numb_trials" size = 8>
+</div>
+
+<div class = "do_clear">
+<input type="button" value="Clear" id="do_clear1" >
+</div>
+
+<div class="numb_climbers">
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 > 2
+<input type="radio" id="ww3" name="nww" value=3 checked> 3
+</div>
+
+<div class = "fudge_factors">
+Fudge 0: <input type = text id="fudgefactor0" value = "0.2" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.25" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.15" size = 3>
+</div>
+
+<div class="crib" >
+<INPUT id="do_crib1" type=button value="crib" >
+</div>
+
+<div class = "custom_area" id=custom_area" >
+<input type="checkbox" id = "custom_table" >
+Make custom tet table from book.
+&nbsp; &nbsp; &nbsp; &nbsp;
+Book file: 
+<input type="file" id="input" >
+</div>
+
+</div> <!-- end of wrapper div -->
+<div id = "cm_display" >
+</div>	
+
+<!------------
+<script type="text/javascript">
+initialize();
+</script>
+
+<br>Debug:<br>
+<textarea id="debug_area" cols=80 rows = 5>
+</textarea><br>
+------------>
+
+</body>
+</html>
