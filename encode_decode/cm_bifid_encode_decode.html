@@ -195,6 +195,10 @@ function cm_bifid_encrypt(plaintext,key,key2,route_numb,route_numb2,period){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
+  
+	if (reverse_left_key)
+		extended_key = extended_key.reverse();
+  
 	embedded_key = [];
 	for (i=0;i<25;i++)
 		embedded_key[i] = extended_key[routes[route_numb][i]];
@@ -227,6 +231,9 @@ function cm_bifid_encrypt(plaintext,key,key2,route_numb,route_numb2,period){
         if (!(c in used_let))
             extended_key2[key_len++] = c;
   }
+	if (reverse_right_key)
+		extended_key2 = extended_key2.reverse();
+  
 	embedded_key2 = [];
 	for (i=0;i<25;i++)
 		embedded_key2[i] = extended_key2[routes[route_numb2][i]];
@@ -384,6 +391,9 @@ function cm_bifid_decrypt(codetext,key,key2,route_numb,route_numb2,period){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
+	if (reverse_left_key)
+		extended_key = extended_key.reverse();
+  
 	embedded_key = [];
 	for (i=0;i<25;i++)
 		embedded_key[i] = extended_key[routes[route_numb][i]];
@@ -418,6 +428,9 @@ function cm_bifid_decrypt(codetext,key,key2,route_numb,route_numb2,period){
         if (!(c in used_let))
             extended_key2[key_len++] = c;
   }
+	if (reverse_right_key)
+		extended_key2 = extended_key2.reverse();
+  
 	embedded_key2 = [];
 	for (i=0;i<25;i++)
 		embedded_key2[i] = extended_key2[routes[route_numb2][i]];
@@ -618,7 +631,7 @@ background-color: Moccasin;
 </head>
 <body bgcolor="Silver" >
 <center>
-<h3>CM Bifid  Encrypt/Decrypt</h3>
+<h3>CM Bifid  Encrypt/Decrypt</h3> <br><br>
 </center>
 Plaintext/Ciphertext:<br>
 <textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
