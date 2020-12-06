@@ -3,9 +3,14 @@
 <title>CM Bifid minimum crib</title>
 <script type="text/javascript">
 // find crib of minimum length that has a unique property, default property: only one place it will fit
+// or only one place with selected minimum number of repeated symbols.
+
+//var digits="0123456789";
+//var symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 var code = [];
 var plain = [];
+var original_plain = [];
 var crib = [];
 var freq = [];
 
@@ -28,6 +33,7 @@ var crib_len;
 
 var labels = [];
 
+var caesar_shift_flag = false;
 
 function setup_code() {
 	var i,j,state,cnt,c, data,n1,n;
@@ -56,26 +62,54 @@ function do_calc(){
     var current_pos,crib_len,numb_positions,start_pos;
     var  match_pos,nr;
     var result, cov, min_coverage, current_coverage;
+    var caesar_shift;	
     
   setup_code();
 	alpha="abcdefghijklmnopqrstuvwxyz";
 	out_str="";
+    if (document.getElementById("c_shift").checked)
+      caesar_shift_flag = true; // global var
+    else
+      caesar_shift_flag = false;   
 	
 	str = document.getElementById('plain_area').value;
 	str = str.toLowerCase();
   cnt = 0;
   plain = [];
+  original_plain = [];
+  caesar_shift = 5;
+  
 	for (var i=0;i<str.length;i++){
 		c = str.charAt(i);
-		if ( c == 'j') c = 'i';		
-		n = alpha.indexOf(c);
-		if ( n>=0)
-			plain[cnt++] = n;
+        if (caesar_shift_flag){ // original_plain is caesar_shifted by 5. 
+            n = alpha.indexOf(c);
+            if ( n>=0){
+                original_plain[cnt] = n;
+                n = (26+n-caesar_shift)%26; // unshift
+                if (n== 9) // 'j'
+                    n = 8; 'i'
+                plain[cnt++] = n;
+            }
+        }
+        else {
+            if ( c == 'j') c = 'i';
+            n = alpha.indexOf(c);
+            if ( n>=0)
+                original_plain[cnt] = plain[cnt++] = n;
+        }
 	}
+		
 	if ( code.length != plain.length){
         alert("Plaintext and ciphertext have inconsistent lengths!");
         return;
   }
+  // for debugging
+  /*
+  test_str = ''
+  for (i=0;i<plain.length;i++)
+	test_str += alpha.charAt(plain[i]);
+ alert(test_str)
+ */
   skip_index = parseInt(document.getElementById('skip_amount').value);
   starting_crib_len = 5;
   if ( document.getElementById('period').value == ''){
@@ -123,7 +157,7 @@ function do_calc(){
 		            min_rev = nr;
 	            	out_str += "New min crib length is "+min_crib_len+" at position "+min_pos+"\n==>  ";
                     for (j=min_pos;j<min_pos+min_crib_len;j++)
-                        out_str += alpha.charAt(plain[j]);
+                        out_str += alpha.charAt(original_plain[j]);					
                     out_str += "\n";
                     
 	            }
@@ -147,16 +181,6 @@ function test_pos(start_pos,crib_len){
 		crib_buffer[start_pos+j] = crib[j];
 	if ( get_labels() == 0) {
 		return(0);
-// 		printf("period %i OK at pos %i\n",period,start_pos);
-// 		for (j=0;j<buf_len;j++) final_buffer[j] = '-'-'a';
-// 		for (j=0;j<crib_len;j++) final_buffer[j+start_pos] = crib[j];
-//         printf("\n");
-//         for (j=0;j<buf_len;j++) {
-//                 printf("%c",final_buffer[j] + 'a');
-//                 if ( ((j+1)%50) == 0)
-//                         printf("\n");
-//         }
-//         printf("\n");
     }
 	return(-1);
 
@@ -282,7 +306,7 @@ Directions: Type or paste in ciphertext and plaintext strings. Set Period. Click
 Ciphertext:<br>
 <textarea id="cipher_area" rows = 5 cols=90 >
 </textarea><br>
-Plaintext:<br>
+Plaintext:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<input type="checkbox" id="c_shift" > check here if plaintext is caesar-shifted by 5 )<br><br>
 <textarea id="plain_area" rows = 3 cols=90 >
 </textarea><br>
 <br>
