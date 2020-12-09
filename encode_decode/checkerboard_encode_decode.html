@@ -20,7 +20,7 @@ var plaintext_groups;
 var codetext_groups;
 
 var key_width;
-var flag_6x6 = false;
+
 
 function setup_route_grid(){
     var str,j,i,c,n;
@@ -86,14 +86,50 @@ function get_route(){
 
 function do_encrypt(){
 var plaintext,key1,s,codetext,i,j,s1,s2,cnt;
-if (document.getElementById('use_6x6').checked){
-	flag_6x6 = true;
-	key_width = 6;
-}	
-else {
-	flag_6x6 = false;
-	key_width = 5;
-}	
+var boundary_keys = [];
+s = document.getElementById('vkey1').value.toLowerCase();
+s1 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s1+=c;
+} 
+document.getElementById('vkey1').value = s1.toUpperCase();
+
+s = document.getElementById('vkey2').value.toLowerCase();
+s2 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s2+=c;
+}
+document.getElementById('vkey2').value = s2.toUpperCase(); 
+boundary_keys[0] = s1+s2;
+
+s = document.getElementById('hkey1').value.toLowerCase();
+s1 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s1+=c;
+} 
+document.getElementById('hkey1').value = s1.toUpperCase();
+
+s = document.getElementById('hkey2').value.toLowerCase();
+s2 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s2+=c;
+} 
+document.getElementById('hkey2').value = s2.toUpperCase();
+boundary_keys[1] = s1+s2;
+
+key_width = 5;
 
 if (!do_check('in'))
 	return;
@@ -102,27 +138,51 @@ plaintext = document.getElementById('input_area').value;
 //alert(plaintext);
 s = plaintext.toLowerCase();
 key1 = document.getElementById('key').value.toLowerCase();
-codetext = playfair_encrypt(s,key1,selected_route);
+
+codetext = checkerboard_encrypt(s,key1,selected_route,boundary_keys);
 
 s = '';
-if ( flag_6x6)
-	s += '6x6 ';
-s += "Playfair cipher\n";
+s += "Checkerboard cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
-
-s += "\nkey: "+document.getElementById('key').value;
+s += "\nvertical key: "+document.getElementById('vkey1').value.toUpperCase();
+s1 = document.getElementById('vkey2').value;
+if (s1!= '')
+	s += "\nvertical key 2: "+document.getElementById('vkey2').value.toUpperCase();;
+s += "\nhorizontal key: "+document.getElementById('hkey1').value.toUpperCase();;
+s1 = document.getElementById('hkey2').value;
+if (s1!= '')
+	s += "\nhroizontal key 2: "+document.getElementById('hkey2').value.toUpperCase();;	
+s += "\nkeysquare key: "+document.getElementById('key').value;
 s += "\nroute: "+route_name[selected_route];
 if (reverse_key)
 	s += ', with key reversed';
 // worksheet
 
-s+="\nKeysquare:\n"
-	for (i=0;i<key_width;i++) {
-	s += '   ';
-	for (j=0;j<key_width;j++)
-		s +=sqr[i][j].toUpperCase();
+s+="\nKey diagram:\n"
+	s += '    ';
+	s += document.getElementById('hkey1').value.toUpperCase();
+	s += '\n'
+	s1 = document.getElementById('hkey2').value;
+	if ( s1!=''){
+		s += '    ';
+		s += s1.toUpperCase();
+		s += '\n';
+	}
 	s += '\n';
+	s1 = document.getElementById('vkey2').value;
+	for (i=0;i<key_width;i++) {
+		//s += ' ';
+		s += document.getElementById('vkey1').value[i].toUpperCase();
+		if (s1!= ''){
+			s += s1[i].toUpperCase();
+			s += '  '
+		}
+		else
+			s += '   ';
+		for (j=0;j<key_width;j++)
+			s +=sqr[i][j];
+		s += '\n';
 	}
 	
 	s += '\nWorksheet:\n';
@@ -145,129 +205,23 @@ s+="\nKeysquare:\n"
 document.getElementById('output_area').value = s;
 }
 
-function playfair_encrypt(plaintext,key,route_numb){
-//alert("playfair encrypt");
+function checkerboard_encrypt(plaintext,key,route_numb, boundary_keys){
     var str,i,j,k,n,s,c,c1;
     var out_str,state ;
     var key_len,index, used_let, extended_key, embedded_key;
 	var codetext,cnt;
+    var x,y;
+    var c1,c2,c3,c4;
+    
 
-if (flag_6x6){
-	symbols = alpha+'1234567890';
-   extended_key = [];
-	used_let = {};
-  key_len = 0;
-  for (i=0;i<key.length;i++){
-        c = key.charAt(i);
-
-        if ( alpha.indexOf(c) != -1 && !(c in used_let)){
-            extended_key[key_len++] = c
-			if(alpha.indexOf(c) < 10) 
-				extended_key[key_len++] = symbols.charAt(alpha.indexOf(c)+26);
-            used_let[c] = 1;
-        }
+  var plain = '';
+  for (i=0;i<plaintext.length;i++){
+	c = plaintext.charAt(i);
+	if (c=='j') c = 'i';
+	n = alpha.indexOf(c);
+	if ( n != -1)
+		plain +=c;
   }
-  for (i=0;i<26;i++) {
-        c = alpha.charAt(i);
-        if (!(c in used_let)) {
-            extended_key[key_len++] = c;
-			if(alpha.indexOf(c) < 10) 
-				extended_key[key_len++] = symbols.charAt(alpha.indexOf(c)+26);
-		}
-
-  }
-  
-	if (reverse_key)
-		extended_key = extended_key.reverse();
-  
-	embedded_key = [];
-	for (i=0;i<36;i++)
-		embedded_key[i] = extended_key[routes6[route_numb][i]];
-	index = 0;
-
-	sqr = [];
-	for (i=0;i<6;i++) {
-		sqr[i] = [];
-		for (j=0;j<6;j++)
-			sqr[i][j] = embedded_key[index++];
-	}
-    // get inverse key square
-	for (i=0;i<6;i++) for (j=0;j<6;j++){
-		inv_row[ sqr[i][j] ] = i;
-		inv_col[ sqr[i][j] ] = j;
-	}
- // remove repeated pairs.
-	var plain = '';
-	state = 0;
-	for (i=0;i<plaintext.length;i++){
-		c = plaintext.charAt(i);
-		if ( c=='j') c = 'i';
-		n = symbols.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				if (c == c1){
-					if ( c != 'x')
-						plain += c+'x';
-					else
-						plain += c+'z';
-				}
-				else {
-					plain += c1+c;
-					state = 0;
-				}
-			}
-		}
-	}
-	if ( state == 1) {
-		if (c1 != 'x')
-			plain += c1+'x';
-		else
-			plain += c1+'z';
-	}
-		
-	state = 0;
-	var code = '';
-	cnt = 0;
-	for (i=0;i<plain.length;i++){
-		c = plain.charAt(i);
-		n = symbols.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				result =put_pc(c1,c)
-				code += result[0]+result[1];
-				state = 0;
-			}
-		}
-	}
-	var period = 2;
-	line_limit = period*Math.floor(66/(period+1));
-    cnt = 0;
-	codetext = '';
-	plaintext_groups = '';
-    for (i=0;i<code.length;i++){
-        codetext += code.charAt(i);
-		plaintext_groups += plain.charAt(i);
-        if ( (++cnt)%period == 0){
-            codetext += ' ';
-			plaintext_groups += ' ';
-            if ( (cnt%line_limit) == 0){
-                codetext += '\n';
-				plaintext_groups += '\n';
-			}
-        }
-    }
-	return(codetext);
-}
-
-	
   var extended_key = [];
 	used_let = {};
 	used_let['j'] = 1;
@@ -297,154 +251,152 @@ if (flag_6x6){
 		for (j=0;j<5;j++)
 			sqr[i][j] = embedded_key[index++];
 	}
-    // get inverse key square
-	for (i=0;i<5;i++) for (j=0;j<5;j++){
-		inv_row[ sqr[i][j] ] = i;
-		inv_col[ sqr[i][j] ] = j;
-	}
-// remove repeated pairs.
-	var plain = '';
-	state = 0;
-	for (i=0;i<plaintext.length;i++){
-		c = plaintext.charAt(i);
-		if ( c=='j') c = 'i';
-		n = alpha.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				if (c == c1){
-					if ( c != 'x')
-						plain += c+'x';
-					else
-						plain += c+'z';
-				}
-				else {
-					plain += c1+c;
-					state = 0;
-				}
-			}
-		}
-	}
-	if ( state == 1) {
-		if (c1 != 'x')
-			plain += c1+'x';
-		else
-			plain += c1+'z';
-	}
 		
-	state = 0;
-	var code = '';
-	cnt = 0;
+    var code = [];
+    cnt = 0;
 	for (i=0;i<plain.length;i++){
 		c = plain.charAt(i);
-		n = alpha.indexOf(c);
+		n = embedded_key.indexOf(c);        
 		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				result =put_pc(c1,c)
-				code += result[0]+result[1];
-				state = 0;
-			}
-		}
-	}
+            x = Math.floor( n/5); // left key index
+            y = n%5; // top key index
+            if ( boundary_keys[0].length==5 || Math.random() <0.5)
+                c1 = boundary_keys[0].charAt(x);
+            else
+                c1 = boundary_keys[0].charAt(x+5);
+            if ( boundary_keys[1].length==5 || Math.random() <0.5)
+                c2 = boundary_keys[1].charAt(y);
+            else
+                c2 = boundary_keys[1].charAt(y+5);
+            c3 = c1+c2;
+            code[i] = c3.toUpperCase();
+        }
+    }
 	var period = 2;
 	line_limit = period*Math.floor(66/(period+1));
     cnt = 0;
 	codetext = '';
 	plaintext_groups = '';
     for (i=0;i<code.length;i++){
-        codetext += code.charAt(i);
-		plaintext_groups += plain.charAt(i);
-        if ( (++cnt)%period == 0){
+        codetext += code[i]
+		plaintext_groups += plain.charAt(i)+' ';
+		cnt = cnt += 2;
+
             codetext += ' ';
 			plaintext_groups += ' ';
             if ( (cnt%line_limit) == 0){
                 codetext += '\n';
 				plaintext_groups += '\n';
 			}
-        }
+
     }
 	
 	return(codetext);
+
 }
-
-
-function put_pc(c1,c2) {
-    var row1,col1,row2,col2,r1,r2;
-
-    row1=inv_row[c1];
-    col1=inv_col[c1];
-    row2=inv_row[c2];
-    col2=inv_col[c2];
-
-    if (row1 == row2) {
-   		r1 = sqr[row1][ (col1+1)%key_width];
-   		r2 = sqr[row2][ (col2+1)%key_width];
-	}
-	else if ( col1 == col2) {
-   		r1 = sqr[(row1+1)%key_width ][col1];
-   		r2 = sqr[ (row2+1)%key_width ][col2];
-	}
-    else {
-    	r1 = sqr[row1][col2];
-    	r2 = sqr[row2][col1];
-	}
-	return( [r1,r2]);
-}
-
-
 
 function do_decrypt(){
 var plaintext,key1,key2,s,codetext,i,j,s1,s2;
-if (document.getElementById('use_6x6').checked){
-	flag_6x6 = true;
-	key_width = 6;
-}	
-else {
-	flag_6x6 = false;
-	key_width = 5;
-}	
+var boundary_keys = [];
+s = document.getElementById('vkey1').value.toLowerCase();
+s1 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s1+=c;
+} 
+document.getElementById('vkey1').value = s1.toUpperCase();
+
+s = document.getElementById('vkey2').value.toLowerCase();
+s2 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s2+=c;
+}
+document.getElementById('vkey2').value = s2.toUpperCase(); 
+boundary_keys[0] = s1+s2;
+
+s = document.getElementById('hkey1').value.toLowerCase();
+s1 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s1+=c;
+} 
+document.getElementById('hkey1').value = s1.toUpperCase();
+
+s = document.getElementById('hkey2').value.toLowerCase();
+s2 = '';
+for (i=0;i<s.length;i++){
+	c = s.charAt(i);
+	n = alpha.indexOf(c)
+	if ( n != -1) 
+		s2+=c;
+} 
+document.getElementById('hkey2').value = s2.toUpperCase();
+boundary_keys[1] = s1+s2;
+
+key_width = 5;
+	
 
 if (!do_check('de'))
 	return;
-//alert("encrypt");
+
 codetext = document.getElementById('input_area').value;
 //alert(plaintext);
 s = codetext.toLowerCase();
 key1 = document.getElementById('key').value.toLowerCase();
 
 //alert("decrypt");
-plaintext = playfair_decrypt(s,key1,selected_route);
-
+plaintext = checkerboard_decrypt(s,key1,selected_route,boundary_keys);
 s = '';
-if ( flag_6x6)
-	s += '6x6 ';
-
-s += "Playfair cipher\n";
+s += "checkerboard cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
 
-s += "\nkey: "+document.getElementById('key').value;
+s += "\nvertical key: "+document.getElementById('vkey1').value.toUpperCase();
+s1 = document.getElementById('vkey2').value;
+if (s1!= '')
+	s += "\nvertical key 2: "+document.getElementById('vkey2').value.toUpperCase();;
+s += "\nhorizontal key: "+document.getElementById('hkey1').value.toUpperCase();;
+s1 = document.getElementById('hkey2').value;
+if (s1!= '')
+	s += "\nhroizontal key 2: "+document.getElementById('hkey2').value.toUpperCase();;	
+s += "\nkeysquare key: "+document.getElementById('key').value;
 s += "\nroute: "+route_name[selected_route];
 if (reverse_key)
 	s += ', with key reversed';
 // worksheet
 
-s+="\nKeysquare:\n"
-
-	for (i=0;i<key_width;i++) {
-	s += '   ';
-	for (j=0;j<key_width;j++)
-		s +=sqr[i][j].toUpperCase();
-	s += '\n';
+s+="\nKey diagram:\n"
+	s += '    ';
+	s += document.getElementById('hkey1').value.toUpperCase();
+	s += '\n'
+	s1 = document.getElementById('hkey2').value;
+	if ( s1!=''){
+		s += '    ';
+		s += s1.toUpperCase();
+		s += '\n';
 	}
-
+	s += '\n';
+	s1 = document.getElementById('vkey2').value;
+	for (i=0;i<key_width;i++) {
+		//s += ' ';
+		s += document.getElementById('vkey1').value[i].toUpperCase();
+		if (s1!= ''){
+			s += s1[i].toUpperCase();
+			s += '  '
+		}
+		else
+			s += '   ';
+		for (j=0;j<key_width;j++)
+			s +=sqr[i][j];
+		s += '\n';
+	}
 	s += '\nWorksheet:\n';
 	codetext_groups = codetext_groups.toUpperCase();
 	s1 = '';
@@ -466,105 +418,14 @@ document.getElementById('output_area').value = s;
 
 }
 
-function playfair_decrypt(codetext,key,route_numb){
-//alert("playfair decrypt");
-    var str,i,j,k,n,s,c,c1,c2,symbols;
+function checkerboard_decrypt(codetext,key,route_numb,boundary_keys){
+    var str,i,j,k,n,s,c,c1,c2,symbols,n1,n2;
     var out_str,state ;
     var key_len,index, used_let, extended_key, embedded_key;
 	var codetext,cnt,offset,le,pos,x,y;
 	var line_limit,state;
 	
 	
-if (flag_6x6){
-	
-   symbols = alpha+'1234567890';	
-   extended_key = [];
-	used_let = {};
-	
-  key_len = 0;
-  for (i=0;i<key.length;i++){
-        c = key.charAt(i);
-        if ( alpha.indexOf(c) != -1 && !(c in used_let)){
-            extended_key[key_len++] = c
-			if(alpha.indexOf(c) < 10) 
-				extended_key[key_len++] = symbols.charAt(alpha.indexOf(c)+26);
-            used_let[c] = 1;
-        }
-  }
-  for (i=0;i<26;i++) {
-        c = alpha.charAt(i);
-        if (!(c in used_let)){
-            extended_key[key_len++] = c;
-			if(alpha.indexOf(c) < 10) 
-				extended_key[key_len++] = symbols.charAt(alpha.indexOf(c)+26);
-		}
-  }
-	if (reverse_key)
-		extended_key = extended_key.reverse();
-  
-	embedded_key = [];
-	for (i=0;i<36;i++)
-		embedded_key[i] = extended_key[routes6[route_numb][i]];
-	index = 0;
-	sqr = [];
-	for (i=0;i<6;i++) {
-		sqr[i] = [];
-		for (j=0;j<6;j++)
-			sqr[i][j] = embedded_key[index++];
-	}
-
-    // get inverse key square
-	for (i=0;i<6;i++) for (j=0;j<6;j++){
-		inv_row[ sqr[i][j] ] = i;
-		inv_col[ sqr[i][j] ] = j;
-	}
-    
-    var code = '';
-    for (i=0;i<codetext.length;i++){
-        c = codetext.charAt(i);
-        n = symbols.indexOf(c);
-        if ( n != -1)
-            code += c;
-    }
-	state = 0;
-
-    var plain = '';
-		for (i=0;i<code.length;i++){
-		c = code.charAt(i);
-		n = symbols.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				result =put_dc(c1,c)
-				plain += result[0]+result[1];
-				state = 0;
-			}
-		}
-	}
-	var period = 2;
-	line_limit = period*Math.floor(66/(period+1));
-    cnt = 0;
-	codetext_groups = '';
-	plaintext_groups = '';
-    for (i=0;i<plain.length;i++){
-        codetext_groups += code.charAt(i);
-		plaintext_groups += plain.charAt(i);
-        if ( (++cnt)%period == 0){
-            codetext_groups += ' ';
-			plaintext_groups += ' ';
-            if ( (cnt%line_limit) == 0){
-                codetext_groups += '\n';
-				plaintext_groups += '\n';
-			}
-        }
-    }
-
-	return(plain);
-
-}
 	
    extended_key = [];
 	used_let = {};
@@ -601,106 +462,79 @@ if (flag_6x6){
 		inv_row[ sqr[i][j] ] = i;
 		inv_col[ sqr[i][j] ] = j;
 	}
-    
     var code = '';
     for (i=0;i<codetext.length;i++){
         c = codetext.charAt(i);
-        if (c=='j') c = 'i';
         n = alpha.indexOf(c);
         if ( n != -1)
             code += c;
     }
-	state = 0;
-
-    var plain = '';
-		for (i=0;i<code.length;i++){
-		c = code.charAt(i);
-		n = alpha.indexOf(c);
-		if ( n>=0) {
-			if ( state == 0) {
-				c1 = c;
-				state = 1;
-			}
-			else {
-				result =put_dc(c1,c)
-				plain += result[0]+result[1];
-				state = 0;
-			}
-		}
+	var plain = '';
+	for (i=0;i<code.length;i= i+2){
+		c1 = code.charAt(i);
+		c2 = code.charAt(i+1)
+		n1 = boundary_keys[0].indexOf(c1);
+		if (n1>4) n1 -= 5;
+		n2 = boundary_keys[1].indexOf(c2);		
+		if ( n2>4) n2 -= 5 ;
+		plain += sqr[n1][n2]		
 	}
+	
 	var period = 2;
 	line_limit = period*Math.floor(66/(period+1));
     cnt = 0;
 	codetext_groups = '';
 	plaintext_groups = '';
+
     for (i=0;i<plain.length;i++){
-        codetext_groups += code.charAt(i);
-		plaintext_groups += plain.charAt(i);
-        if ( (++cnt)%period == 0){
+        codetext_groups += code.charAt(cnt)+code.charAt(cnt+1);
+		j += 2;
+		plaintext_groups += plain.charAt(i)+' ';
+		cnt = cnt += 2;
+
             codetext_groups += ' ';
 			plaintext_groups += ' ';
             if ( (cnt%line_limit) == 0){
                 codetext_groups += '\n';
 				plaintext_groups += '\n';
 			}
-        }
+
     }
-
-	return(plain);
 	
+	return(plain);
 
 }
-
-function put_dc(c1,c2) {
-    var row1,col1,row2,col2,r1,r2;
-
-    row1=inv_row[c1];
-    col1=inv_col[c1];
-    row2=inv_row[c2];
-    col2=inv_col[c2];
-
-    if (row1 == row2) {
-   		r1 = sqr[row1][ (col1+key_width-1)%key_width];
-   		r2 = sqr[row2][ (col2+key_width-1)%key_width];
-	}
-	else if ( col1 == col2) {
-   		r1 = sqr[(row1+key_width-1)%key_width ][col1];
-   		r2 = sqr[ (row2+key_width-1)%key_width ][col2];
-	}
-    else {
-    	r1 = sqr[row1][col2];
-    	r2 = sqr[row2][col1];
-	}
-	return( [r1,r2]);
-}
-
-
 
 function do_check(status){
-	var s,s1,n,c;
+	var s,s1,n,c,c_text;
 	var alpha='abcdefghijklmnopqrstuvwxyz';
 	var symbols;
-	if (flag_6x6)
-		symbols = alpha+'1234567890';
-	else
-		symbols = alpha;
+	symbols = alpha;
 	s = document.getElementById('input_area').value;
 	if (s == ''){
 		alert("No text entered");
 		return(false)
 	}
 	s = s.toLowerCase();
+	c_text=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			c_text += c;
+	}
+	
 	s1=''
 	for (n = 0;n<s.length;n++){
 		c = s.charAt(n);
 		if (symbols.indexOf(c) != -1) 
 			s1 += c;
 	}
-
-	if (s1.indexOf('j') != -1 && !flag_6x6 && status=='de'){
+/*
+	if (s1.indexOf('j') != -1 && status=='de'){
 		alert("Ciphertext has a J!");
 		return(false);
 	}
+*/	
 	if ( status=='de' && (s1.length %2) !=0 ){
 		alert("Ciphertext has odd number of symbols");
 		return(false);
@@ -708,13 +542,135 @@ function do_check(status){
 	
 	s = document.getElementById('key').value;
 	if (s == ''){
-		alert("No key entered");
+		alert("No keysquare key entered");
 		return(false)
 	}
 	if (selected_route == -1){
 		alert("no route selected");
 		return(false);
 	}
+	s = document.getElementById('vkey1').value;
+	if (s == ''){
+		alert("No vertical key entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if (s1.length != 5){
+		alert("Vertical key is not 5 letters");
+		return(false)
+	}
+	key_let = {};
+	for (n=0;n<s1.length;n++){
+		c = s1.charAt(n);
+		if (c in key_let){
+			s="Letter "+c+" occurs in more than one position in the vertical key";
+			alert(s);
+			return(false);
+		}
+		else
+			key_let[c]=n;
+	}
+	s = document.getElementById('vkey2').value;
+	if (s != ''){
+		s = s.toLowerCase();
+		s1=''
+		for (n = 0;n<s.length;n++){
+			c = s.charAt(n);
+			if (alpha.indexOf(c) != -1)
+				s1 += c;
+		}
+		if (s1.length != 5){
+			alert("Second Vertical key is not 5 letters");
+			return(false)
+		}
+		for (n=0;n<s1.length;n++){
+			c = s1.charAt(n);
+			if (c in key_let && key_let[c] != n){
+				s="Letter "+c+" occurs in more than one position in the vertical key";
+				alert(s);
+				return(false);
+			}
+			else
+				key_let[c]=n;
+		}
+	}
+	if ( status=='de'){
+        for (n=0;n<c_text.length; n = n+2) {
+            c = c_text[n];
+            if ( !(c in key_let) ){
+                s = "Cipher letter "+c.toUpperCase()+" is not in vertical key!"
+				alert(s);
+				return(false);
+			}
+        }
+    }
+s = document.getElementById('hkey1').value;
+	if (s == ''){
+		alert("No Horizontal key entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if (s1.length != 5){
+		alert("Horizontal key is not 5 letters");
+		return(false)
+	}
+	key_let = {};
+	for (n=0;n<s1.length;n++){
+		c = s1.charAt(n);
+		if (c in key_let){
+			s="Letter "+c+" occurs in more than one position in the Horizontal key";
+			alert(s);
+			return(false);
+		}
+		else
+			key_let[c]=n;
+	}
+	s = document.getElementById('hkey2').value;
+	if (s != ''){
+		s = s.toLowerCase();
+		s1=''
+		for (n = 0;n<s.length;n++){
+			c = s.charAt(n);
+			if (alpha.indexOf(c) != -1)
+				s1 += c;
+		}
+		if (s1.length != 5){
+			alert("Second Horizontal key is not 5 letters");
+			return(false)
+		}
+		for (n=0;n<s1.length;n++){
+			c = s1.charAt(n);
+			if (c in key_let && key_let[c] != n){
+				s="Letter "+c+" occurs in more than one position in the Horizontal key";
+				alert(s);
+				return(false);
+			}
+			else
+				key_let[c]=n;
+		}
+	}
+		if ( status=='de'){
+        for (n=1;n<c_text.length; n = n+2) {
+            c = c_text[n];
+            if ( !(c in key_let) ){
+                s = "Cipher letter "+c.toUpperCase()+" is not in horizontal key!"
+				alert(s);
+				return(false);
+			}
+        }
+    }	
 	return(true);
 }
 
@@ -788,7 +744,7 @@ background-color: Moccasin;
 </head>
 <body bgcolor="Silver" >
 <center>
-<h3>Playfair  Encrypt/Decrypt</h3> <br><br>
+<h3>Checkerboard  Encrypt/Decrypt</h3> <br><br>
 </center>
 Plaintext/Ciphertext:<br>
 <textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
@@ -804,13 +760,22 @@ output:<br>
 <br><br>
 <!--
 &nbsp;&nbsp; Period: <input type="text" id="period"  size=8  >
--->
+
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
 <input type = checkbox id="use_6x6"  size = 2 >6x6 keysquare
+-->
+<div>
+&nbsp;&nbsp;&nbsp;
+Vertical key: <input type="text" name = "vkey1" id="vkey1">
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; Vertical key 2 (optional): <input type="text" name = "vkey2" id="vkey2">
+<br><br>
+<div>Horizontal key: <input type="text" name = "hkey1" id="hkey1">
+&nbsp;&nbsp;&nbsp; Horizontal key 2 (optional): <input type="text" name = "hkey2" id="hkey2">
 
 <br><br>
 <div>
-&nbsp;key: <input type="text" name = "left_key" id="key">
+&nbsp;Keysquare key: <input type="text" name = "left_key" id="key">
 &nbsp;
 route:
 <span id="rou">
