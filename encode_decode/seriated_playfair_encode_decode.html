@@ -204,6 +204,9 @@ function seriated_playfair_encrypt(plaintext,key,route_numb,period){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
+	if (reverse_key)
+		extended_key = extended_key.reverse();
+  
 	embedded_key = [];
 	for (i=0;i<25;i++)
 		embedded_key[i] = extended_key[routes[route_numb][i]];
@@ -469,6 +472,9 @@ function seriated_playfair_decrypt(codetext,key,route_numb,period){
         if (!(c in used_let))
             extended_key[key_len++] = c;
   }
+	if (reverse_key)
+		extended_key = extended_key.reverse();
+  
 	embedded_key = [];
 	for (i=0;i<25;i++)
 		embedded_key[i] = extended_key[routes[route_numb][i]];
