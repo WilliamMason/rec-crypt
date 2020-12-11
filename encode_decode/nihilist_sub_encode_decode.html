@@ -25,6 +25,8 @@ var codetext_groups;
 var key_width;
 var flag_6x6 = false;
 
+var period_key;
+
 function setup_route_grid(){
     var str,j,i,c,n;
     
@@ -88,7 +90,7 @@ function get_route(){
 }
 
 function do_encrypt(){
-var plaintext,key1,s,codetext,i,j,s1,s2,cnt;
+var plaintext,key1,s,codetext,i,j,s1,s2,cnt,c1,c2;
 /* 6x6 version to do
 if (document.getElementById('use_6x6').checked){
 	flag_6x6 = true;
@@ -107,17 +109,16 @@ plaintext = document.getElementById('input_area').value;
 //alert(plaintext);
 s = plaintext.toLowerCase();
 key1 = document.getElementById('key').value.toLowerCase();
-period = document.getElementById('period').value
-period = parseInt(period);
-codetext = seriated_playfair_encrypt(s,key1,selected_route,period);
+period_key = document.getElementById('period').value
+codetext = nihilist_sub_encrypt(s,key1,selected_route,period_key);
 
 s = '';
 if ( flag_6x6)
 	s += '6x6 ';
-s += "Seriated Playfair cipher\n";
+s += "Nihilist Substitution cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
-s += "\nperiod: "+document.getElementById('period').value;
+s += "\nperiod key: "+document.getElementById('period').value;
 s += "\nkey: "+document.getElementById('key').value;
 s += "\nroute: "+route_name[selected_route];
 if (reverse_key)
@@ -131,85 +132,78 @@ s+="\nKeysquare:\n"
 		s +=sqr[i][j].toUpperCase();
 	s += '\n';
 	}
-
-	s += '\nWorksheet:\n';
-    var left_over = code_text.length%(2*period)
-    var nxt_line = Math.floor(66/(period+1));
-    var out = ''
-    cnt = 0
-    var cnt2 = 0
-    var cline=''
-    var cline2 = ''
-    var pline = ''
-    var pline2=''
-    var pos = 0
-    while (pos < code_text.length-left_over){
-        for (i=0;i<period;i++){
-            cline += code_text[pos+i].toUpperCase();
-            cline2 += code_text[pos+period+i].toUpperCase();
-            pline += plain_text[pos+i]
-            pline2 += plain_text[pos+period+i]
-            cnt += 1
-		}
-        cline += ' '
-        cline2 += ' '
-        pline += ' '
-        pline2 += ' '
-        pos += 2*period
-        cnt2 += 1
-        if ((cnt2%nxt_line) == 0){
-            out += cline + '\n'
-            out += cline2 + '\n'
-            out += pline + '\n'
-            out += pline2 + '\n'
-            cline = ''
-            cline2 = ''
-            pline = ''
-            pline2 = ''
-		}
-	}
-    n = left_over/2
-    for (i=0;i<n;i++){
-        cline += code_text[pos+i].toUpperCase();
-        cline2 += code_text[pos+n+i].toUpperCase();
-        pline += plain_text[pos+i]
-        pline2 += plain_text[pos+n+i]
-	}
-    out += cline+'\n'+cline2+'\n'+pline+'\n'+pline2+'\n'
+ s+= '\nperiodic key\n';
+ s1 = '';
+ s2 = period_key.toLowerCase();
+ for (i=0;i<s2.length;i++){
+	c = s2.charAt(i);
+	n = alpha.indexOf(c);
+	if ( n !=-1)
+		s1 += c;
+ }
+for (i=0;i<s1.length;i++){
+	c1 = inv_row[s1.charAt(i)]+1;
+	c2 = inv_col[s1.charAt(i)]+1;
+	s+= ''+c1+c2+' ';
+}	
+s += '\n';
+for (i=0;i<s1.length;i++)
+	s+= s1.charAt(i)+'  ';
+s += '\n';
 	
-	s += out;
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<codetext_groups.length;i++){
+	s1 += codetext_groups.charAt(i);
+	s2 += plaintext_groups.charAt(i);
+	if (codetext_groups.charAt(i+1) == '\n'){
+	 s += s1+'\n'+s2+'\n';
+	 s1 = '';
+	 s2 = '';
+	 i++
+	}
+}
+if ( s1 != '')
+	s += s1+'\n'+s2+'\n';
+	
 document.getElementById('output_area').value = s;
 }
 
-function seriated_playfair_encrypt(plaintext,key,route_numb,period){
+function nihilist_sub_encrypt(plaintext,key,route_numb,period_key){
     var str,i,j,k,n,s,c,c1;
     var out_str,state ;
-    var key_len,index, used_let, extended_key, embedded_key;
+    var key_len,index, used_let;
 	var codetext,cnt;
-	
-  var extended_key = [];
-	used_let = {};
-	used_let['j'] = 1;
-  key_len = 0;
-  for (i=0;i<key.length;i++){
+    var x,y;
+    var c1,c2,c3,c4;
+    var p_key_coord, p_count;
+
+    // get key square
+    var extended_key = [];
+    used_let = {};
+    used_let['j'] = 1;
+    key_len = 0;
+    for (i=0;i<key.length;i++){
         c = key.charAt(i);
-	    	if (c=='j') c = 'i';
+    	if (c=='j') c = 'i';
         if ( alpha.indexOf(c) != -1 && !(c in used_let)){
             extended_key[key_len++] = c
             used_let[c] = 1;
         }
-  }
-  for (i=0;i<26;i++) {
+    }
+    for (i=0;i<26;i++) {
         c = alpha.charAt(i);
         if (!(c in used_let))
             extended_key[key_len++] = c;
-  }
+    }
 	if (reverse_key)
 		extended_key = extended_key.reverse();
-  
-	embedded_key = [];
-	for (i=0;i<25;i++)
-		embedded_key[i] = extended_key[routes[route_numb][i]];
+	
+    embedded_key = [];
+    for (i=0;i<25;i++)
+		embedded_key[i] = extended_key[routes[route_numb][i]]; 
 	index = 0;
 	for (i=0;i<5;i++) {
 		sqr[i] = [];
@@ -221,132 +215,55 @@ function seriated_playfair_encrypt(plaintext,key,route_numb,period){
 		inv_row[ sqr[i][j] ] = i;
 		inv_col[ sqr[i][j] ] = j;
 	}
-	s = [];
-	state = 0;
+		
+    // get coordintes of period_key
+	period_key = period_key.toLowerCase();
+    p_key_coord = [];
+	cnt = 0;
+    for (i=0;i<period_key.length;i++){
+        c = period_key.charAt(i);
+        if ( c=='j') c = 'i';
+        n = embedded_key.indexOf(c);
+		if ( n != -1){
+			x = Math.floor( n/5); // left key index
+			y = n%5; // top key index
+			p_key_coord[cnt++] = 10*(x+1)+y+1;
+		}
+    }
+    codetext = '';
+    cnt = 0;
+    p_count = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
 	for (i=0;i<plaintext.length;i++){
 		c = plaintext.charAt(i);
-		if ( c=='j') c = 'i';
-		n = alpha.indexOf(c);
-		if ( n>=0) 
-            s.push(c);
-    }    
-    //insert nulls
-    var redo_flag = 1
-    var made_even_flag = 0
-    var pos,nul;
-    while (redo_flag ==1 ){
-        le = s.length;
-        left_over = le % (2*period);
-        redo_flag = 0;
-        pos = 0;
-        while (pos < le - left_over){
-            for (i=0;i<period;i++){
-                if (s[pos+i] == s[pos+i+period]){
-                    nul = 'x';
-                    if (s[pos+i] == nul) nul = 'z';
-                    s.splice(pos+i+period,0,nul);
-                    redo_flag = 1
-                    if (made_even_flag==1){
-                        s.pop();
-                        made_even_flag = 0;
-                     }
-                    //console.log("Added null");
-                    break;
-                }
-            }
-            if (redo_flag==1)
-                break;
-            pos += 2*period;
-        }
-        if (redo_flag==1)  continue;
-        if (left_over & 1 ){
-            s.push('x');
-            made_even_flag = 1
-            redo_flag = 1
-            continue; //recalculate left_over
-        }
-        if (left_over != 0){
-            pos = le - left_over
-            //for i in range(left_over/2):
-            for (i=0;i<left_over/2;i++){
-                if (s[pos+i] == s[pos+i+left_over/2]){
-                    nul = 'x';
-                    if (s[pos+i] == nul) nul ='z';
-                    s.splice(pos+i+left_over/2,0,nul);
-                    redo_flag = 1
-                    //console.log("Added null");
-                    if (made_even_flag==1){
-                        s.pop();
-                        made_even_flag = 0;
-                    }
-                    break;
-                }
-            }
+        if ( c=='j') c = 'i';        
+		n = embedded_key.indexOf(c);        
+		if ( n>=0) {
+            x = Math.floor( n/5); // left key index
+            y = n%5; // top key index
+            j = (10*(x+1)+y+1+p_key_coord[p_count++]) % 100;
+            if ( j<10){
+                codetext += '0';
+				codetext_groups += '0';
+			}
+            codetext += j+' ';
+			codetext_groups += j+' ';
+			plaintext_groups += c+'  ';
+            if (p_count == period_key.length){
+                p_count = 0;
+				codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+			cnt += 3;
+			if ( cnt>=65){
+				cnt = 0;
+				codetext += '\n';
+			}                
         }
     }
-    //  nulls inserted
-	plain_text = s.slice(0); // copy to global variable for later use.
-    code_text = [];
-    left_over = le % (2*period)
-    pos = 0
-    buf_len = s.length;
-		while (pos < buf_len-left_over){
-            for (j=0;j<period;j++) {
-                    c1 = s[pos+j];
-                    c2 = s[pos+j+period];
-                    put_pc(c1,c2,pos+j,pos+j+period);
-            }
-            pos += 2*period;
-        }
-        if ( left_over>0) {
-            pos = buf_len - left_over;
-            k = left_over/2;
-            for (j=0;j<k;j++){
-                c1 = s[pos+j];
-                c2 = s[pos+j+k];
-                put_pc(c1,c2,pos+j,pos+j+k);
-            }
-        }
-    //codetext = code_text.join('');
-	line_limit = 5*Math.floor(66/(6));
-	codetext = '';
-	cnt = 0;
-	for (i=0;i<code_text.length;i++){
-		codetext += code_text[i];
-		cnt++;
-		if ( (cnt%5) == 0 ){
-			codetext += ' ';
-			if ( (cnt%line_limit)==0)
-				codetext += '\n';
-		}
-	}
     return(codetext);
 }
-
-function put_pc(c1,c2,i1,i2) {
-    var row1,col1,row2,col2;
-    
-    var keysquare_width = 5;
-
-    row1=inv_row[c1];
-    col1=inv_col[c1];
-    row2=inv_row[c2];
-    col2=inv_col[c2];
-
-    if (row1 == row2) {
-   		code_text[i1] = sqr[row1][ (col1+keysquare_width+1)%keysquare_width];
-   		code_text[i2] = sqr[row2][ (col2+keysquare_width+1)%keysquare_width];
-	}
-	else if ( col1 == col2) {
-   		code_text[i1] = sqr[(row1+keysquare_width+1)%keysquare_width ][col1];
-   		code_text[i2] = sqr[ (row2+keysquare_width+1)%keysquare_width ][col2];
-	}
-    else {
-    	code_text[i1] = sqr[row1][col2];
-    	code_text[i2] = sqr[row2][col1];
-	}	        
-}
-
 
 
 function do_decrypt(){
@@ -369,20 +286,19 @@ codetext = document.getElementById('input_area').value;
 //alert(plaintext);
 s = codetext.toLowerCase();
 key1 = document.getElementById('key').value.toLowerCase();
-period = document.getElementById('period').value
-period = parseInt(period);
+period_key = document.getElementById('period').value
 
 //alert("decrypt");
-plaintext = seriated_playfair_decrypt(s,key1,selected_route,period);
+plaintext = nihilist_sub_decrypt(s,key1,selected_route,period_key);
 
 s = '';
 if ( flag_6x6)
 	s += '6x6 ';
 
-s += "Seriated Playfair cipher\n";
+s += "Nihilist Substitution cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
-s += "\nperiod: "+period;
+s += "\nperiod: "+period_key;
 s += "\nkey: "+document.getElementById('key').value;
 s += "\nroute: "+route_name[selected_route];
 if (reverse_key)
@@ -397,87 +313,79 @@ s+="\nKeysquare:\n"
 		s +=sqr[i][j].toUpperCase();
 	s += '\n';
 	}
+ s+= '\nperiodic key\n';
+ s1 = '';
+ s2 = period_key.toLowerCase();
+ for (i=0;i<s2.length;i++){
+	c = s2.charAt(i);
+	n = alpha.indexOf(c);
+	if ( n !=-1)
+		s1 += c;
+ }
+for (i=0;i<s1.length;i++){
+	c1 = inv_row[s1.charAt(i)]+1;
+	c2 = inv_col[s1.charAt(i)]+1;
+	s+= ''+c1+c2+' ';
+}	
+s += '\n';
+for (i=0;i<s1.length;i++)
+	s+= s1.charAt(i)+'  ';
+s += '\n';
 
-	s += '\nWorksheet:\n';
-    var left_over = code_text.length%(2*period)
-    var nxt_line = Math.floor(66/(period+1));
-    var out = ''
-    cnt = 0
-    var cnt2 = 0
-    var cline=''
-    var cline2 = ''
-    var pline = ''
-    var pline2=''
-    var pos = 0
-    while (pos < code_text.length-left_over){
-        for (i=0;i<period;i++){
-            cline += code_text[pos+i].toUpperCase();
-            cline2 += code_text[pos+period+i].toUpperCase();
-            pline += plain_text[pos+i]
-            pline2 += plain_text[pos+period+i]
-            cnt += 1
-		}
-        cline += ' '
-        cline2 += ' '
-        pline += ' '
-        pline2 += ' '
-        pos += 2*period
-        cnt2 += 1
-        if ((cnt2%nxt_line) == 0){
-            out += cline + '\n'
-            out += cline2 + '\n'
-            out += pline + '\n'
-            out += pline2 + '\n'
-            cline = ''
-            cline2 = ''
-            pline = ''
-            pline2 = ''
-		}
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<codetext_groups.length;i++){
+	s1 += codetext_groups.charAt(i);
+	s2 += plaintext_groups.charAt(i);
+	if (codetext_groups.charAt(i+1) == '\n'){
+	 s += s1+'\n'+s2+'\n';
+	 s1 = '';
+	 s2 = '';
+	 i++
 	}
-    n = left_over/2
-    for (i=0;i<n;i++){
-        cline += code_text[pos+i].toUpperCase();
-        cline2 += code_text[pos+n+i].toUpperCase();
-        pline += plain_text[pos+i]
-        pline2 += plain_text[pos+n+i]
-	}
-    out += cline+'\n'+cline2+'\n'+pline+'\n'+pline2+'\n'
-	
-	s += out;
+}
+if ( s1 != '')
+	s += s1+'\n'+s2+'\n';
 	
 document.getElementById('output_area').value = s;
 
 }
 
-function seriated_playfair_decrypt(codetext,key,route_numb,period){
-    var str,i,j,k,n,s,c,c1;
+function nihilist_sub_decrypt(codetext,key,route_numb,period_key){
+    var str,i,j,k,n,s,c,c1,n1,n2;
     var out_str,state ;
-    var key_len,index, used_let, extended_key, embedded_key;
-	var plaintext,cnt;
-	
-  var extended_key = [];
-	used_let = {};
-	used_let['j'] = 1;
-  key_len = 0;
-  for (i=0;i<key.length;i++){
+    var key_len,index, used_let;
+	var codetext,cnt;
+    var x,y;
+    var c1,c2,c3,c4;
+    var p_key_coord, p_count;
+	var digits = '0123456789';
+
+    // get key square
+    var extended_key = [];
+    used_let = {};
+    used_let['j'] = 1;
+    key_len = 0;
+    for (i=0;i<key.length;i++){
         c = key.charAt(i);
-	    	if (c=='j') c = 'i';
+    	if (c=='j') c = 'i';
         if ( alpha.indexOf(c) != -1 && !(c in used_let)){
             extended_key[key_len++] = c
             used_let[c] = 1;
         }
-  }
-  for (i=0;i<26;i++) {
+    }
+    for (i=0;i<26;i++) {
         c = alpha.charAt(i);
         if (!(c in used_let))
             extended_key[key_len++] = c;
-  }
+    }
 	if (reverse_key)
 		extended_key = extended_key.reverse();
-  
-	embedded_key = [];
-	for (i=0;i<25;i++)
-		embedded_key[i] = extended_key[routes[route_numb][i]];
+	
+    embedded_key = [];
+    for (i=0;i<25;i++)
+		embedded_key[i] = extended_key[routes[route_numb][i]]; 
 	index = 0;
 	for (i=0;i<5;i++) {
 		sqr[i] = [];
@@ -489,63 +397,55 @@ function seriated_playfair_decrypt(codetext,key,route_numb,period){
 		inv_row[ sqr[i][j] ] = i;
 		inv_col[ sqr[i][j] ] = j;
 	}
-	s = [];
+		
+    // get coordintes of period_key
+	period_key = period_key.toLowerCase();
+    p_key_coord = [];
+	cnt = 0;
+    for (i=0;i<period_key.length;i++){
+        c = period_key.charAt(i);
+        if ( c=='j') c = 'i';
+        n = embedded_key.indexOf(c);
+		if ( n != -1){
+			x = Math.floor( n/5); // left key index
+			y = n%5; // top key index
+			p_key_coord[cnt++] = 10*(x+1)+y+1;
+		}
+    }
+    plaintext = '';
+    cnt = 0;
+    p_count = 0;
 	state = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+	
 	for (i=0;i<codetext.length;i++){
 		c = codetext.charAt(i);
-		n = alpha.indexOf(c);
-		if ( n>=0) 
-            s.push(c);
-    }    
-	le = s.length;
-	code_text = s.slice(0); // copy to global variable for later use.
-    plain_text = [];
-    left_over = le % (2*period)
-    pos = 0
-    buf_len = s.length;
-		while (pos < buf_len-left_over){
-            for (j=0;j<period;j++) {
-                    c1 = s[pos+j];
-                    c2 = s[pos+j+period];
-                    put_dc(c1,c2,pos+j,pos+j+period);
-            }
-            pos += 2*period;
+        n = digits.indexOf(c);        
+		if ( n>=0) {
+			if ( state == 0){
+				n1 = parseInt(c);
+				c1 = c;
+				state = 1;
+				continue;
+				
+			}
+			n2 = parseInt(c);
+            j = (10*n1+n2+100-p_key_coord[p_count++]) % 100;
+            x = Math.floor( j/10)-1; // left key index
+            y = (j%10)-1; // top key index
+			codetext_groups+= c1+c+' '
+            plaintext += sqr[x][y];
+			plaintext_groups += sqr[x][y]+'  ';
+            if (p_count == period_key.length){
+                p_count = 0;
+				codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+			state = 0;
         }
-        if ( left_over>0) {
-            pos = buf_len - left_over;
-            k = left_over/2;
-            for (j=0;j<k;j++){
-                c1 = s[pos+j];
-                c2 = s[pos+j+k];
-                put_dc(c1,c2,pos+j,pos+j+k);
-            }
-        }
-    plaintext = plain_text.join('');
+    }
     return(plaintext);
-}
-
-function put_dc(c1,c2,i1,i2) {
-    var row1,col1,row2,col2;
-    
-    var keysquare_width = 5;
-
-    row1=inv_row[c1];
-    col1=inv_col[c1];
-    row2=inv_row[c2];
-    col2=inv_col[c2];
-
-    if (row1 == row2) {
-   		plain_text[i1] = sqr[row1][ (col1+keysquare_width-1)%keysquare_width];
-   		plain_text[i2] = sqr[row2][ (col2+keysquare_width-1)%keysquare_width];
-	}
-	else if ( col1 == col2) {
-   		plain_text[i1] = sqr[(row1+keysquare_width-1)%keysquare_width ][col1];
-   		plain_text[i2] = sqr[ (row2+keysquare_width-1)%keysquare_width ][col2];
-	}
-    else {
-    	plain_text[i1] = sqr[row1][col2];
-    	plain_text[i2] = sqr[row2][col1];
-	}	        
 }
 
 
@@ -553,10 +453,13 @@ function do_check(status){
 	var s,s1,n,c;
 	var alpha='abcdefghijklmnopqrstuvwxyz';
 	var symbols;
+	var digits = '0123456789';
 	if (flag_6x6)
 		symbols = alpha+'1234567890';
 	else
 		symbols = alpha;
+	if (status == 'de')
+		symbols = digits;
 	s = document.getElementById('input_area').value;
 	if (s == ''){
 		alert("No text entered");
@@ -569,24 +472,30 @@ function do_check(status){
 		if (symbols.indexOf(c) != -1) 
 			s1 += c;
 	}
-
+/*
 	if (s1.indexOf('j') != -1 && !flag_6x6 && status=='de'){
 		alert("Ciphertext has a J!");
 		return(false);
 	}
+*/	
+	if (s1.length == 0) {
+		alert("Ciphertext has no digits");
+		return(false);
+	}
 	if ( status=='de' && (s1.length %2) !=0 ){
-		alert("Ciphertext has odd number of symbols");
+		alert("Ciphertext has odd number of digits");
 		return(false);
 	}
+
 	s = document.getElementById('period').value;
-	if (s == '' || isNaN(s)){
-		alert("No numerical period entered");
-		return(false);
+	if (s == ''){
+		alert("No Period key entered");
+		return(false)
 	}
-	
+
 	s = document.getElementById('key').value;
 	if (s == ''){
-		alert("No key entered");
+		alert("No Keysquare key entered");
 		return(false)
 	}
 	if (selected_route == -1){
@@ -666,7 +575,7 @@ background-color: Moccasin;
 </head>
 <body bgcolor="Silver" >
 <center>
-<h3>Seriated Playfair  Encrypt/Decrypt</h3> <br><br>
+<h3>Nihilist Substitution  Encrypt/Decrypt</h3> <br><br>
 </center>
 Plaintext/Ciphertext:<br>
 <textarea id="input_area" cols=80 rows = 5 spellcheck="false" >
@@ -681,14 +590,14 @@ output:<br>
 </textarea>
 <br><br>
 
-&nbsp;&nbsp; Period: <input type="text" id="period"  size=8  >
+&nbsp;&nbsp; Period key: <input type="text" id="period"  >
 <!--
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
 <input type = checkbox id="use_6x6"  size = 2 >6x6 keysquare
 -->
 <br><br>
 <div>
-&nbsp;key: <input type="text" name = "left_key" id="key">
+&nbsp;Keysquare key: <input type="text" name = "left_key" id="key" >
 &nbsp;
 route:
 <span id="rou">
