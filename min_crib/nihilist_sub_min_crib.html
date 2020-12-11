@@ -1,0 +1,241 @@
+<html>
+<!-- nihilist sub min crib.
+-->
+<head>
+<script type="text/javascript">
+
+function get_possibilities(crib,pairs,period,single_key_flag,key_value){
+/*
+	poly_alpha = [None]*(period+1)
+	inverse_poly_alpha = [None]*(period+1)	
+	numb_hits = 0;
+*/    
+    var poly_alpha = [];
+    var inverse_poly_alpha = []
+    var numb_hits = 0;
+    var crib_pos,i,j,c,n,index,flag,v;
+	// one extra alphabet to handle indices wihere key value is known
+    for (crib_pos = 0;crib_pos<pairs.length-crib.length+1;crib_pos++){
+        for (n=0;n< period+1;n++){
+            poly_alpha[n] = [];
+            for (i=0;i<26;i++)
+                poly_alpha[n][i] = -1;
+            inverse_poly_alpha[n] = [];
+            for (i=0;i<=111;i++) //max value of a "pair" is 55+55 = 110	
+                inverse_poly_alpha[n][i] = -1;
+        }
+        var crib_buffer = [];
+        for (i=0;i<pairs.length;i++)
+            crib_buffer[i] = -1;
+        for (n=0;n<crib.length;n++)
+            crib_buffer[crib_pos+n] = crib[n];
+		index= 0
+		flag = true;
+        for (n=0;n<pairs.length;n++) {
+			if (crib_buffer[n] == -1){
+				index += 1;
+				if (index == period)
+					index = 0;
+				continue;
+            }
+			c = crib_buffer[n];
+			//is the current index one with just one key value? If so put in the common alphabet with index 'period'
+			if (single_key_flag[index] == 1){
+				v = pairs[n] - key_value[index]
+				if (poly_alpha[period][c] == -1) // first encounter
+					poly_alpha[period][c] = v
+				else if (poly_alpha[period][c] != v){
+					// crib won't fit here
+					//print "pos ",crib_pos, "common bad at index ",index,"with ",lowerC[c]," values ", poly_alpha[period][c]," ", v
+					flag = false;
+					break;
+                }
+				if (inverse_poly_alpha[period][v] == -1)
+					inverse_poly_alpha[period][v] = c
+				else if (inverse_poly_alpha[period][v] != c){
+					//crib won't fit here
+					// print "pos ",crib_pos, "common bad at index ",index,"with ",lowerC[c]," values ", poly_alpha[period][c]," ", v
+					flag = false;
+					break;
+                }
+            } // end if
+			else {
+				v = pairs[n];
+				if (poly_alpha[index][c] == -1) // # first encounter
+					poly_alpha[index][c] = v
+				else if (poly_alpha[index][c] != v){
+					// crib won't fit here
+                    //print  "pos ",crib_pos, "bad at ",index
+					flag = false;
+					break;
+                 }
+				if (inverse_poly_alpha[index][v] == -1) // # first encounter
+					inverse_poly_alpha[index][v] = c
+				else if (inverse_poly_alpha[index][v] != c){
+					//crib won't fit here
+					//print  "pos ",crib_pos, "bad at ",index
+					flag = false;
+					break;
+                }
+            } // end else
+			index += 1
+			if (index == period)
+				index = 0
+		} // next n		
+		if (flag ){
+			numb_hits += 1
+			//print crib_pos+1," ",
+			if (numb_hits>1) // #no unique position
+				return numb_hits
+		}	
+	//print " "
+    } // next crib_pos
+	return (numb_hits )// better be one not zero!
+}
+
+function do_processing(){
+    var out_str,s,str;
+    var code,plain,pairs;
+    var i,j,c,n,cycle,period;
+    var key_count, n1,n2, pos,flag,j1,j2, le;
+    var digits = '0123456789';
+    var alpha = 'abcdefghijklmnopqrstuvwxyz';
+    var skip_index = 25;
+    var min_allowed_len = 5;
+ 
+    
+    s = document.getElementById('ciphertext').value;
+    if ( s==''){
+        alert("No cipher entered");
+        return
+    }
+    code = [];
+    for (i=0;i<s.length;i++){
+        c = s.charAt(i);
+        n = digits.indexOf(c);
+        if (n != -1)
+            code.push(n);
+    }
+    if ( (code.length%2) != 0){
+        alert("cipher has odd number of digits")
+        return
+    }
+    pairs = [];
+    for (i=0;i<code.length; i = i+2){
+        n = 10*code[i]+code[i+1];
+        if (n<11)
+            n += 100;
+        pairs.push(n);
+    }
+    s=document.getElementById('period').value;
+    if ( s==''){
+        alert("no period entered");
+        return;
+    }
+    period = parseInt(s);
+    var single_key_flag = []
+    var key_value = [];
+    for (i=0;i<period;i++)
+        single_key_flag[i] = key_value[i] = 0;
+    for (cycle = 0; cycle<period; cycle++){
+        key_count = 0;
+        for (n1=1;n1<6;n1++)
+            for (n2 = 1;n2<6;n2++){
+                n = 10*n1+n2;
+                pos = cycle;
+                flag = true;
+                while(pos<pairs.length){
+                    i = pairs[pos]
+                    i -= n
+                    j1 = Math.floor(i/10);
+                    j2 = i%10
+                    if (j1< 1 || j1>5 || j2<1 || j2>5){
+                        flag = 0
+                        break
+                    }
+                    pos += period
+                }
+                if (flag){
+                    key_value[cycle] = n;
+                    key_count++;
+                }
+        }
+        if ( key_count==1)
+            single_key_flag[cycle]=1
+    } // next cycle
+	out_str="";
+    out_str += "Single key indices and their values";
+    for (i=0;i<period;i++)
+        if ( single_key_flag[i] ==1 )
+            out_str += '\n'+i+' '+ key_value[i];
+
+    s = document.getElementById('plaintext').value;
+    if ( s==''){
+        alert("No plaintext entered");
+        return
+    }
+    s = s.toLowerCase();
+    plain = [];
+    for (i=0;i<s.length;i++){
+        c = s.charAt(i);
+        if ( c=='j') c = 'i';
+        n = alpha.indexOf(c);
+        if (n != -1)
+            plain.push(n);
+    }
+
+// main loop
+    var min_len = plain.length;
+    var min_pos = 0;
+
+    for (pos = skip_index;pos< plain.length- min_allowed_len+1;pos++)
+        for (le = min_allowed_len;le<plain.length-pos;le++){
+        crib = plain.slice(pos,pos+le);
+		n =get_possibilities(crib,pairs,period,single_key_flag,key_value);
+		if (n == 1){
+			if (le <= min_len){
+                n = pos+1;
+                out_str += "\nminimum crib length "+le+" at position (relative to starting at 1) "+n;
+				min_len = le
+				min_pos = pos
+            }
+			break;
+        }
+		else if (n == 0){
+            s = "Program bug! no possible crib at " + pos;
+			alert(s );
+			return;
+        }
+    }
+out_str += "\n\nlast minimum crib is: "
+
+for (n=0;n<min_len;n++)
+    out_str += alpha.charAt( plain[min_pos+n] )
+
+    
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Nihilist substitution minimum crib</h3>
+Paste cipher and plaintext into labled boxes. Enter period. Press min crib button
+<br><br>
+ciphertext:<br>
+<textarea id="ciphertext" cols=80 rows = 6 >
+</textarea><br>
+<br>
+plaintext:<br>
+<textarea id="plaintext" cols=80 rows = 6>
+</textarea><br>
+<br>
+Period length: <input type = text size = 4 id="period">
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=5>
+</textarea>
+<br>
+<input type="button" value="Min crib" onclick=do_processing();>
+<br><br>
+</body>
+</html>
