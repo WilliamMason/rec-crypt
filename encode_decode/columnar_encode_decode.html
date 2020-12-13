@@ -1,0 +1,292 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var plain_array;
+var period;
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function do_check(status){
+	var s,s1,n,c, key_numbs,max_num,i,j,k;
+	var digits='0123456789';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No hat entered");
+		return(false)
+	}
+	s = alltrim(s);	
+    s = condense_white_space(s)    
+	key_numbs = {};
+	max_num = -1;
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if ( digits.indexOf(c) != -1){
+			s1  = s.split(' ');
+			if ( s1.length <2){
+				alert("Numbers in key must be separated by blanks!");
+				return(false);
+			}
+			for (j=0;j<s1.length;j++){
+				k = parseInt(s1[j]);
+				if (isNaN(k)) {
+					//if ( j==s1.length-1) continue; // last entry might be line feed or something					
+					alert("Key contains mixed numbers and non-numbers!");
+					return(false);
+				}
+				if (k>max_num) max_num = k;
+				key_numbs[k]=1;
+			}
+			for (j=1;j<max_num;j++){
+				if ( !(j in key_numbs)){
+					s = 'Number '+j+' missing from key.';
+					alert(s);
+					return(false);
+				}
+			}
+			break;
+		}
+	}
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = col_tramp_encrypt(s,key);
+s = '';
+s += "Columnar transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhat: "+key.toUpperCase();
+s += '\nworksheet\n';
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+document.getElementById('output_area').value = s;
+
+}
+
+function col_tramp_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c,s1;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+
+	
+    var numeric_key = [];
+	numb_flag = false;
+	// see if key already numeric
+	s = alltrim(key);	
+	s = condense_white_space(s)
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		if (digits.indexOf(c) != -1){ // key has digits
+			s1 = s.split(' ');
+			var zero_flag = false;
+			for (j=0;j<s1.length;j++){
+				numeric_key[j] = parseInt(s1[j]);
+				if (numeric_key[j] == 0)
+					zero_flag = true;
+			}
+			if (!zero_flag){ // key starts at 1, include 0 in numeric key
+				for (j=0;j<numeric_key.length;j++)
+					numeric_key[j]--;
+			}
+			numb_flag = true;
+			break;
+		}
+	}
+
+	if (!numb_flag){
+    // change alphabetic key to numeric key.	
+		n = 0;
+		for (i=0;i<26;i++){
+			for (j=0;j<key.length;j++)
+				if (key.charAt(j) == alpha.charAt(i) )
+					numeric_key[j] = n++;
+		}
+	}
+	period = numeric_key.length; // global variuable
+// get offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ numeric_key[i] ] = i;
+    var plain = [];
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            plain[plain.length] = c;
+    }
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet
+    code = [];
+    index = 0;    
+    for (i=0;i<offset.length;i++){
+        k = offset[i];
+        for (j=k;j<plain.length;j = j+offset.length){
+            code[index++] = plain[j];
+        }
+    }
+	var codetext="";    
+	for (i=0;i<code.length;i++){
+			codetext += code[i];
+            if ( ((i+1)%5) == 0)
+                codetext += ' ';
+            if ( ((i+1)%55 ) ==0)
+                codetext += '\n';
+	}
+    return(codetext)
+}
+
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = col_tramp_decrypt(s,key);
+s = '';
+s += "Columnar transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhat: "+key.toUpperCase();
+s += '\nworksheet\n';
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+function col_tramp_decrypt(codetext,key){
+    var str,i,j,k,n,s,c,s1;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+
+	
+    var numeric_key = [];
+	numb_flag = false;
+	// see if key already numeric
+	s = alltrim(key);	
+	s = condense_white_space(s)
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		if (digits.indexOf(c) != -1){ // key has digits
+			s1 = s.split(' ');
+			var zero_flag = false;
+			for (j=0;j<s1.length;j++){
+				numeric_key[j] = parseInt(s1[j]);
+				if (numeric_key[j] == 0)
+					zero_flag = true;
+			}
+			if (!zero_flag){ // key starts at 1, include 0 in numeric key
+				for (j=0;j<numeric_key.length;j++)
+					numeric_key[j]--;
+			}
+			numb_flag = true;
+			break;
+		}
+	}
+
+	if (!numb_flag){
+    // change alphabetic key to numeric key.	
+		n = 0;
+		for (i=0;i<26;i++){
+			for (j=0;j<key.length;j++)
+				if (key.charAt(j) == alpha.charAt(i) )
+					numeric_key[j] = n++;
+		}
+	}
+	period = numeric_key.length; // global variable
+// get offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ numeric_key[i] ] = i;
+    var code = [];
+    for (i=0;i<codetext.length;i++){
+        c = codetext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            code[code.length] = c;
+    }
+
+    var plain = [];
+    index = 0;    
+    for (i=0;i<offset.length;i++){
+        k = offset[i];
+        for (j=k;j<code.length;j = j+offset.length){
+            plain[j] = code[index++];
+        }
+    }
+	var plaintext="";    
+	for (i=0;i<plain.length;i++){
+			plaintext += plain[i];
+	}
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet	
+    return(plaintext)
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Columnar Transposition Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area"></textarea></div>
+<br><br>
+<div>Hat: <input type="text" name = "key" id="key"> (Either alphabetic, or numbers separated by blanks)
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+
+</body>
+</html>
