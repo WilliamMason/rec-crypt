@@ -1,0 +1,251 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var plain_array;
+var period;
+var worksheet_key;
+
+
+function do_check(status){
+	var s,s1,n,c;
+	var digits='0123456789';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No hat entered");
+		return(false)
+	}
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if ( digits.indexOf(c) != -1){
+			alert("Alphabetic hat only!");
+			return(false);
+		}
+	}
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = myszkowski_tramp_encrypt(s,key);
+s = '';
+s += "Myszkowski transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhat: "+key.toUpperCase();
+s += '\nworksheet:\n';
+for (i=0;i<period;i++)
+	 s+= worksheet_key[i]+' ';
+s += '\n';	 
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+document.getElementById('output_area').value = s;
+
+}
+
+function myszkowski_tramp_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c,pos,cnt;
+    var out_str;
+    var key_len,index,offset;
+    // change alphabetic key to numeric key.
+    var numeric_key = [];
+    n = 0;
+    for (i=0;i<26;i++){
+        k = 0;
+        for (j=0;j<key.length;j++){
+            if (key.charAt(j) == alpha.charAt(i) ){
+                numeric_key[j] = n;
+                k = 1;
+            }
+         }
+         if ( k==1) n++;                
+    }
+	period = numeric_key.length; // global variable	
+	worksheet_key = [];
+	for (i=0;i<period;i++)
+		worksheet_key[i] = numeric_key[i]+1;
+// get offset
+    offset = [];
+    for (i=0;i<26;i++){
+        offset[i] = [];
+        for (j=0;j<numeric_key.length;j++){
+            if (numeric_key[j] == i)
+                offset[i].push(j);
+        }
+    }
+    var plain = [];
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            plain[plain.length] = c;
+    }
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet
+    code = [];
+    cnt = 0;
+    for (i=0;i<26;i++){
+        if ( offset[i].length == 0) continue;
+        index = pos = 0;
+        while( offset[i][index ] + pos < plain.length){
+            k = plain[ offset[i][index] + pos];
+            code[cnt++] = k;
+            if ( ++index == offset[i].length ){
+                index = 0;
+                pos += key.length
+            }
+            
+        }
+    }
+	var codetext="";    
+	for (i=0;i<code.length;i++){
+			codetext += code[i];
+            if ( ((i+1)%5) == 0)
+                codetext += ' ';
+            if ( ((i+1)%55 ) ==0)
+                codetext += '\n';
+	}
+    return(codetext)
+}
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = myszkowski_tramp_decrypt(s,key);
+s = '';
+s += "Myszkowski transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhat: "+key.toUpperCase();
+s += '\nworksheet:\n';
+for (i=0;i<period;i++)
+	 s+= worksheet_key[i]+' ';
+s += '\n';	 
+
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+function myszkowski_tramp_decrypt(codetext,key){
+    var str,i,j,k,n,s,c,pos,cnt;
+    var out_str;
+    var key_len,index,offset;
+    // change alphabetic key to numeric key.
+    var numeric_key = [];
+    n = 0;
+    for (i=0;i<26;i++){
+        k = 0;
+        for (j=0;j<key.length;j++){
+            if (key.charAt(j) == alpha.charAt(i) ){
+                numeric_key[j] = n;
+                k = 1;
+            }
+         }
+         if ( k==1) n++;                
+    }
+	period = numeric_key.length; // global variable	
+	worksheet_key = [];
+	for (i=0;i<period;i++)
+		worksheet_key[i] = numeric_key[i]+1;
+// get offset
+    offset = [];
+    for (i=0;i<26;i++){
+        offset[i] = [];
+        for (j=0;j<numeric_key.length;j++){
+            if (numeric_key[j] == i)
+                offset[i].push(j);
+        }
+    }
+    var code = [];
+    for (i=0;i<codetext.length;i++){
+        c = codetext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            code[code.length] = c;
+    }
+
+    var plain = [];
+    cnt = 0;
+    for (i=0;i<26;i++){
+        if ( offset[i].length == 0) continue;
+        index = pos = 0;
+        while( offset[i][index ] + pos < code.length){
+			k = code[cnt++];
+            plain[ offset[i][index] + pos] = k;
+            if ( ++index == offset[i].length ){
+                index = 0;
+                pos += key.length
+            }
+            
+        }
+    }
+	var plaintext="";    
+	for (i=0;i<code.length;i++){
+			plaintext += plain[i];
+	}
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet	
+    return(plaintext)
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Myszkowski Transposition Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area"></textarea></div>
+<br><br>
+<div>Hat: <input type="text" name = "key" id="key"> (Alphabetic)
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+
+</body>
+</html>
