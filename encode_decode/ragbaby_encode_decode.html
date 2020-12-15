@@ -1,0 +1,333 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var codetext_groups,plaintext_groups;
+var complete_key;
+
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function do_check(status){
+	var s,s1,n,c;
+	var digits='0123456789';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = ragbaby_encrypt(s,key);
+s = '';
+s += "Ragbaby cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+s += '\ncomplete key:\n'+ complete_key;
+
+
+	s += '\nWorksheet:\n';
+	codetext = codetext.toUpperCase();
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext.length;i++){
+		s1 += codetext.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+
+}
+
+function ragbaby_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c;
+    var cnt;
+    
+    var r_alpha = 'abcdefghiklmnopqrstuvwyz';
+
+    key = key.toLowerCase();
+	if (key.length<24){
+		var extended_key = '';
+		for (i=0;i<key.length;i++){
+			c = key.charAt(i);
+			if (c=='j') c = 'i';
+			if ( c=='x') c = 'w';
+			if ( r_alpha.indexOf(c) != -1 && extended_key.indexOf(c) == -1)
+				extended_key += c;
+		}
+		for (i=0;i<r_alpha.length;i++) {
+			c = r_alpha.charAt(i);
+			if (extended_key.indexOf(c) == -1)
+				extended_key +=c;
+		}
+	}
+	else{
+		var extended_key = ''; // assume key is already extended ,consisting of 24,25, or 26 letters
+		for (i=0;i<key.length;i++){
+			c = key.charAt(i);
+			if ( alpha.indexOf(c) != -1 && extended_key.indexOf(c) == -1)
+				extended_key += c;
+		}
+	}
+	complete_key = extended_key.toUpperCase(); // global variable
+	plaintext = alltrim(plaintext);
+	plaintext = condense_white_space(plaintext);
+	var codetext="";
+    var index = 0;
+    var start_pos = 0;
+    var word_flag = false;
+	cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+	var temp_str = '';
+	var temp1_str = '';
+    var special = "-'=" ;//characters that may occur in middle of words
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+        if (special.indexOf(c) != -1)
+            continue;
+        if (c=='j' && extended_key.indexOf('j')== -1) c = 'i';
+        if ( c=='x'&& extended_key.indexOf('x')== -1) c = 'w';
+		n = extended_key.indexOf(c);
+		if ( n>=0) {
+            if (!word_flag){
+                start_pos = (start_pos+1)%extended_key.length;
+                index = start_pos;
+                word_flag = true;
+            }
+            j = extended_key.indexOf(c);
+			codetext += extended_key.charAt( (j+index)%extended_key.length );
+			temp_str += extended_key.charAt( (j+index)%extended_key.length );
+			temp1_str += c;
+            index++;
+			//cnt++;
+        }
+		else {
+			if (cnt + temp_str.length<= 65){
+				codetext_groups += temp_str;
+				plaintext_groups += temp1_str;
+				cnt += temp_str.length;
+				temp_str = '';
+				temp1_str = '';
+			}
+			else {
+				codetext_groups += '\n'+temp_str;
+				plaintext_groups += '\n'+temp1_str;
+				cnt = temp_str.length;
+				temp_str = '';
+				temp1_str = '';				
+			}
+            word_flag = false;
+			codetext += c;
+			cnt++;
+			codetext_groups +=c;
+			plaintext_groups += c;
+			
+        }
+	}
+    return(codetext_groups);
+    //return(codetext)
+}
+
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = ragbaby_decrypt(s,key);
+s = '';
+s += "Ragbaby cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+s += '\ncomplete key:\n'+ complete_key;
+
+
+	s += '\nWorksheet:\n';
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+function ragbaby_decrypt(codetext,key){
+    var str,i,j,k,n,s,c;
+    var cnt;
+    
+    var r_alpha = 'abcdefghiklmnopqrstuvwyz';
+
+    key = key.toLowerCase();
+	if (key.length<24){
+		var extended_key = '';
+		for (i=0;i<key.length;i++){
+			c = key.charAt(i);
+			if (c=='j') c = 'i';
+			if ( c=='x') c = 'w';
+			if ( r_alpha.indexOf(c) != -1 && extended_key.indexOf(c) == -1)
+				extended_key += c;
+		}
+		for (i=0;i<r_alpha.length;i++) {
+			c = r_alpha.charAt(i);
+			if (extended_key.indexOf(c) == -1)
+				extended_key +=c;
+		}
+	}
+	else{
+		var extended_key = ''; // assume key is already extended ,consisting of 24,25, or 26 letters
+		for (i=0;i<key.length;i++){
+			c = key.charAt(i);
+			if ( alpha.indexOf(c) != -1 && extended_key.indexOf(c) == -1)
+				extended_key += c;
+		}
+	}
+	complete_key = extended_key.toUpperCase(); // global variable
+	codetext = alltrim(codetext);
+	codetext = condense_white_space(codetext);
+
+	var plaintext="";
+    var index = 0;
+    var start_pos = 0;
+    var word_flag = false;
+	cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+	var temp_str = '';
+	var temp1_str = '';
+    var special = "-'=" ;//characters that may occur in middle of words
+	for (i=0;i<codetext.length;i++){
+		c = codetext.charAt(i);
+        if (special.indexOf(c) != -1)
+            continue;
+		//if ( c=='\n') c = ' ';
+		n = extended_key.indexOf(c);
+		if ( n>=0) {
+            if (!word_flag){
+                start_pos = (start_pos+1)%extended_key.length;
+                index = start_pos;
+                word_flag = true;
+            }
+            j = extended_key.indexOf(c);
+			plaintext += extended_key.charAt( (2*extended_key.length+j-index)%extended_key.length );
+			temp_str += c
+			temp1_str += extended_key.charAt( (2*extended_key.length+j-index)%extended_key.length );
+            index++;
+			//cnt++;
+        }
+		else {
+			if (cnt + temp_str.length<= 65){
+				codetext_groups += temp_str;
+				plaintext_groups += temp1_str;
+				cnt += temp_str.length;
+				temp_str = '';
+				temp1_str = '';
+			}
+			else {
+				codetext_groups += '\n'+temp_str;
+				plaintext_groups += '\n'+temp1_str;
+				cnt = temp_str.length;
+				temp_str = '';
+				temp1_str = '';				
+			}
+            word_flag = false;
+			plaintext += c;
+			cnt++;
+			codetext_groups +=c;
+			plaintext_groups += c;
+			
+        }
+	}
+    return(plaintext);
+    //return(codetext)
+}
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Ragbaby Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area"></textarea></div>
+<br><br>
+<div>Key: <input type="text" name = "key" id="key">
+<br><br>
+<b>Special cases:</b> For a 24 letter key with missing letters different from 'j' and 'x' include all 24 letters of the key. <br>For 25 and 26 letters keys, include all 25 or 26 letters of the key.
+</div>
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+
+
+
+
+</body>
+</html>
