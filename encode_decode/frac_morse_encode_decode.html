@@ -348,6 +348,8 @@ var alpha_27 = 'abcdefghijklmnopqrstuvwxyz0123456789 ';
 		n = extended_key.indexOf( code.charAt(i) );		
 		mcode += morse_order[n];
 	}
+	if (mcode.charAt(mcode.length-1) != END_SYMBOL)
+		mcode += END_SYMBOL
 	morse_translation = mcode; // global
 	//console.log(mcode);
 	var plain_text = [];
