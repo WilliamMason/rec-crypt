@@ -1,0 +1,246 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var codetext_groups,plaintext_groups;
+var complete_key;
+
+function lefttrim(str) { // remove leading blanks
+	return str.replace(/^\s+/g, '');
+}
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function do_encrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,hat,result;
+
+if (!do_check('in'))
+	return;
+	
+plaintext = document.getElementById('input_area').value;
+key = document.getElementById('key').value;
+hat = document.getElementById('hat').value;
+s = plaintext.toLowerCase();
+result = tridigital_encrypt(s,key,hat)
+codetext = result[0];
+var numerical_hat = result[1];
+s = '';
+s += "Tridigital cipher\n";	
+s += "ciphertext:\n"+codetext;
+s += "\nplaintext:\n"+plaintext;
+s += '\nkey: '+key;
+s += '\nhat: '+hat;
+s += '\nKey array:\n';
+for (i=0;i<10;i++)
+	s += numerical_hat[i];
+s += '\n';
+cnt =  0;	
+for (i=0;i<9;i++)
+	s += complete_key.charAt(cnt++);
+s += '-\n';
+for (i=0;i<9;i++)
+	s += complete_key.charAt(cnt++);
+s += '-\n';
+for (i=0;i<8;i++)
+	s += complete_key.charAt(cnt++);
+s += '--\n';	
+
+
+
+
+	s += '\nWorksheet:\n';
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( plaintext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !=''){
+			s += s1+'\n'+s2+'\n';
+	}
+
+document.getElementById('output_area').value = s;
+
+}
+
+function tridigital_encrypt(plaintext,key,hat){ // plaintext already lower case
+  var result,s,n,c,i,cnt,crib_pos,out_str,j,k,x,indx,s1,s2;
+  //var alpha = 'abcdefghijklmnopqrstuvwxyz';
+  var alpha_27 = 'abcdefghijklmnopqrstuvwxyz ';
+  
+	key = key.toLowerCase();
+    var extended_key = '';
+    for (i=0;i<key.length;i++){
+        c = key.charAt(i);
+        if ( alpha.indexOf(c) != -1 && extended_key.indexOf(c) == -1)
+            extended_key += c;
+    }
+    for (i=0;i<26;i++) {
+        c = alpha.charAt(i);
+        if (extended_key.indexOf(c) == -1)
+            extended_key +=c;
+    }
+	complete_key = extended_key.slice(0).toUpperCase();; // global
+	hat = hat.toLowerCase();
+	str = '';
+	for (i=0;i<hat.length;i++){
+		c = hat.charAt(i);
+		n = alpha.indexOf(c);
+		if (n != -1)
+			str += c;
+	}
+	hat = str; // put nothing but alphabetic characters in hat
+    var numerical_hat = [];
+    var digits = ['1','2','3','4','5','6','7','8','9','0'];
+    var cnt = 0;
+    for (i=0;i<26;i++)
+        for (j=0;j<hat.length;j++){
+            c = hat.charAt(j);
+            n = alpha.indexOf(c);
+            if ( n==i)
+                numerical_hat[j] = digits[cnt++];
+        }
+	plaintext = condense_white_space(plaintext); // change all spacing delimiters to blanks.
+	str = ''
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+		n = alpha_27.indexOf(c);
+		if (n != -1)
+			str += c;
+	} // dump everything except lettters and blanks
+	plaintext = alltrim(str);
+	plaintext = condense_white_space(plaintext);
+    var code = '';
+	var plain = '';
+  for (i=0;i<plaintext.length;i++) {
+		c = plaintext.charAt(i);
+		n = alpha_27.indexOf(c);
+		if ( n >-1) {
+			if ( c==' ')
+					code += numerical_hat[9];
+			else {
+				k = extended_key.indexOf(c)
+				indx = k%9;
+				code += numerical_hat[indx];
+			}
+			plain += c;
+		}
+  }
+  codetext = ''
+  cnt = 0;
+  for (i=0;i<code.length;i++){
+    codetext += code.charAt(i);
+    cnt++;
+    if ( (cnt%5)==0 )
+      codetext += ' ';
+    if ( (cnt%55)==0)
+      codetext += '\n';
+  }
+  codetext_groups = ''; // global
+  plaintext_groups = ''; //global
+  
+  var pos = 0;
+  var last_blank = 0;
+  for (i=0;i<plain.length;i++){
+	c = plain.charAt(i);
+	if (c==' '){
+		if (i-pos <65)
+			last_blank = i;
+		else {
+			plaintext_groups = plaintext_groups + plain.substring(pos,last_blank)+'\n';
+			codetext_groups = codetext_groups + code.substring(pos,last_blank)+'\n';
+			pos = last_blank;
+			last_blank = i;
+		}
+	}	
+  }
+  plaintext_groups = plaintext_groups + plain.substring(pos)+'\n'; // tail end of plaintext
+  codetext_groups = codetext_groups + code.substring(pos)+'\n'; 
+  return([codetext,numerical_hat])
+}
+
+
+
+function do_check(status){
+	var s,s1,n,c,i,cnt;
+	var digits='0123456789';
+    var alpha = 'abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	s = document.getElementById('hat').value;
+	if (s == ''){
+		alert("No hat entered");
+		return(false)
+	}   
+    s = s.toLowerCase();
+    cnt = 0;
+    for (i = 0;i< s.length;i++){
+        c = s.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n != -1)
+            cnt++;
+    }
+    if ( cnt != 10) {
+        alert("Hat needs exactly 10 letters!");
+        return(false);
+    }
+	return(true);
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    //document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Tridigital Encrypt</h3></center>
+
+<div>Plaintext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+<div>Hat (10 letters): <input type="text" name = "hat" id="hat"  >
+<br><br>
+<div> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;
+Key: <input type="text" name = "key" id="key"  >
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+
+</div>
+<br><br>
+
+</body>
+</html>
