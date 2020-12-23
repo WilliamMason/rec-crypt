@@ -1,0 +1,351 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var key_array;
+var key_len;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	return str.replace(/[^0-9]/g,'');
+}
+
+
+function do_encrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,cnt1;
+var digits = '0123456789';
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = grandpre_encrypt(s,key);
+s = '';
+s += "Grandpre cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += '\n\nkey:\n  '
+if ( key_len<10)
+
+for (i=0;i<key_len;i++){
+	j = i;
+	if ( key_len<10)
+		j++;
+	s += digits.charAt(j) +' ';
+}
+s += '\n';
+cnt = 0;
+for (i=0;i<key_len;i++){
+	j = i;
+	if ( key_len<10)
+		j++;
+	s += digits.charAt(j) +' ';
+	for (j=0;j<key_len;j++)
+		s += key_array.charAt(j+cnt*key_len)+' ';
+	s += '\n';
+	cnt++;
+}
+
+
+s += '\nWorksheet:\n';
+var plain = letters_only(plaintext);
+var code = digits_only(codetext);
+cnt = 0;
+s1='';
+s2 = '';
+cnt1 = 0;
+for (i=0;i<code.length;i=i+2){
+	s1 += code.charAt(i);
+	s1 += code.charAt(i+1);
+	s1 += ' '
+	s2 += plain.charAt(cnt1++)+'  ';
+	if (++cnt == 22){
+	 s += s1+'\n'+s2+'\n';
+	 s1 = ''
+	 s2 = ''
+	 cnt = 0;
+	}
+}
+
+if ( s1 != '')
+	s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+
+}
+
+function grandpre_encrypt(plaintext,key){ 
+    var str,i,j,k,n,s,c,x,cnt,n1,n2;
+    var out_str,plain;
+  var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var let_count = [];
+  var inverse_key = [];
+  key = letters_only(key);
+  key = key.toUpperCase();
+  for (i=0;i<26;i++) {
+ 	 let_count[i] = 0;
+ 	 inverse_key[i] = [];
+  }
+  key_array = key.substring(0);; // global
+  key_len = Math.floor( Math.sqrt(key.length) );
+  for (j=0;j<key_len;j++)
+  for (i=0;i<key_len;i++){
+	  n = upperC.indexOf(key.charAt(i+key_len*j));
+	  if (key_len<10){
+      n1 = j+1;
+      n2 = i+1;
+	  }
+	  inverse_key[n][let_count[n]]= ''+n1+n2;
+	  let_count[n] += 1;
+  }
+    plain = letters_only(plaintext);
+	plain = plain.toUpperCase();
+	var codetext="";
+	cnt = 0;
+	for (i=0;i<plain.length;i++){
+		c = plain.charAt(i);
+		n = upperC.indexOf(c);
+		if ( let_count[n] ==1) x = inverse_key[n][0];
+		else {
+            j = Math.floor(Math.random()*let_count[n]);
+            x = inverse_key[n][j];
+		}
+		//if (x<10)
+			//codetext += '0';
+        
+		codetext += x+' ';
+		cnt += 3;
+		if ( cnt>=65){
+		  codetext += '\n';
+		  cnt = 0;
+		}
+	}
+  return(codetext)
+}
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,n;
+var digits = '0123456789';
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+
+
+plaintext = grandpre_decrypt(codetext,key);
+s = '';
+s += "Grandper cipher\n";	
+s += "ciphertext:\n"+codetext;
+s += "\nplaintext:\n"+plaintext;
+s += '\n\nkey:\n  '
+if ( key_len<10)
+
+for (i=0;i<key_len;i++){
+	j = i;
+	if ( key_len<10)
+		j++;
+	s += digits.charAt(j) +' ';
+}
+s += '\n';
+cnt = 0;
+for (i=0;i<key_len;i++){
+	j = i;
+	if ( key_len<10)
+		j++;
+	s += digits.charAt(j) +' ';
+	for (j=0;j<key_len;j++)
+		s += key_array.charAt(j+cnt*key_len)+' ';
+	s += '\n';
+	cnt++;
+}
+
+s += '\nWorksheet:\n';
+var plain = letters_only(plaintext);
+var code = digits_only(codetext);
+cnt = 0;
+s1='';
+s2 = '';
+cnt1 = 0;
+for (i=0;i<code.length;i=i+2){
+	s1 += code.charAt(i);
+	s1 += code.charAt(i+1);
+	s1 += ' '
+	s2 += plain.charAt(cnt1++)+'  ';
+	if (++cnt == 22){
+	 s += s1+'\n'+s2+'\n';
+	 s1 = ''
+	 s2 = ''
+	 cnt = 0;
+	}
+}
+
+if ( s1 != '')
+	s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+	
+
+}
+
+function grandpre_decrypt(codetext,key){ 
+    var str,i,j,k,n,s,c,x,cnt,n1,n2;
+    var out_str,plain;
+  var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  digits = '0123456789';
+  var let_count = [];
+  var inverse_key = [];
+  key = letters_only(key);
+  key = key.toUpperCase();
+  for (i=0;i<26;i++) {
+ 	 let_count[i] = 0;
+ 	 inverse_key[i] = [];
+  }
+  key_array = key.substring(0);; // global
+  key_len = Math.floor( Math.sqrt(key.length) );
+  /*
+  for (j=0;j<key_len;j++)
+  for (i=0;i<key_len;i++){
+	  n = upperC.indexOf(key.charAt(i+key_len*j));
+      n1 = j+1;
+      n2 = i+1;
+	  inverse_key[n][let_count[n]]= ''+n1+n2;
+	  let_count[n] += 1;
+  }
+  */
+    code = digits_only(codetext);
+	
+	var plaintext="";
+	cnt = 0;
+	for (i=0;i<code.length;i= i+2){
+		c = code.charAt(i);
+		n1 = digits.indexOf(c);
+		if (key_len<10)
+			n1--;
+		c = code.charAt(i+1);
+		n2 = digits.indexOf(c);
+		if(key_len<10)
+			n2--;
+		//if (x<10)
+			//codetext += '0';
+        c = key.charAt(n1*key_len+n2).toLowerCase();;
+		plaintext += c;
+	}
+  return(plaintext)
+}
+
+function do_check(status){
+	var s,s1,n,c,s2,i,j,s3,kdigits,m,do_get;
+	var digits='0123456789'; 
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	if(status=='de'){
+		m = 0;
+		for (n=0;n<s.length;n++){
+			c = s.charAt(n);
+			if ( alpha.indexOf(c) != -1){
+				alert("Can't decrypt alphabetic characters!");
+				return(false);
+			}
+			if (digits.indexOf(c) != -1)
+				m++;
+		}
+		if ( (m&1)!=0){
+			alert("odd number of digits!");
+			return(false);
+		}
+	}		
+	else{
+		for (n=0;n<s.length;n++){
+			c = s.charAt(n);
+			if ( digits.indexOf(c) != -1){
+				alert("Can't encrypt digits!");
+				return(false);
+			}
+		}
+	}		
+	
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if (s1.length > 100){
+		alert("Sorry, maximum Grandpre is 10x10");
+		return(false)
+	}	
+    
+	if (s1.length != 64){
+    	do_get = confirm("Key length is different from 64, continue?")
+    	return(do_get);
+	}	
+
+	return(true);
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+ 
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Grandpre Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext (for 10x10 use order 0-9)<br>
+<textarea name="text" rows="5" cols="100" id="input_area"></textarea></div>
+<br><br>
+Key:
+<br>
+<div style="float:left;">
+<textarea name = "key" id="key" rows="9" cols="10" ></textarea>
+</div>
+<div style="float:left; font-family:monospace;">
+&nbsp;&nbsp;&nbsp;&nbsp;Enter key words in rows, for example:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;LADYBUGS <br>
+&nbsp;&nbsp;&nbsp;&nbsp;AZIMUTHS <br>
+&nbsp;&nbsp;&nbsp;&nbsp;CALFSKIN <br>
+&nbsp;&nbsp;&nbsp;&nbsp;QUACKISH <br>
+&nbsp;&nbsp;&nbsp;&nbsp;UNJOVIAL <br>
+&nbsp;&nbsp;&nbsp;&nbsp;EVULSION <br>
+&nbsp;&nbsp;&nbsp;&nbsp;ROWDYISM <br>
+&nbsp;&nbsp;&nbsp;&nbsp;SEXTUPLY <br>
+</div>
+<div style="clear:left;">
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+</body>
+</html>
