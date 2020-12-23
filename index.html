@@ -1,74 +1,107 @@
 <html>
 <header>
+<style>
+
+
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  grid-gap: 10px;
+
+}
+.wrapper > span {
+padding: 10px;
+ background-color: LightBlue ;
+ 
+}
+
+.wrapper1 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  grid-gap: 10px;
+
+}
+
+.wrapper1 > span {
+padding: 10px;
+ background-color: LightGreen ;
+ 
+}
+
+</style>
+
 </header>
 <body bgcolor="Silver">
  
  <center><h3>Recreational Cryptography programs</h3></center>
  
    <br><br>
-   &nbsp;&nbsp;<a href="simple_conversions.html">Simple_conversions</a>&nbsp;&nbsp;
-   &nbsp;&nbsp;<a href="id_test_random_database_web_worker.html">Neural net cipher ID test </a> (experimental)&nbsp;&nbsp;
-   &nbsp;&nbsp;<a href="Bions_gadgets_on_Github.html">GADGETS</a>&nbsp;&nbsp;
+   <div class="wrapper">
+   <span><a href="simple_conversions.html">Simple_conversions</a></span>
+   <span><a href="id_test_random_database_web_worker.html">Neural net cipher ID test </a> (experimental)</span>
+   <span><a href="Bions_gadgets_on_Github.html">GADGETS</a></span>
+   </div>
  <br><br>
 	&nbsp;&nbsp;<b>Minimum crib programs:</b><br><br>
-	&nbsp;&nbsp;<a href="min_crib/bifid_minimum_crib.html">Bifid crib</a>&nbsp;&nbsp; 
-	&nbsp;&nbsp;<a href="min_crib/cm_bifid_min_crib.html">CM bifid crib</a>&nbsp;&nbsp; 
-	&nbsp;&nbsp;<a href="min_crib/s4_min_crib.html">Four-square crib</a>&nbsp;&nbsp;
-	&nbsp;&nbsp;<a href="min_crib/nihilist_sub_min_crib.html">Nihilist substitution crib</a>&nbsp;&nbsp;
-   &nbsp;&nbsp;<a href="min_crib/numb_key_checkerboard_min_crib.html">Numbered-key/Checkerboard crib</a>&nbsp;&nbsp;
-   &nbsp;&nbsp;<a href="min_crib/phillips_min_crib.html">Phillips crib</a>&nbsp;&nbsp; 
-   <br><br>   
-   &nbsp;&nbsp;<a href="min_crib/playfair_min_crib.html">Playfair crib</a>&nbsp;&nbsp; 
-   
-   &nbsp;&nbsp;<a href="min_crib/quag_min_crib.html">Quagmire crib</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="min_crib/seriated_playfair_min_crib.html">Seriated Playfair crib</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="min_crib/syllabary_min_crib_worker.html">Syllabary crib</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="min_crib/trisquare_min_crib.html">Tri-square crib</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="min_crib/trifid_min_crib.html">Trifid crib</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="min_crib/s2_min_crib.html">Two-square crib</a>&nbsp;&nbsp;
-   
+	<div class= "wrapper1">
+	<span><a href="min_crib/bifid_minimum_crib.html">Bifid crib</a></span> 
+	<span><a href="min_crib/cm_bifid_min_crib.html">CM bifid crib</a></span> 
+	<span><a href="min_crib/s4_min_crib.html">Four-square crib</a></span>
+	<span><a href="min_crib/nihilist_sub_min_crib.html">Nihilist substitution crib</a></span>
+   <span><a href="min_crib/numb_key_checkerboard_min_crib.html">Numbered-key/Checkerboard crib</a></span>
+   <span><a href="min_crib/phillips_min_crib.html">Phillips crib</a></span> 
+   <span><a href="min_crib/playfair_min_crib.html">Playfair crib</a></span> 
+   <span><a href="min_crib/quag_min_crib.html">Quagmire crib</a></span> 
+   <span><a href="min_crib/seriated_playfair_min_crib.html">Seriated Playfair crib</a></span> 
+   <span><a href="min_crib/syllabary_min_crib_worker.html">Syllabary crib</a></span> 
+   <span><a href="min_crib/trisquare_min_crib.html">Tri-square crib</a></span> 
+   <span><a href="min_crib/trifid_min_crib.html">Trifid crib</a></span> 
+   <span><a href="min_crib/s2_min_crib.html">Two-square crib</a></span>
+   </div>
    <br><br>
+  
  &nbsp;&nbsp;<b>Encode/Decode programs:</b><br><br>   
-   &nbsp;&nbsp;<a href="encode_decode/amsco_encode_decode.html" >Amsco Transposition</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/arist_pat_encode.html" >Aristocrat/Patristocrat</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/arist_pat_batch.html" >Bulk Aristocrat/Patristocrat encode</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/bifid_encode_decode.html" >Bifid</a> ( 6x6 keysquare option) &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/caesar.html" >Caesar shift</a>&nbsp;&nbsp; 
-   <br><br>
-   &nbsp;&nbsp;<a href="encode_decode/checkerboard_encode_decode.html" >Checkerboard</a>&nbsp;&nbsp; 
+ <div class= "wrapper">
+   <span><a href="encode_decode/amsco_encode_decode.html" >Amsco Transposition</a></span> 
+   <span><a href="encode_decode/arist_pat_encode.html" >Aristocrat/Patristocrat</a></span>
+   <span><a href="encode_decode/arist_pat_batch.html" >Bulk Aristocrat/Patristocrat encode</a></span> 
+   <span><a href="encode_decode/bifid_encode_decode.html" >Bifid</a> ( 6x6 keysquare option) </span> 
+   <span><a href="encode_decode/caesar.html" >Caesar shift</a></span> 
+ 
+   <span><a href="encode_decode/checkerboard_encode_decode.html" >Checkerboard</a></span> 
    
-   &nbsp;&nbsp;<a href="encode_decode/cm_bifid_encode_decode.html" >CM Bifid</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/columnar_encode_decode.html" >Columnar Transposition</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/compressocrat_encode_decode.html" >Compressocrat</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/condi_encode_decode.html" >CONDI</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/s2_s4_encode_decode.html" >Four-square/Two square</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/frac_morse_encode_decode.html" >Fractionated Morse</a>&nbsp;&nbsp; 
-   <br><br>
-   &nbsp;&nbsp;<a href="encode_decode/headline_puzzle.html" >Headline puzzle</a>&nbsp;&nbsp; 
+   <span><a href="encode_decode/cm_bifid_encode_decode.html" >CM Bifid</a></span> 
+   <span><a href="encode_decode/columnar_encode_decode.html" >Columnar Transposition</a></span> 
+   <span><a href="encode_decode/compressocrat_encode_decode.html" >Compressocrat</a></span> 
+   <span><a href="encode_decode/condi_encode_decode.html" >CONDI</a></span>
+   <span><a href="encode_decode/s2_s4_encode_decode.html" >Four-square/Two square</a></span> 
+   <span><a href="encode_decode/frac_morse_encode_decode.html" >Fractionated Morse</a></span> 
+	<span><a href="encode_decode/grandpre_encode_decode.html" >Grandpre</a></span>  
+   <span><a href="encode_decode/headline_puzzle.html" >Headline puzzle</a></span> 
 
-   &nbsp;&nbsp;<a href="encode_decode/keyphrase_encode.html" >Keyphrase</a> (encode only)&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/monome_dinome_encode_decode.html" >Monome-Dinome</a> &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/myszkowski_encode_decode.html" >Myszkowski Transposition</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/nihilist_sub_encode_decode.html" >Nihilist Substitution</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/numb_key_encode_decode.html" >Numbered Key</a>&nbsp;&nbsp; 
-   <br><br>
-   &nbsp;&nbsp;<a href="encode_decode/phillips_encode_decode.html" >Phillips</a>&nbsp;&nbsp; 
+   <span><a href="encode_decode/keyphrase_encode.html" >Keyphrase</a> (encode only)</span> 
+   <span><a href="encode_decode/monome_dinome_encode_decode.html" >Monome-Dinome</a> </span> 
+   <span><a href="encode_decode/myszkowski_encode_decode.html" >Myszkowski Transposition</a></span> 
+   <span><a href="encode_decode/nihilist_sub_encode_decode.html" >Nihilist Substitution</a></span> 
+   <span><a href="encode_decode/numb_key_encode_decode.html" >Numbered Key</a></span> 
+
+   <span><a href="encode_decode/phillips_encode_decode.html" >Phillips</a></span> 
    
-   &nbsp;&nbsp;<a href="encode_decode/playfair_encode_decode.html" >Playfair</a> ( 6x6 keysquare option) &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/quagmire_encode_decode.html" >Quagmire</a> &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/ragbaby_encode_decode.html" >Ragbaby</a> &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/running_key_encode_decode.html" >Running Key</a> &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/seriated_playfair_encode_decode.html" >Seriated Playfair</a>&nbsp;&nbsp;     
-   &nbsp;&nbsp;<a href="encode_decode/syllabary_encode_decode.html" >Syllabary</a>&nbsp;&nbsp; 
-   <br><br>
-   &nbsp;&nbsp;<a href="encode_decode/sequence_tramp_encode_decode.html" >Sequence Transposition</a>&nbsp;&nbsp; 
+   <span><a href="encode_decode/playfair_encode_decode.html" >Playfair</a> ( 6x6 keysquare option) </span> 
+   <span><a href="encode_decode/quagmire_encode_decode.html" >Quagmire</a> </span> 
+   <span><a href="encode_decode/ragbaby_encode_decode.html" >Ragbaby</a> </span> 
+   <span><a href="encode_decode/running_key_encode_decode.html" >Running Key</a> </span> 
+   <span><a href="encode_decode/seriated_playfair_encode_decode.html" >Seriated Playfair</a></span>     
+   <span><a href="encode_decode/syllabary_encode_decode.html" >Syllabary</a></span> 
+
+   <span><a href="encode_decode/sequence_tramp_encode_decode.html" >Sequence Transposition</a></span> 
    
-   &nbsp;&nbsp;<a href="encode_decode/trisquare_encode_decode.html" >Tri-Square</a>&nbsp;&nbsp;
-   &nbsp;&nbsp;<a href="encode_decode/tridigital_encode.html" >Tridigital</a> (encode only) &nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/s2_s4_encode_decode.html" >Two-square/Four square</a>&nbsp;&nbsp; 
-   &nbsp;&nbsp;<a href="encode_decode/vig_family_encode_decode.html" >Vigenere Family</a>
+   <span><a href="encode_decode/trisquare_encode_decode.html" >Tri-Square</a></span>
+   <span><a href="encode_decode/tridigital_encode.html" >Tridigital</a> (encode only) </span> 
+   <span><a href="encode_decode/s2_s4_encode_decode.html" >Two-square/Four square</a></span> 
+   <span><a href="encode_decode/vig_family_encode_decode.html" >Vigenere Family</a>
    <span title = "Vigenere, Variant, Beaufort, Porta&#10;Vigenere autokey, Variant autokey, Beaufort autokey&#10;Porta autokey, Vigenere slidefair, Beaufort slidefair">(*)</span>
    <br><br><br>
-   
+</div>   
 </body>
 </html>
