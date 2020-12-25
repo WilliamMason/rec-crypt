@@ -1,0 +1,435 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var key;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+var plaintext_groups;
+var codetext_groups;
+var key_array;
+var first_code_groups, second_code_groups;
+
+var period;
+var ciph_type;
+
+var VSLIDEFAIR = 0;
+var BSLIDEFAIR = 1;
+var VIGENERE = 2;
+var VARIANT = 3;
+var BEAUFORT = 4;
+var VAUTOKEY = 5;
+var BAUTOKEY = 6;
+var VEAUTOKEY = 7;
+var PORTA = 8;
+var PAUTOKEY = 9;
+
+var family_type;
+var codetext_groups,key_groups,plaintext_groups;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+function do_check(status){
+	var s,s1,n,c;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	s = document.getElementById('pindex').value;
+	if (s == ''){
+		alert("No progession index entered");
+		return(false);
+	}
+	if (parseInt(s) == 0){
+		alert("Need progession index greater than zero!");
+		return(false)
+	}
+	
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key_width,s,codetext,i,j,s1,s2,cnt,prog_index,s3,s4;
+
+if (!do_check('in'))
+	return;
+//alert("encrypt");
+plaintext = document.getElementById('input_area').value.toLowerCase();
+
+key = document.getElementById('key').value;
+
+prog_index = parseInt(document.getElementById('pindex').value);
+codetext = progressive_key_encrypt(plaintext,key,prog_index);
+s = '';
+s += "Progresssive Key cipher\n";
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += '\nFamily Type: '+family_type;
+s += "\nkey: "+key.toUpperCase();
+s += '\nProgession index: '+prog_index;
+
+
+	s += '\nWorksheet:\n';
+	
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	s3 = '';
+	s4 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += second_code_groups.charAt(i);
+		s3 += first_code_groups.charAt(i);
+		s4 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n'+s3+'\n'+s4+'\n';
+			s1= '';
+			s2 = '';
+			s3 = '';
+			s4 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n'+s3+'\n'+s4+'\n';
+
+
+
+
+document.getElementById('output_area').value = s;
+}
+
+function progressive_key_encrypt(plaintext,key,progression_index){ 
+    var i,c,n,key_len,cnt,ct,cp;
+    var k_sign, i_sign;
+    var num_key = [];
+    var current_indx = 0;
+    var cnt2;
+	var first_code,second_code,code,plain;
+    
+	key = letters_only(key);
+	key_len = key.length;
+    for (i=0;i<key.length;i++){
+        c = key.charAt(i);
+        n = alpha.indexOf(c);
+        num_key[i]  = n;
+    }
+	period = num_key.length;
+    if ( document.getElementById('vig').checked ){
+        c_type = 2;
+		family_type = 'Vigenere'; //global
+	}
+    else if ( document.getElementById('bea').checked ){
+        c_type = 4;
+		family_type = 'Beaufort'; //global
+	}
+    else{
+        c_type = 3;
+		family_type = 'Variant'; //global
+	}
+	
+    cnt = 0;
+    cnt2 = 0;
+    codetext = '';
+	first_code = '';
+	second_code = '';
+	plain = '';
+	code = '';
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0) {
+			plain += c;
+			ct = encode_let(n,num_key[cnt],c_type);
+			first_code+= alpha.charAt(ct);
+			ct = encode_let(ct,current_indx,c_type);
+			second_code += alpha.charAt(current_indx);
+			codetext += alpha.charAt(ct);
+			code += alpha.charAt(ct);
+
+            cnt++;
+            if (cnt == key_len){
+                cnt= 0;
+                current_indx = (current_indx + progression_index) % 26;
+            
+            }
+            cnt2++;
+            if ( (cnt2%5) == 0)
+                codetext += ' ';
+            if ( (cnt2%55) == 0){
+                codetext += '\n';
+                cnt2 = 0;
+            }
+        }
+	}
+	var line_limit = period*Math.floor(66/(period+1));
+	
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+	first_code_groups = '';
+	second_code_groups = '';
+    for (i=0;i<plain.length;i++){
+        codetext_groups += code.charAt(i).toUpperCase();
+		first_code_groups += first_code.charAt(i).toUpperCase();
+		second_code_groups += second_code.charAt(i).toUpperCase(); 
+		plaintext_groups += plain.charAt(i);
+        if ( (++cnt)%period == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+			first_code_groups += ' ';
+			second_code_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+				first_code_groups += '\n';
+				second_code_groups += '\n';
+			}
+        }
+    }
+	
+    return( codetext.toUpperCase() )
+}
+
+function encode_let(cp,ky,num_type){
+	var ct;
+	if (num_type == VIGENERE || num_type == VEAUTOKEY)
+		//cp = (26+ct-ky)%26;
+		ct = (cp+ky)%26;
+	else if (num_type == VARIANT || num_type == VAUTOKEY)
+		//cp = (ct+ky)%26;
+		ct = (26+cp-ky)%26;
+	else if (num_type == BEAUFORT || num_type == BAUTOKEY)
+		//cp = (26+ky-ct)%26;
+		ct = (26+ky-cp)%26;
+	else { // PORTA
+		ky = Math.floor(ky/2);
+		ct = cp;
+		if (ct < 13){
+			ct += ky;
+			if (ct < 13) ct += 13;
+		}
+		else {
+			ct -= ky;
+			if (ct > 12) ct -= 13;
+		}
+	}
+	return( ct );
+}	
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value;
+
+prog_index = parseInt(document.getElementById('pindex').value);
+plaintext = progressive_key_decrypt(codetext,key,prog_index);
+s = '';
+s += "Progresssive Key cipher\n";
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += '\nFamily Type: '+family_type;
+s += "\nkey: "+key.toUpperCase();
+s += '\nProgession index: '+prog_index;
+
+
+	s += '\nWorksheet:\n';
+	
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	s3 = '';
+	s4 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += second_code_groups.charAt(i);
+		s3 += first_code_groups.charAt(i);
+		s4 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n'+s3+'\n'+s4+'\n';
+			s1= '';
+			s2 = '';
+			s3 = '';
+			s4 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n'+s3+'\n'+s4+'\n';
+
+
+
+
+document.getElementById('output_area').value = s;
+}
+
+function progressive_key_decrypt(codetext,key,progression_index){ 
+    var i,c,n,key_len,cnt,cp,ct;
+    var k_sign, i_sign;
+    var num_key = [];
+    var current_indx = 0;
+    var cnt2;
+	var first_code,second_code,code,plain;
+    
+	key = letters_only(key);
+	key_len = key.length;
+    for (i=0;i<key.length;i++){
+        c = key.charAt(i);
+        n = alpha.indexOf(c);
+        num_key[i]  = n;
+    }
+	period = num_key.length;
+    if ( document.getElementById('vig').checked ){
+        c_type = 2;
+		family_type = 'Vigenere'; //global
+	}
+    else if ( document.getElementById('bea').checked ){
+        c_type = 4;
+		family_type = 'Beaufort'; //global
+	}
+    else{
+        c_type = 3;
+		family_type = 'Variant'; //global
+	}
+	codetext = letters_only(codetext);
+    cnt = 0;
+    cnt2 = 0;
+    plaintext = '';
+	first_code = '';
+	second_code = '';
+	plain = '';
+	code = '';
+	for (i=0;i<codetext.length;i++){
+		c = codetext.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0) {
+			code += c;
+			ct = decode_let(n,current_indx,c_type);
+			second_code += alpha.charAt(current_indx);			
+			cp = decode_let(ct,num_key[cnt],c_type);
+			first_code+= alpha.charAt(ct);
+
+			plaintext += alpha.charAt(cp);
+			plain += alpha.charAt(cp);
+			//codetext += alpha.charAt( (52+k_sign[0]*n+k_sign[1]*num_key[cnt]+i_sign*current_indx)%26 ) ;
+            cnt++;
+            if (cnt == key_len){
+                cnt= 0;
+                current_indx = (current_indx + progression_index) % 26;
+            
+            }
+        }
+	}
+	var line_limit = period*Math.floor(66/(period+1));
+	
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+	first_code_groups = '';
+	second_code_groups = '';
+    for (i=0;i<plain.length;i++){
+        codetext_groups += codetext.charAt(i).toUpperCase();
+		first_code_groups += first_code.charAt(i).toUpperCase();
+		second_code_groups += second_code.charAt(i).toUpperCase(); 
+		plaintext_groups += plain.charAt(i);
+        if ( (++cnt)%period == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+			first_code_groups += ' ';
+			second_code_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+				first_code_groups += '\n';
+				second_code_groups += '\n';
+			}
+        }
+    }
+	
+    return( plaintext )
+}
+
+function decode_let(ct,ky,num_type){
+	var cp;
+	if (num_type == VIGENERE || num_type == VEAUTOKEY)
+		cp = (26+ct-ky)%26;
+	else if (num_type == VARIANT || num_type == VAUTOKEY)
+		cp = (ct+ky)%26;
+	else if (num_type == BEAUFORT || num_type == BAUTOKEY)
+		cp = (26+ky-ct)%26;
+	else { // PORTA
+		ky = Math.floor(ky/2);
+		cp = ct;
+		if (cp < 13){
+			cp += ky;
+			if (cp < 13) cp += 13;
+		}
+		else {
+			cp -= ky;
+			if (cp > 12) cp -= 13;
+		}
+	}
+	return( cp );
+}	
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    //document.getElementById('do_clear_all').addEventListener("click",do_clear_all);
+//	selected_route = -1;
+
+    
+}
+
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Progressive Key Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Cipher Type:
+Vigenere <input type="radio" name="r_buttons" id = "vig" checked>
+&nbsp;&nbsp;
+Beaufort <input type="radio" name="r_buttons" id = "bea">
+&nbsp;&nbsp;
+Variant <input type="radio" name="r_buttons" id = "var">
+<br><br>
+Progression index (1-25): <input type="text" name = "pindex" id="pindex" size=3 >
+<br><br>
+Key: <input type="text" name = "key" id="key">
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</body>
+</html>
