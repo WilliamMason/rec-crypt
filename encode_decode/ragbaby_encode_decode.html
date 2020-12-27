@@ -155,6 +155,11 @@ function ragbaby_encrypt(plaintext,key){
 			
         }
 	}
+	if ( temp_str != ''){
+		codetext_groups += temp_str;
+		plaintext_groups += temp1_str;
+	}
+	
     return(codetext_groups);
     //return(codetext)
 }
@@ -285,6 +290,10 @@ function ragbaby_decrypt(codetext,key){
 			plaintext_groups += c;
 			
         }
+	}
+	if ( temp_str != ''){
+		codetext_groups += temp_str;
+		plaintext_groups += temp1_str;
 	}
     return(plaintext);
     //return(codetext)
