@@ -1,0 +1,286 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var digits = '0123456789';
+
+var vig_code;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cntcnt1;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = nicodemus_encrypt(s,key);
+s = '';
+s += "Nicodemus cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nWorksheet:\n';
+
+plain = letters_only(plaintext);
+key = letters_only(key);
+var period = key.length;
+cnt = 0;
+cnt1 = 0;
+for (i=0;i<plain.length;i++){
+	s += plain.charAt(i)+' ';
+	if ( ((++cnt)%period) == 0){
+		s += '      ';
+		for (j=0;j<period;j++)
+			s += vig_code.charAt(i-period+1+j).toUpperCase()+' ';
+		s += '\n';
+		if ( ++cnt1 == 5){
+			s += '\n';
+			cnt1 = 0;
+		}
+	}
+}
+var left_over = plain.length - period*Math.floor(plain.length/period);
+if ( left_over>0){
+	for (i=0;i<period-left_over;i++)
+		s+='  ';
+	s += '      ';
+	for (i=0;i<left_over;i++)
+		s += vig_code.charAt(plain.length-left_over+i).toUpperCase()+' ';
+}
+document.getElementById('output_area').value = s;
+
+}
+
+function nicodemus_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c;
+    var out_str;
+    var key_len,index,offset;
+    // change alphabetic key to numeric  tramp key.
+	plaintext = letters_only(plaintext);
+	key = letters_only(key);
+    var numeric_key = [];
+    n = 0;
+    for (i=0;i<26;i++){
+        for (j=0;j<key.length;j++)
+            if (key.charAt(j) == alpha.charAt(i) )
+                numeric_key[j] = n++;
+    }
+// get tramp offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ numeric_key[i] ] = i;
+    // get numeric vigenere key
+    var  vig_key = [];
+    for (i=0;i<key.length;i++)
+        vig_key[i] = alpha.indexOf(key[i] );
+        
+    //get numeric plaintext
+    var plain = [];
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            plain[plain.length] = n;
+    }
+    var start_pos = 0;
+    var limit = key.length*5;
+    code = [];
+    while (start_pos< plain.length){
+        if (start_pos+limit > plain.length)
+            limit = plain.length - start_pos;
+        for (index = 0;index<key.length; index++){
+            for (i= start_pos;i<start_pos+limit;i++){
+                if ( (i%key.length) == offset[index] )
+                    code.push( (plain[i] + vig_key[ offset[index] ] ) % 26 );                
+            }
+        }
+        start_pos += limit;
+    }
+	var codetext="";    
+	for (i=0;i<code.length;i++){
+			codetext += alpha.charAt( code[i] );
+            if ( ((i+1)%5) == 0)
+                codetext += ' ';
+            if ( ((i+1)%55 ) ==0)
+                codetext += '\n';
+	}
+	vig_code = ''; // global for worksheet display
+	index = 0;
+	for (i=0; i< plain.length;i++){
+		vig_code += alpha.charAt( (plain[i]+vig_key[index])%26 );
+		index++;
+		if (index == key.length)
+			index = 0;
+	}
+    return(codetext )
+
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cntcnt1;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = nicodemus_decrypt(s,key);
+s = '';
+s += "Nicodemus cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nWorksheet:\n';
+
+plain = letters_only(plaintext);
+key = letters_only(key);
+var period = key.length;
+cnt = 0;
+cnt1 = 0;
+for (i=0;i<plain.length;i++){
+	s += plain.charAt(i)+' ';
+	if ( ((++cnt)%period) == 0){
+		s += '      ';
+		for (j=0;j<period;j++)
+			s += vig_code.charAt(i-period+1+j).toUpperCase()+' ';
+		s += '\n';
+		if ( ++cnt1 == 5){
+			s += '\n';
+			cnt1 = 0;
+		}
+	}
+}
+var left_over = plain.length - period*Math.floor(plain.length/period);
+if ( left_over>0){
+	for (i=0;i<period-left_over;i++)
+		s+='  ';
+	s += '      ';
+	for (i=0;i<left_over;i++)
+		s += vig_code.charAt(plain.length-left_over+i).toUpperCase()+' ';
+}
+document.getElementById('output_area').value = s;
+
+}
+
+function nicodemus_decrypt(codetext,key){
+    var str,i,j,k,n,s,c,cnt;
+    var out_str;
+    var key_len,index,offset;
+    // change alphabetic key to numeric  tramp key.
+	codetext = letters_only(codetext);
+	key = letters_only(key);
+    var numeric_key = [];
+    n = 0;
+    for (i=0;i<26;i++){
+        for (j=0;j<key.length;j++)
+            if (key.charAt(j) == alpha.charAt(i) )
+                numeric_key[j] = n++;
+    }
+// get tramp offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ numeric_key[i] ] = i;
+    // get numeric vigenere key
+    var  vig_key = [];
+    for (i=0;i<key.length;i++)
+        vig_key[i] = alpha.indexOf(key[i] );
+        
+    //get numeric codetext
+    var code = [];
+    for (i=0;i<codetext.length;i++){
+        c = codetext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            code[code.length] = n;
+    }
+    var start_pos = 0;
+    var limit = key.length*5;
+	cnt = 0;
+    var plain = [];
+    while (start_pos< code.length){
+        if (start_pos+limit > code.length)
+            limit = code.length - start_pos;
+        for (index = 0;index<key.length; index++){
+            for (i= start_pos;i<start_pos+limit;i++){
+                if ( (i%key.length) == offset[index] )
+                    plain[i]=( (26+code[cnt++] - vig_key[ offset[index] ] ) % 26 );                
+            }
+        }
+        start_pos += limit;
+    }
+	var plaintext="";    
+	for (i=0;i<plain.length;i++){
+			plaintext += alpha.charAt( plain[i] );
+	}
+	vig_code = ''; // global for worksheet display
+	index = 0;
+	for (i=0; i< plain.length;i++){
+		vig_code += alpha.charAt( (plain[i]+vig_key[index])%26 );
+		index++;
+		if (index == key.length)
+			index = 0;
+	}
+    return(plaintext )
+
+}
+
+function do_check(status){
+	var s,s1,n,c;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	
+	return(true);
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Nicodemus Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Key: <input type="text" name = "key" id="key" >
+
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+
+</body>
+</html>
