@@ -1,0 +1,475 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var period,sq;
+
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everything except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everything except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = grille_encrypt(s,key);
+s = '';
+s += "Grille transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nWorksheet:\n';
+s1 = letters_only(codetext);
+for (i=0;i<s1.length;i++){
+	s += s1.charAt(i).toUpperCase()+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+s += '\nPosition 1:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[0][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 2:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[1][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 3:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[2][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 4:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[3][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+document.getElementById('output_area').value = s;
+
+}
+
+function turn_grille(key,grille_width){
+	var i,j,c,n,str,pos,row,col;
+	
+	var nkey = [];
+	for (i = 0;i<key.length;i++){
+		pos = key[i];
+		row = Math.floor(pos/grille_width);
+		col = pos%grille_width;
+		nkey.push( col*grille_width + grille_width -row -1 )
+	}
+	nkey.sort(function(a, b){return a - b});
+	return(nkey);
+}
+
+function grille_encrypt(plaintext,key){
+	var i,j,n,c,str,pos,index,center,codetext;
+	
+	str= letters_only(plaintext);
+	var plain = [];
+	for (i=0;i<str.length;i++)
+		plain[i] = str.charAt(i);
+	var grille_width = Math.floor(Math.sqrt(plain.length));
+	if (grille_width*grille_width != plain.length){
+		alert('Plaintext does not fit into square!');
+		return;
+	}
+	period = grille_width; // global
+	key = alltrim(key);	
+    key = condense_white_space(key)
+	key = key.split(' ');
+	var nkey = [];
+	for (i=0;i<key.length;i++)
+		nkey.push(parseInt(key[i])-1);
+	sq = [ [],[],[],[] ]; // global
+	for (j=0;j<4;j++)
+	for (i=0;i<plain.length;i++)
+		sq[j][i] = '-';
+	var code = [];
+		if (grille_width & 1){ // grille has odd width, leave center letter in place?
+			center = Math.floor(grille_width/2);
+			center += grille_width*center;
+			j = nkey.indexOf(center);
+			if ( j!= -1)
+				nkey.splice(j,1); // remove element j from array
+			code[center] = plain[center];
+			for (i=0;i<4;i++)
+				sq[i][center] = plain[center];
+		}
+		else	center = -1;
+		index = 0;
+		for (i=0;i<4;i++){
+			for (j = 0;j<nkey.length;j++){
+				pos = nkey[j];
+				code[pos] = plain[index];
+				sq[i][pos] = plain[index];
+				index++;
+				if ( index == center)
+					index++;
+			}
+			nkey = turn_grille(nkey,grille_width);
+		}
+		codetext = '';
+		for (i=0;i<code.length;i++){
+			codetext += code[i];
+			if ( (i+1)%5 == 0){
+				codetext += ' ';
+			if ( (i+1)%55 == 0)
+				codetext += '\n';
+			}
+		}
+		return(codetext);
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = grille_decrypt(s,key);
+s = '';
+s += "Grille transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+s += '\nWorksheet:\n';
+s1 = letters_only(codetext);
+for (i=0;i<s1.length;i++){
+	s += s1.charAt(i).toUpperCase()+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+s += '\nPosition 1:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[0][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 2:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[1][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 3:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[2][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+s += '\nPosition 4:\n'
+for (i=0;i<s1.length;i++){
+	s += sq[3][i]+' ';
+	if ( (i+1)%period == 0)
+		 s+= '\n'
+}
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+/*
+def grille_decode(codetext,key):
+    """
+    input strings codetext and key. key is string of positions (start = 1) where
+    the grille is open, separated by blanks. Return grille decoded codetext string.
+    """
+    code = convert_string(codetext)
+    grille_width = int(sqrt(len(code)))
+    if grille_width * grille_width <> len(code):
+        print "codetext doesn't fit into square!"
+        return "ERROR"
+    nkey = []
+    for pos in key.split():
+        nkey.append( int(pos)-1)
+    plain = [0]*len(code)
+    if grille_width & 1:
+        center = int(grille_width/2)
+        center += grille_width*center
+        try:
+            x = nkey.index(center)
+            nkey.pop(x)
+        except ValueError:
+            pass
+        plain[center] = code[center]
+    else: center = -1
+    index = 0
+    for i in range(4):
+        for pos in nkey:
+            plain[index] = code[pos]
+            index += 1
+            if index == center: index += 1
+        nkey = turn_grille(nkey,grille_width)
+    plaintext = convert_to_string(plain)
+    return plaintext
+*/
+
+function grille_decrypt(codetext,key){
+	var i,j,n,c,str,pos,index,center,codetext;
+	
+	str= letters_only(codetext);
+	var code = [];
+	for (i=0;i<str.length;i++)
+		code[i] = str.charAt(i);
+	var grille_width = Math.floor(Math.sqrt(code.length));
+	if (grille_width*grille_width != code.length){
+		alert('Codetext does not fit into square!');
+		return;
+	}
+	period = grille_width; // global
+	key = alltrim(key);	
+    key = condense_white_space(key)
+	key = key.split(' ');
+	var nkey = [];
+	for (i=0;i<key.length;i++)
+		nkey.push(parseInt(key[i])-1);
+	sq = [ [],[],[],[] ]; // global
+	for (j=0;j<4;j++)
+	for (i=0;i<code.length;i++)
+		sq[j][i] = '-';
+	var plain = [];
+		if (grille_width & 1){ // grille has odd width, leave center letter in place?
+			center = Math.floor(grille_width/2);
+			center += grille_width*center;
+			j = nkey.indexOf(center);
+			if ( j!= -1)
+				nkey.splice(j,1); // remove element j from array
+			plain[center] = code[center];
+			for (i=0;i<4;i++)
+				sq[i][center] = code[center];
+		}
+		else	center = -1;
+		index = 0;
+		for (i=0;i<4;i++){
+			for (j = 0;j<nkey.length;j++){
+				pos = nkey[j];
+				plain[index] = code[pos] ;
+				sq[i][pos] = plain[index];				
+				index++;
+				if ( index == center)
+					index++;
+			}
+			nkey = turn_grille(nkey,grille_width);
+		}
+		plaintext = plain.join('');
+		return(plaintext);
+}
+
+
+function get_orbit(i,side_len){
+	var p,p1,p2,p3;
+	var x,y,x1,y1;
+	
+	p = i-1;
+	y = Math.floor(p/side_len);
+	x = p%side_len;
+	y1=x;
+	x1 = side_len-y-1;
+	p1 = x1+side_len*y1+1;
+	y=x1;
+	x = side_len-y1-1;
+	p2 = x+side_len*y+1;
+	y1=x;
+	x1 = side_len-y-1;
+	p3 = x1+side_len*y1+1;
+	return([p1,p2,p3])
+}
+	
+
+function do_check(status){
+	var s,s1,n,c,i,p,r,j,p1,numb_per;
+	var digits='0123456789';
+	var alpha='abcdefghijklmnopqrstuvwxyz';	
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	n = Math.sqrt(s1.length);
+
+	if ( s1.length != n*n){
+		alert("Text length is not a perfect square.");
+		return(false);
+	}
+	numb_per = Math.floor(s1.length/4);	
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No perforation key entered");
+		return(false)
+	}
+    s = alltrim(s);	
+    s = condense_white_space(s)
+	s1 = s.split(' ');
+	if (s1.length != numb_per && s1.length != numb_per+1){ // odd length square may or may not have perf in middle
+		alert("Wrong number of perforations");
+		return(false);
+	}
+	for (i=0;i<s1.length-1;i++){
+		p = parseInt(s1[i]);
+		r = get_orbit(p,n);
+		for (j=i+1;j<s1.length;j++){
+			p1 = parseInt(s1[j]);
+			if (p1==r[0] || p1 == r[1] || p1==r[2]){
+				s = "Perforations "+p+" and "+p1+" are in the same orbit!";
+				alert(s);
+				return(false);
+			}
+		}
+	}
+		
+	return(true);
+}
+
+function make_key(){
+	var s,s1,n,c,i,p,r,j,p1,numb_per;
+	var digits='0123456789';
+	var alpha='abcdefghijklmnopqrstuvwxyz';	
+    var mask_width,choice_width,parity,ch_sq,j,mask,v;
+    
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("Must enter plaintext before generating key");
+		return;
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	n = Math.sqrt(s1.length);
+
+	if ( s1.length != n*n){
+		alert("Text length is not a perfect square.");
+		return;
+	}
+    mask_width = n;
+    choice_width = Math.floor(mask_width /2);
+    parity = mask_width & 1;
+    ch_sq = [];
+    for (j=0;j<choice_width;j++) {
+        ch_sq[j] = [];
+        for (i=0;i<choice_width+parity;i++)
+            ch_sq[j][i] = Math.floor(Math.random()*4);
+    }
+    mask = [];
+    for (j=0;j<mask_width;j++) {
+        mask[j] = [];
+
+        for (i=0;i<mask_width;i++)
+            mask[j][i] = 0;
+    }
+    for (j=0;j<choice_width;j++) {
+        for (i=0;i<choice_width+parity;i++) {
+            v = ch_sq[j][i];
+            if (v == 0)
+                mask[j][i] = 1;
+            else if (v ==1)
+                mask[mask_width-1-i][j] = 1;
+            else if (v == 2)
+                mask[mask_width-1-j][mask_width-1-i] = 1
+            else 
+                mask[i][mask_width-1-j] = 1
+        }
+    }
+    s = '';
+    for (i=0;i<mask_width;i++) 
+        for (j=0;j<mask_width;j++) {
+            if (mask[i][j] ==1){
+                n = j+i*mask_width+1;
+                s += n+' ';
+            }
+    }
+    document.getElementById('key').value = s;
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Grille Transposition Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+
+<br><br>
+<div>
+Perforations at: <input type="text" name = "key" id="key" size= 80 > (numbers separated by blanks)
+<br><br>
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+<input type="button" value="Generate random key" onclick="make_key()">
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+
+</body>
+</html>
