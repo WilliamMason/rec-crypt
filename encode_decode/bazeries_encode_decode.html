@@ -1,0 +1,397 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var word1 = ['one','two','three','four','five','six','seven','eight','nine']
+var word2 = ['eleven','twelve','thirteen','fourteen','fifteen','sixteen', 'seventeen','eighteen','nineteen']
+var word3 = ['error','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
+
+var pos_digits = '123456789';
+var alpha="abcdefghiklmnopqrstuvwxyz";
+var digits = '0123456789';
+var complete_alpha = "abcdefghijklmnopqrstuvwxyz";
+var  extended_key;
+var std_sq = ['aflqv','bgmrw','chnsx','dioty','ekpuz'];
+
+var codetext_groups, plaiintext_groups;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+function j_to_i(str){
+	str = str.toLowerCase();
+	return str.replace(/j/g,'i');
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,alpha_key;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value;
+alpha_key = document.getElementById('al_key').value.toLowerCase();
+s = plaintext.toLowerCase();
+codetext = bazeries_encrypt(s,key,alpha_key);
+s = '';
+s += "Bazeries cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+s += "\nalphabetic key: "+alpha_key;
+s += '\nKey Squares:\n';
+for (i=0;i<5;i++){
+s += std_sq[i]+'     ';
+for (j=0;j<5;j++)
+	s += extended_key.charAt(5*i+j).toUpperCase();
+s += '\n';	
+}
+s += '\n';
+s += '\nWorksheet: (before code reverse)\n';
+s1='';
+s2 = '';
+for (i=0;i<plaintext_groups.length;i++) {
+	s1 += codetext_groups.charAt(i).toUpperCase();
+	s2 += plaintext_groups.charAt(i);
+	if ( codetext_groups.charAt(i+1) == '\n'){
+		s += s1+'\n'+s2+'\n';
+		s1 = '';
+		s2 = '';
+		i++
+	}
+}
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n';	
+	
+
+document.getElementById('output_area').value = s;
+
+}
+
+function xlate_baz(numb_str){
+    var numb,i,n,word_len;
+    var to_go, txt;
+
+    numb = [];
+    word_len = 0;
+    for (i=0;i<numb_str.length;i++){
+         n = pos_digits.indexOf(numb_str.charAt(i));
+         if (n== -1){
+            //alert("No zeros or non digit characters allowed in number!");
+            return('Q'); // error signal
+         }
+         numb[word_len++] = n;
+    }
+    if ( word_len>6){
+        alert("Number must be less than a million!");
+        return('Q');
+    }
+    to_go = word_len;
+    txt='';
+    while(to_go > 0){
+		if (to_go==6||to_go==4||to_go==3||to_go==1) // in [6,4,3,1]:
+			txt += word1[ numb[word_len-to_go]]
+		else {
+			if (numb[word_len-to_go] == 0){
+				to_go -= 1			
+				txt += word2[ numb[word_len-to_go]]
+            }
+			else
+				txt += word3[ numb[word_len-to_go]]
+        }
+		if (to_go == 4)
+			txt += "thousand"
+		else if (to_go==3 || to_go==6)// in [3,6]:
+			txt += "hundred"		
+		to_go -= 1
+    }
+	return(txt);
+}        
+
+
+function expand_key(text){
+    var i,n,c;
+	var key;
+    
+    var txt = text.toLowerCase();
+    key = '';
+    for (i=0;i<txt.length;i++){
+        c = txt.charAt(i)
+        n = alpha.indexOf(c);
+        if ( n>=0){
+            n = key.indexOf(c);
+            if ( n == -1)
+                key += c;
+        }
+    }
+    for (i=0;i<26;i++){
+        c = alpha.charAt(i)
+        n = key.indexOf(c);
+        if ( n == -1)
+            key += c;
+    }
+    return(key);
+}    
+
+function bazeries_encrypt(s,key,alpha_key){
+    var str,i,j,k,n,c,s1;
+    var out_str;
+    var plaintext,codetext;
+	var row,col,cnt,index,cnt1;
+
+	key = digits_only(key);
+	if (alpha_key == '')
+		alpha_key = xlate_baz(key)
+	extended_key = expand_key(alpha_key); // global
+
+	plaintext = j_to_i(s);
+	plaintext = letters_only(plaintext);
+	var code = []; // first do substitution
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+		n = alpha.indexOf(c);
+		// coordinates in vertical keysquare
+		col = Math.floor(n/5);
+		row = n%5;
+		code[i] = extended_key.charAt(5*row+col);
+	}
+	cnt = 0;
+	index = 0;
+	var line_limit = 65;
+	codetext_groups = ''
+	plaintext_groups = ''
+	cnt1 = 0;
+	var reversed_code = [];
+	while(cnt<code.length){
+		n = parseInt(key.charAt(index));
+		s1 = code.slice(cnt,cnt+n);
+		s1.reverse();
+		for (j=0;j<s1.length;j++){
+			reversed_code += s1[j];
+			codetext_groups += code[cnt+j];
+			plaintext_groups += plaintext.charAt(cnt+j);
+			cnt1++;
+		}
+		codetext_groups += ' ';
+		plaintext_groups+= ' ';
+		if (++cnt1 >=line_limit){
+			codetext_groups+= '\n';
+			plaintext_groups += '\n';
+			cnt1 = 0;
+		}
+		cnt += n;
+		index++;
+		if (index == key.length)
+			index = 0;
+	}
+	codetext = '';
+	for (i=0;i<reversed_code.length;i++){
+		codetext+= reversed_code[i];
+		if ( (i+1)%5 == 0){
+			codetext += ' ';
+			if( (i+1)%55 == 0)
+				codetext += '\n';
+		}
+	}
+	
+	return(codetext);
+
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,alpha_key,cnt1
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+alpha_key = document.getElementById('al_key').value.toLowerCase();
+key = document.getElementById('key').value;
+s = codetext.toLowerCase();
+plaintext = bazeries_decrypt(s,key,alpha_key);
+s = '';
+s += "Bazeries cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+s += "\nalphabetic key: "+alpha_key;
+s += '\nKey Squares:\n';
+for (i=0;i<5;i++){
+s += std_sq[i]+'     ';
+for (j=0;j<5;j++)
+	s += extended_key.charAt(5*i+j).toUpperCase();
+s += '\n';	
+}
+s += '\n';
+s += '\nWorksheet: (before code reverse)\n';
+s1='';
+s2 = '';
+for (i=0;i<plaintext_groups.length;i++) {
+	s1 += codetext_groups.charAt(i).toUpperCase();
+	s2 += plaintext_groups.charAt(i);
+	if ( codetext_groups.charAt(i+1) == '\n'){
+		s += s1+'\n'+s2+'\n';
+		s1 = '';
+		s2 = '';
+		i++
+	}
+}
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n';	
+	
+
+document.getElementById('output_area').value = s;
+
+	
+//alert("decrypt");
+}
+
+function bazeries_decrypt(s,key,alpha_key){
+    var str,i,j,k,n,c,s1;
+    var out_str;
+    var plaintext,codetext;
+	var row,col,cnt,index,cnt1;
+
+	key = digits_only(key);
+	if (alpha_key == '')
+		alpha_key = xlate_baz(key)
+	extended_key = expand_key(alpha_key); // global
+
+	codetext = letters_only(s);
+	var plain = []; // first do substitution
+	for (i=0;i<codetext.length;i++){
+		c = codetext.charAt(i);
+		n = extended_key.indexOf(c);
+		row = Math.floor(n/5);
+		col = n%5;
+		// coordinates in vertical keysquare
+		plain[i] = alpha.charAt(5*col+row);
+	}
+	cnt = 0;
+	index = 0;
+	var line_limit = 65;
+	codetext_groups = ''
+	plaintext_groups = ''
+	cnt1 = 0;
+	var reversed_plain = [];
+	while(cnt<plain.length){
+		n = parseInt(key.charAt(index));
+		if (cnt+n>plain.length)
+			n = plain.length-cnt;
+		s1 = plain.slice(cnt,cnt+n);
+		s1.reverse();
+		for (j=0;j<s1.length;j++){
+			reversed_plain += s1[j];
+			//codetext_groups += codetext.charAt(cnt+j);
+			//plaintext_groups += plain[cnt+j];
+			codetext_groups += codetext.charAt(n+cnt-j-1);// reverse code text groups too.
+			plaintext_groups += s1[j];
+			cnt1++;
+		}
+		codetext_groups += ' ';
+		plaintext_groups+= ' ';
+		if (++cnt1 >=line_limit){
+			codetext_groups+= '\n';
+			plaintext_groups += '\n';
+			cnt1 = 0;
+		}
+		cnt += n;
+		index++;
+		if (index == key.length)
+			index = 0;
+	}
+	plaintext = '';
+	for (i=0;i<reversed_plain.length;i++){
+		plaintext+= reversed_plain[i];
+	}
+	
+	return(plaintext);
+
+}
+
+function do_check(status){
+	var s,s1,n,c,flag;
+	var digits='0123456789';
+    var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if ( status=='de' && s1.indexOf('j') != -1 ){
+		alert("Ciphertext has a J!");
+		return(false);
+	}
+    
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	flag=0;
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if ( c=='0'){
+			alert("Sorry, no zeros allowed in number key");
+			return(false);
+		}
+		if (digits.indexOf(c) != -1)
+			flag=1;
+	}
+	if ( flag==0){
+		alert("Number Key must consist of digits!");
+		return(false);
+	}
+		
+	return(true);
+}
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Bazeries Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+<div>Number Key: <input type="text" name = "key" id="key"  > (non-zero digits only)
+<br><br>
+Alphabetic Key: <input type="text" name = "al_key" id="al_key" size = 60> (Can leave blank for standard English)
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+
+</body>
+</html>
