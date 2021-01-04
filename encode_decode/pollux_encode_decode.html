@@ -1,0 +1,472 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var codetext_groups,plaintext_groups;
+var complete_key;
+var morse_translation;
+var morse_groups, plaintext_groups,codetext_groups;
+var morse_to_letter
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+function blanks_only(str) { // replace all non letters by blanks
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,' ');
+}
+function one_blank_separator(str){// return words separated by exactly one blank
+		str = blanks_only(str);
+		str = alltrim(str);
+		str = condense_white_space(str)
+		return(str);
+}
+
+function morse_symbols_only(str){
+	str = str.toLowerCase();
+	return str.replace(/[^.x-]/g,'');
+}
+
+function do_check(status){
+	var s,s1,n,c,key_let;
+	var digits='0123456789'; 
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	var symbols = 'x-.';
+	
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	if(status=='de'){
+		for (n=0;n<s.length;n++){
+			c = s.charAt(n);
+			if ( alpha.indexOf(c) != -1){
+				alert("Can't decrypt alphabetic characters!");
+				return(false);
+			}
+		}
+	}		
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (symbols.indexOf(c) != -1)
+			s1 += c;
+	}
+	if (s1.length != 10){
+		alert("Key must be ten symbols long");
+		return(false);
+	}	
+	
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,cnt1;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();
+s = plaintext.toLowerCase();
+codetext = pollux_encrypt(s,key);
+s = '';
+s += "Pollux cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nWorksheet:\n';
+	s1 = '';
+	s2 = '';
+	for (i=0;i<morse_groups.length;i++){
+		s1 += morse_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( morse_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+s += '\n';
+var line_length = 32;
+cnt = 0;
+cnt1 = 0;
+	s1 = '';
+	s2 = '';
+	for (i=0;i<morse_translation.length;i++){
+		s1 += codetext_groups.charAt(cnt++)+' ';
+		s2 += morse_translation.charAt(i)+' ' ;
+		if ( ( (++cnt1)%line_length) == 0){
+			s += s1+'\n'+s2+'\n';
+			s1 = '';
+			s2 = '';
+			cnt1 = 0;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+key = morse_symbols_only(key);
+
+s+='\nKey Array:\n';
+s += '1 2 3 4 5 6 7 8 9 0 \n'
+for (i=0;i<key.length;i++)
+s += key.charAt(i)+' '
+s += '\n';
+document.getElementById('output_area').value = s;
+
+}
+
+
+var morse_dict = { 'e':['.'],
+		't':['-'],
+		'i':['.','.'],
+		'a':['.','-'],
+		'n':['-','.'],
+		'm':['-','-'],
+		's':['.','.','.'],
+		'u':['.','.','-'],
+		'r':['.','-','.'],
+		'w':['.','-','-'],
+		'd':['-','.','.'],
+		'k':['-','.','-'],
+		'g':['-','-','.'],
+		'o':['-','-','-'],
+		'h':['.','.','.','.'],
+		'v':['.','.','.','-'],
+		'f':['.','.','-','.'],
+		'l':['.','-','.','.'],
+		'p':['.','-','-','.'],
+		'j':['.','-','-','-'],
+		'b':['-','.','.','.'],
+		'x':['-','.','.','-'],
+		'c':['-','.','-','.'],
+		'y':['-','.','-','-'],
+		'z':['-','-','.','.'],
+		'q':['-','-','.','-'],
+		'1':['.','-','-','-','-'],
+		'2':['.','.','-','-','-'],
+		'3':['.','.','.','-','-'],
+		'4':['.','.','.','.','-'],
+		'5':['.','.','.','.','.'],
+		'6':['-','.','.','.','.'],
+		'7':['-','-','.','.','.'],
+		'8':['-','-','-','.','.'],
+		'9':['-','-','-','-','.'],
+		'0':['-','-','-','-','-'],
+		'.':['.','-','.','-','.','-'],
+		',':['-','-','.','.','-','-'],
+		'?':['.','.','-','-','.','.'],
+		':':['-','-','-','.','.','.'],
+		';':['-','.','-','.','-','.'],
+		'-':['-','.','.','.','.','-'],
+		'/':['-','.','.','-','.'],
+		'=':['-','.','.','.','-']
+};
+
+var END_SYMBOL = 'x'
+
+function pollux_encrypt(plaintext,key){
+var result,s,n,c,i,crib_pos,out_str,j,k,x,m_cnt,cnt1,cnt2;
+var alpha = 'abcdefghijklmnopqrstuvwxyz0123456789';
+var alpha_27 = 'abcdefghijklmnopqrstuvwxyz0123456789 ';
+var inv_key;
+	key = morse_symbols_only(key);
+	inv_key = [];
+	for (i=0;i<3;i++)
+		inv_key[i] = [];
+	for (i=0;i<key.length;i++){
+		c = key.charAt(i);
+		j = (i+1)%10;
+		if ( c=='.')
+			inv_key[0].push(j);
+		else if (c=='-')
+			inv_key[1].push(j);
+		else
+			inv_key[2].push(j);
+	}
+	
+	// convert all non digital or non numeric symbols to blanks
+	plaintext = one_blank_separator(plaintext);
+    var mcode = [];
+	m_cnt = 0;
+	for (i=0;i<plaintext.length;i++) {
+		c = plaintext.charAt(i);
+		n = alpha_27.indexOf(c);
+		if ( n >-1) {
+		  // get morse code for c
+		  if ( c==' '){
+		    mcode[m_cnt++] = END_SYMBOL;
+		    if ( i==0) mcode[m_cnt++] = END_SYMBOL;
+		  }
+		  else {
+  		  x = morse_dict[c]
+		    for (j=0;j<x.length;j++)
+		      mcode[m_cnt++] = x[j];
+		    mcode[m_cnt++] = END_SYMBOL;
+		  }
+		}
+	}
+    mcode[m_cnt++] = END_SYMBOL;
+	morse_translation = mcode.slice(0); // global variable 
+	morse_translation = morse_translation.join('');
+	cnt1 = 0;
+	cnt2 = 0;
+	morse_groups = '';
+	plaintext_groups = '';
+	for (i=0;i<morse_translation.length;i++){
+		c = morse_translation.charAt(i);
+		morse_groups += c;
+		if ( c==END_SYMBOL){
+			plaintext_groups += plaintext.charAt(cnt1++);
+		}
+		else plaintext_groups += ' ';
+		if ( (++cnt2%65) ==0 ){
+			morse_groups += '\n';
+			plaintext_groups += '\n'
+			cnt2 = 0;
+		}
+	}
+    // convert morse code into pollux digits
+	
+    s = '';
+    j = 0;
+    k = 0;
+	codetext_groups = '';
+    for (i=0;i<mcode.length; i++){
+        c = mcode[i]; // char s
+		if ( c=='.'){
+			n = Math.floor(Math.random()*inv_key[0].length);
+			n = inv_key[0][n];
+			s += n;
+			codetext_groups += n
+		}
+		else if (c=='-'){
+			n = Math.floor(Math.random()*inv_key[1].length);
+			n = inv_key[1][n];
+			s += n;
+			codetext_groups += n
+		}
+		else {
+			n = Math.floor(Math.random()*inv_key[2].length);
+			n = inv_key[2][n];
+			s += n;
+			codetext_groups += n
+		}
+        if (++j == 5){
+            s += ' ';
+            j = 0;
+            if ( ++k == 11){
+                s += '\n'
+                k = 0;
+            }
+        }
+    }
+	
+    return(s);
+}
+
+function do_decrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,cnt1;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = pollux_decrypt(s,key);
+s = '';
+s += "Pollux cipher\n";	
+
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nWorksheet:\n';
+	s1 = '';
+	s2 = '';
+	for (i=0;i<morse_groups.length;i++){
+		s1 += morse_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( morse_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+s += '\n';
+var line_length = 32;
+cnt = 0;
+cnt1 = 0;
+	s1 = '';
+	s2 = '';
+	for (i=0;i<morse_translation.length;i++){
+		s1 += codetext_groups.charAt(cnt++)+' ';
+		s2 += morse_translation.charAt(i)+' ' ;
+		if ( ( (++cnt1)%line_length) == 0){
+			s += s1+'\n'+s2+'\n';
+			s1 = '';
+			s2 = '';
+			cnt1 = 0;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+key = morse_symbols_only(key);
+
+s+='\nKey Array:\n';
+s += '1 2 3 4 5 6 7 8 9 0 \n'
+for (i=0;i<key.length;i++)
+s += key.charAt(i)+' '
+s += '\n';
+document.getElementById('output_area').value = s;
+
+	
+//alert("decrypt");
+}
+
+function pollux_decrypt(codetext,key){
+var result,s,n,c,i,crib_pos,out_str,j,k,x,m_cnt,cnt1,plaintext;
+var alpha = 'abcdefghijklmnopqrstuvwxyz0123456789';
+var alpha_27 = 'abcdefghijklmnopqrstuvwxyz0123456789 ';
+
+	key = morse_symbols_only(key);
+	morse_to_letter = {}
+	for (c in morse_dict){
+		s = morse_dict[c].join('')
+		morse_to_letter[s] = c;
+	}
+//console.log(morse_to_letter);
+	code = digits_only(codetext);
+	codetext_groups = code; // global
+	var mcode = '';
+	for (i=0;i<code.length;i++){
+		n = parseInt(code.charAt(i) );
+		n = (9+n)%10; // switch from 1-0 to 0-9 order
+		mcode += key.charAt(n);
+	}
+	if (mcode.charAt(mcode.length-1) != END_SYMBOL)
+		mcode += END_SYMBOL
+
+	morse_translation = mcode; // global
+	//console.log(mcode);
+	var plain_text = [];
+	var plain_len;
+	x = plain_len = 0;
+    while( x< mcode.length) {
+            if ( mcode.charAt(x) == END_SYMBOL) {
+                    plain_text[plain_len++] = ' ';
+                    x++;
+                    if ( x>= mcode.length)
+                            break;
+            }
+            plain_text[ plain_len++ ] = tsearch(x);
+            while( mcode.charAt(x++) != END_SYMBOL && x <mcode.length);
+	}
+	plaintext = plain_text.join('');
+	cnt = 0;
+	cnt1 = 0;
+	morse_groups = '';
+	plaintext_groups = '';
+	for (i=0;i<morse_translation.length;i++){
+		c = morse_translation.charAt(i);
+		morse_groups += c;
+		if ( c==END_SYMBOL){
+			plaintext_groups += plaintext.charAt(cnt1++);
+		}
+		else plaintext_groups += ' ';
+		if ( (++cnt%65) ==0 ){
+			morse_groups += '\n';
+			plaintext_groups += '\n'
+		}
+	}
+	
+	return(plaintext);
+	
+}
+
+function tsearch(x){
+var i,j,c,n, s;
+
+s = '';
+if ( morse_translation.charAt(x) == END_SYMBOL)
+	return( ' ' );
+	
+while( morse_translation.charAt(x) != END_SYMBOL) {
+	s += morse_translation.charAt(x);
+	x++;
+}
+
+if (morse_to_letter[s] != undefined)
+	return(morse_to_letter[s])
+//alert("undefined morse string!");
+return('ERROR1');
+
+}
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Pollux Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+<div>Key: <input type="text" name = "key" id="key" > (Example key: x-..x.--x. )
+</div>
+
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</body>
+</html>
