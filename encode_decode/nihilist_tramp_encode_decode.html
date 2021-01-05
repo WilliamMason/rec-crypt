@@ -1,0 +1,437 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var plain_array;
+var period;
+
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+
+
+function do_check(status){
+	var s,s1,n,c,i,p,r,j,p1,side_len, key_numbs,max_num, k;
+	var digits='0123456789';
+	var alpha='abcdefghijklmnopqrstuvwxyz';	
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	n = Math.sqrt(s1.length);
+
+	if ( s1.length != n*n){
+		alert("Text length is not a perfect square.");
+		return(false);
+	}
+	side_len = n;
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	flag=0;
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if (digits.indexOf(c) != -1){
+			flag=1;
+		}
+	}
+	if ( flag==0){
+		alert("Key must consist of digits!");
+		return(false);
+	}
+	s = alltrim(s);
+    s = condense_white_space(s)            
+	s = s.split(' ')
+	if ( s.length != side_len){
+		alert("Key length doesn't match text length.");
+		return(false);
+	}
+	s = document.getElementById('key').value;
+	s = alltrim(s);	
+    s = condense_white_space(s)    
+	key_numbs = {};
+	max_num = -1;
+	for (n=0;n<s.length;n++){
+		c = s.charAt(n);
+		if ( digits.indexOf(c) != -1){
+			s1  = s.split(' ');
+			if ( s1.length <2){
+				alert("Numbers in key must be separated by blanks!");
+				return(false);
+			}
+			for (j=0;j<s1.length;j++){
+				k = parseInt(s1[j]);
+				if (isNaN(k)) {
+					//if ( j==s1.length-1) continue; // last entry might be line feed or something					
+					alert("Key contains mixed numbers and non-numbers!");
+					return(false);
+				}
+				if (k>max_num) max_num = k;
+				key_numbs[k]=1;
+			}
+			for (j=1;j<max_num;j++){
+				if ( !(j in key_numbs)){
+					s = 'Number '+j+' missing from key.';
+					alert(s);
+					return(false);
+				}
+			}
+			break;
+		}
+	}
+		
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,by_rows;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value;
+if 	(document.getElementById('by_rows').checked)
+	by_rows = true;
+else
+	by_rows=false;
+s = plaintext.toLowerCase();
+codetext = nihilist_tramp_encrypt(s,key,by_rows);
+s = '';
+s += "Nihilist transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key;
+s += '\ntaken off by '
+if ( by_rows)
+	s += 'rows';
+else
+	s += 'columns'
+s += '\nworksheet\n';
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+s += '\n\nAfter reordering\n';
+var code = letters_only(codetext);
+if (by_rows){
+	for (i=0;i<code.length;i++){
+		s += code.charAt(i).toUpperCase()+' ';
+		if ( (i+1)%period == 0)
+			s += '\n'
+	}
+}
+else {
+	var display_array  = [];
+	cnt = 0;
+	for (i=0;i< period;i++)
+		for (j=0;j<period;j++){
+			display_array[i+j*period] = code.charAt(cnt++);
+	}
+	
+	for (i=0;i<plain_array.length;i++){
+		s += display_array[i].toUpperCase()+' ';
+		if ( ((i+1)%period) == 0 )
+			s += '\n';
+	}	
+}
+
+document.getElementById('output_area').value = s;
+
+}
+
+function nihilist_tramp_encrypt(plaintext,key,by_rows){
+    var str,i,j,k,n,s,c,s1,c1,c2;
+    var out_str;
+    var key_len,index,offset,numb_flag,row,col;
+	var digits = '0123456789';
+
+	
+    var numeric_key = [];
+	numb_flag = false;
+	// see if key already numeric
+	s = alltrim(key);	
+	s = condense_white_space(s)
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		if (digits.indexOf(c) != -1){ // key has digits
+			s1 = s.split(' ');
+			var zero_flag = false;
+			for (j=0;j<s1.length;j++){
+				numeric_key[j] = parseInt(s1[j]);
+				if (numeric_key[j] == 0)
+					zero_flag = true;
+			}
+			if (!zero_flag){ // key starts at 1, include 0 in numeric key
+				for (j=0;j<numeric_key.length;j++)
+					numeric_key[j]--;
+			}
+			numb_flag = true;
+			break;
+		}
+	}
+/* not using alphabetic key because key is really offset not 'real key'
+	if (!numb_flag){
+    // change alphabetic key to numeric key.	
+		n = 0;
+		for (i=0;i<26;i++){
+			for (j=0;j<key.length;j++)
+				if (key.charAt(j) == alpha.charAt(i) )
+					numeric_key[j] = n++;
+		}
+	}
+*/	
+	period = numeric_key.length; // global variable
+	// key is really offset according to ACA book
+	var coffset = [];
+	for (i=0;i<numeric_key.length;i++)
+		coffset[ numeric_key[i] ] = i;
+	
+// get offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ coffset[i] ] = i;
+		
+    var plain = [];
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            plain[plain.length] = c;
+    }
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet
+    c1 = 1
+    c2 = period;
+    if (by_rows ){
+        c2=1
+        c1 = period;
+	}
+    code = [];
+    index = 0;    
+
+	for (col = 0;col<period;col++)
+		for (row = 0;row<period;row++){
+			k = offset[col]*c1+offset[row]*c2;
+            code[index++] = plain[k];
+    }
+	var codetext="";    
+	for (i=0;i<code.length;i++){
+			codetext += code[i];
+            if ( ((i+1)%5) == 0)
+                codetext += ' ';
+            if ( ((i+1)%55 ) ==0)
+                codetext += '\n';
+	}
+    return(codetext)
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,by_rows;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value;
+if 	(document.getElementById('by_rows').checked)
+	by_rows = true;
+else
+	by_rows=false;
+s = codetext.toLowerCase();
+plaintext = nihilist_tramp_decrypt(s,key,by_rows);
+s = '';
+s += "Nihilist transposition cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key;
+s += '\ntaken off by '
+if ( by_rows)
+	s += 'rows';
+else
+	s += 'columns'
+s += '\nworksheet\n';
+for (i=0;i<plain_array.length;i++){
+	s += plain_array[i]+' ';
+	if ( ((i+1)%period) == 0 )
+		s += '\n';
+}	
+
+s += '\n\nAfter reordering\n';
+var code = letters_only(codetext);
+if (by_rows){
+	for (i=0;i<code.length;i++){
+		s += code.charAt(i).toUpperCase()+' ';
+		if ( (i+1)%period == 0)
+			s += '\n'
+	}
+}
+else {
+	var display_array  = [];
+	cnt = 0;
+	for (i=0;i< period;i++)
+		for (j=0;j<period;j++){
+			display_array[i+j*period] = code.charAt(cnt++);
+	}
+	
+	for (i=0;i<plain_array.length;i++){
+		s += display_array[i].toUpperCase()+' ';
+		if ( ((i+1)%period) == 0 )
+			s += '\n';
+	}	
+}
+
+document.getElementById('output_area').value = s;
+
+}
+
+function nihilist_tramp_decrypt(codetext,key,by_rows){
+    var str,i,j,k,n,s,c,s1,c1,c2;
+    var out_str;
+    var key_len,index,offset,numb_flag,row,col;
+	var digits = '0123456789';
+
+	
+    var numeric_key = [];
+	numb_flag = false;
+	// see if key already numeric
+	s = alltrim(key);	
+	s = condense_white_space(s)
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		if (digits.indexOf(c) != -1){ // key has digits
+			s1 = s.split(' ');
+			var zero_flag = false;
+			for (j=0;j<s1.length;j++){
+				numeric_key[j] = parseInt(s1[j]);
+				if (numeric_key[j] == 0)
+					zero_flag = true;
+			}
+			if (!zero_flag){ // key starts at 1, include 0 in numeric key
+				for (j=0;j<numeric_key.length;j++)
+					numeric_key[j]--;
+			}
+			numb_flag = true;
+			break;
+		}
+	}
+/* not using alphabetic key because key is really offset not 'real key'
+	if (!numb_flag){
+    // change alphabetic key to numeric key.	
+		n = 0;
+		for (i=0;i<26;i++){
+			for (j=0;j<key.length;j++)
+				if (key.charAt(j) == alpha.charAt(i) )
+					numeric_key[j] = n++;
+		}
+	}
+*/	
+	period = numeric_key.length; // global variable
+	// key is really offset according to ACA book
+	var coffset = [];
+	for (i=0;i<numeric_key.length;i++)
+		coffset[ numeric_key[i] ] = i;
+	
+// get offset
+    offset = [];
+    for (i=0;i<numeric_key.length;i++)
+        offset[ coffset[i] ] = i;
+		
+    var code = [];
+    for (i=0;i<codetext.length;i++){
+        c = codetext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            code[code.length] = c;
+    }
+
+    c1 = 1
+    c2 = period;
+    if (by_rows ){
+        c2=1
+        c1 = period;
+	}
+    plain = [];
+    index = 0;    
+
+	for (col = 0;col<period;col++)
+		for (row = 0;row<period;row++){
+			k = offset[col]*c1+offset[row]*c2;
+            plain[k] = code[index++];
+    }
+	plain_array = plain.slice(0); // make copy into global variable, use in worksheet
+	plaintext = plain.join('');
+    return(plaintext)
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Nihilist Transposition Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+
+<br><br>
+Take off by: 
+<input type="radio" name="takeoff" value="0" id="by_cols" checked> Columns 
+<input type="radio" name="takeoff" value="1"  id="by_rows"> Rows<br>
+
+<br><br>
+
+<div>
+Key: <input type="text" name = "key" id="key" size= 80 > (numbers separated by blanks)
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</div>
+<br><br>
+<br><br>
+Note: For compatibility with "The ACA & You", nihilist keys are inverses of columnar keys.
+&nbsp; &nbsp; (Click <A href="https://williammason.github.io/rec-crypt/gadget_forms/get_inverse_key.html">here</A> for inverse calculator.)
+</body>
+</html>
