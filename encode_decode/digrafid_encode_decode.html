@@ -1,0 +1,444 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+var period;
+var worksheet_left_key,worksheet_right_key;
+
+var plaintext_groups;
+var codetext_groups;
+
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function letters_hash_only(str){ // remove everthing except letters and the # symbol
+	str = str.toLowerCase();
+	return str.replace(/[^a-z#]/g,'');
+}
+
+
+function do_encrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,left_key_right_key;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+left_key = document.getElementById('lkey').value.toLowerCase();	
+right_key = document.getElementById('rkey').value.toLowerCase();	
+period = parseInt(document.getElementById('period').value);
+s = plaintext.toLowerCase();
+codetext = digrafid_encrypt(s,left_key,right_key,period);
+s = '';
+s += "Digrafid cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhorizontal key: "+left_key.toUpperCase();
+s += "\nvertical key: "+right_key.toUpperCase();
+s += "\nperiod: "+period;
+
+s += "\nKey Array:\n";
+s += '1 2 3 4 5 6 7 8 9\n'
+for (i=0;i<9;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '1 2 3 \n';	
+for (i=9;i<18;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '4 5 6 \n';	
+for (i=18;i<27;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '7 8 9\n';	
+cnt = 0;
+for (i=0;i<9;i++){
+s += '                  ';
+for (j=0;j<3;j++)
+	s += worksheet_right_key.charAt(cnt+j*9)+' ';
+j = cnt+1;	
+s += ' '+j;
+cnt++;	
+s += '\n'
+}
+
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<codetext.length;i++){
+	s1 += codetext.charAt(i).toUpperCase();
+	s2 += plaintext_groups.charAt(i);
+	if (codetext.charAt(i+1)=='\n'){
+		s += s1+'\n'+s2+'\n';
+		s1 = '';
+		s2 ='';
+		i++
+	}
+}
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n';
+		
+document.getElementById('output_area').value = s;		
+}
+
+function digrafid_encrypt(plaintext,left_key,right_key,period){
+    var str,i,j,k,n,s,c,c1,m;
+    var out_str,state ;
+    var key_len,index, used_let, extended_left_key, embedded_key,extended_right_key;
+	var codetext,cnt,offset,le,pos,x,y;
+    var alpha_plus = 'abcdefghijklmnopqrstuvwxyz#';	
+	var row,col,left_digit,right_digit,hor_digit,vert_digit;
+    
+    extended_left_key = [];
+	used_let = {};
+  //key_len = 0;
+  left_key = letters_hash_only(left_key);
+  right_key = letters_hash_only(right_key);
+  for (i=0;i<left_key.length;i++){
+        c = left_key.charAt(i);
+        if ( alpha_plus.indexOf(c) != -1 && !(c in used_let)){
+            //extended_left_key[key_len++] = c
+			extended_left_key.push(c);
+            used_let[c] = 1;
+        }
+  }
+  for (i=0;i<27;i++) {
+        c = alpha_plus.charAt(i);
+        if (!(c in used_let))
+            //extended_left_key[key_len++] = c;
+			extended_left_key.push(c);
+  }
+    extended_right_key = [];
+	used_let = {};
+  
+  for (i=0;i<right_key.length;i++){
+        c = right_key.charAt(i);
+        if ( alpha_plus.indexOf(c) != -1 && !(c in used_let)){
+            //extended_left_key[key_len++] = c
+			extended_right_key.push(c);
+            used_let[c] = 1;
+        }
+  }
+  for (i=0;i<27;i++) {
+        c = alpha_plus.charAt(i);
+        if (!(c in used_let))
+            //extended_left_key[key_len++] = c;
+			extended_right_key.push(c);
+  }
+  
+	worksheet_left_key = extended_left_key.join('').toUpperCase(); // global
+	worksheet_right_key = extended_right_key.join('').toUpperCase(); // global
+	var plain = letters_only(plaintext);
+	var workspace = [];
+    var code = [];
+    le = plain.length;
+    if (2*period < le)
+        offset = period;
+    else
+        offset = Math.floor(le/2);
+    index = pos = 0;
+    cnt = 0;
+    for (i=0;i<le;i= i+2){
+        c = plain.charAt(i);
+        
+        n = extended_left_key.indexOf(c)
+		row = Math.floor(n/9);
+		left_digit = n%9;
+		c = plain.charAt(i+1);
+        n = extended_right_key.indexOf(c)
+		col = Math.floor(n/9);
+		right_digit = n%9;
+		middle_digit = 3*row+col;
+        workspace[index] = left_digit;
+		workspace[index+offset] = middle_digit;
+		workspace[index+2*offset] = right_digit;
+        index++;
+        if ( index == offset) {// workspace full
+            for (j=0;j<3*offset; j = j+3){
+				hor_digit = workspace[j];
+				n = workspace[j+1];
+				row = Math.floor(n/3);
+				col = n%3;
+                code[cnt++] = extended_left_key[ hor_digit+9*row ];
+				vert_digit = workspace[j+2];
+				code[cnt++] = extended_right_key[vert_digit+9*col];
+            }
+            index = 0;
+            pos += 2*offset;
+            if (2*period > le-pos)
+                offset = Math.floor( (le-pos)/2 );
+        }
+    }
+	var line_limit = period*Math.floor(66/(2*period+1));
+    cnt = 0;
+	codetext = '';
+	plaintext_groups = '';
+    for (i=0;i<code.length;i++){
+        codetext += code[i];
+		plaintext_groups += plain.charAt(i);
+        if ( (++cnt)%(2*period) == 0){
+            codetext += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext += '\n';
+				plaintext_groups += '\n';
+			}
+        }
+    }
+	return(codetext);
+}
+
+
+function do_decrypt(){
+var plaintext,key,key_width,s,codetext,i,j,s1,s2,cnt,left_key,right_key
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+left_key = document.getElementById('lkey').value.toLowerCase();	
+right_key = document.getElementById('rkey').value.toLowerCase();	
+period = parseInt(document.getElementById('period').value);
+s = codetext.toLowerCase();
+plaintext = digrafid_decrypt(s,left_key,right_key,period);
+s = '';
+s += "Digrafid cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nhorizontal key: "+left_key.toUpperCase();
+s += "\nvertical key: "+right_key.toUpperCase();
+s += "\nperiod: "+period;
+
+s += "\nKey Array:\n";
+s += '1 2 3 4 5 6 7 8 9\n'
+for (i=0;i<9;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '1 2 3 \n';	
+for (i=9;i<18;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '4 5 6 \n';	
+for (i=18;i<27;i++)
+	s += worksheet_left_key.charAt(i)+' ';	
+s += '7 8 9\n';	
+cnt = 0;
+for (i=0;i<9;i++){
+s += '                  ';
+for (j=0;j<3;j++)
+	s += worksheet_right_key.charAt(cnt+j*9)+' ';
+j = cnt+1;	
+s += ' '+j;
+cnt++;	
+s += '\n'
+}
+
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<codetext_groups.length;i++){
+	s1 += codetext_groups.charAt(i).toUpperCase();
+	s2 += plaintext_groups.charAt(i);
+	if (codetext_groups.charAt(i+1)=='\n'){
+		s += s1+'\n'+s2+'\n';
+		s1 = '';
+		s2 ='';
+		i++
+	}
+}
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+
+
+}
+
+
+function digrafid_decrypt(codetext,left_key,right_key,period){
+    var str,i,j,k,n,s,c,c1,m;
+    var out_str,state ;
+    var key_len,index, used_let, left_extended_key, right_extended_key;
+	var codetext,cnt,offset,le,pos,x,y;
+    var alpha_plus = 'abcdefghijklmnopqrstuvwxyz#';	
+    
+    extended_left_key = [];
+	used_let = {};
+  //key_len = 0;
+  left_key = letters_hash_only(left_key);
+  right_key = letters_hash_only(right_key);
+  for (i=0;i<left_key.length;i++){
+        c = left_key.charAt(i);
+        if ( alpha_plus.indexOf(c) != -1 && !(c in used_let)){
+			extended_left_key.push(c);
+            used_let[c] = 1;
+        }
+  }
+  for (i=0;i<27;i++) {
+        c = alpha_plus.charAt(i);
+        if (!(c in used_let))
+			extended_left_key.push(c);
+  }
+    extended_right_key = [];
+	used_let = {};
+  
+  for (i=0;i<right_key.length;i++){
+        c = right_key.charAt(i);
+        if ( alpha_plus.indexOf(c) != -1 && !(c in used_let)){
+			extended_right_key.push(c);
+            used_let[c] = 1;
+        }
+  }
+  for (i=0;i<27;i++) {
+        c = alpha_plus.charAt(i);
+        if (!(c in used_let))
+			extended_right_key.push(c);
+  }
+  
+	worksheet_left_key = extended_left_key.join('').toUpperCase(); // global
+	worksheet_right_key = extended_right_key.join('').toUpperCase(); // global
+	var code = letters_hash_only(codetext);
+	var workspace = [];
+    var plain = [];
+    le = code.length;
+    if (2*period < le)
+        offset = period;
+    else
+        offset = Math.floor(le/2);
+    index = pos = 0;
+    cnt = 0;
+    for (i=0;i<le;i= i+2){
+        c = code.charAt(i);      
+        n = extended_left_key.indexOf(c)
+		row = Math.floor(n/9);
+		left_digit = n%9;
+		c = code.charAt(i+1);
+        n = extended_right_key.indexOf(c)
+		col = Math.floor(n/9);
+		right_digit = n%9;
+		middle_digit = 3*row+col;
+        workspace[index] = left_digit;
+		workspace[index+1] = middle_digit;
+		workspace[index+2] = right_digit;
+        index += 3;
+        if ( index == 3*offset) {// workspace full
+            for (j=0;j<offset; j++){
+				hor_digit = workspace[j];
+				n = workspace[j+offset];
+				row = Math.floor(n/3);
+				col = n%3;
+                plain[cnt++] = extended_left_key[ hor_digit+9*row ];
+				vert_digit = workspace[j+2*offset];
+				plain[cnt++] = extended_right_key[vert_digit+9*col];
+            }
+            index = 0;
+            pos += 2*offset;
+            if (2*period > le-pos)
+                offset = Math.floor( (le-pos)/2 );
+        }
+    }
+	plaintext = plain.join('');
+	
+	var line_limit = period*Math.floor(66/(2*period+1));
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+    for (i=0;i<code.length;i++){
+        codetext_groups += code.charAt(i);
+		plaintext_groups += plain[i];
+        if ( (++cnt)%(2*period) == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+        }
+    }
+	
+	return(plaintext);
+}
+
+function do_check(status){
+	var s,s1,n,c;
+	var alpha='abcdefghijklmnopqrstuvwxyz#';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if ( (s1.length&1) !=0){
+		alert("Text has odd number of symbols!");
+		return(false);
+	}
+	s = document.getElementById('lkey').value;
+	if (s == ''){
+		alert("No horizontal key entered");
+		return(false)
+	}
+	s = document.getElementById('rkey').value;
+	if (s == ''){
+		alert("No vertical key entered");
+		return(false)
+	}
+	s = document.getElementById('period').value;
+	if (s == ''){
+		alert("No period entered");
+		return(false);
+	}
+	if (parseInt(s) == 0){
+		alert("Need period greater than zero!");
+		return(false)
+	}
+	
+	return(true);
+}
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+
+</script>
+</head>
+<body bgcolor="Silver">
+<center><h3>Digrafid Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area" >
+</textarea></div>
+<br><br>
+Horizontal key: <input type="text" name = "left_key" id="lkey"  >
+<br><br>
+&nbsp; &nbsp;
+Vertical key: <input type="text" name = "right_key" id="rkey"  >
+
+
+<br><br>
+<div>Period (for <b>pairs</b>): <input type="text" name = "period" id="period" size=3  >
+</div>
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+
+</body>
+</html>
