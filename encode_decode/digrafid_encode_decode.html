@@ -171,7 +171,7 @@ function digrafid_encrypt(plaintext,left_key,right_key,period){
                 offset = Math.floor( (le-pos)/2 );
         }
     }
-	var line_limit = period*Math.floor(66/(2*period+1));
+	var line_limit = 2*period*Math.floor(66/(2*period+1));
     cnt = 0;
 	codetext = '';
 	plaintext_groups = '';
@@ -339,7 +339,7 @@ function digrafid_decrypt(codetext,left_key,right_key,period){
     }
 	plaintext = plain.join('');
 	
-	var line_limit = period*Math.floor(66/(2*period+1));
+	var line_limit = 2*period*Math.floor(66/(2*period+1));
     cnt = 0;
 	codetext_groups = '';
 	plaintext_groups = '';
