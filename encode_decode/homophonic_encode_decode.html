@@ -1,0 +1,397 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var key_array;
+var period;
+
+var codetext_groups,plaintext_groups;
+
+function lefttrim(str) { // remove leading blanks
+	return str.replace(/^\s+/g, '');
+}
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+function j_to_i(str){
+	str = str.toLowerCase();
+	return str.replace(/j/g, 'i');
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = homophonic_encrypt(s,key);
+s = '';
+s += "Homophonic cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nKey array;\n'
+s += 'A  B  C  D  E  F  G  H  I  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z\n';
+for (i=0;i<25;i++){
+	n = key_array[0][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[1][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[2][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[3][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<codetext.length;i++){
+	 s1+= codetext.charAt(i);
+	 s2 += plaintext_groups.charAt(i);
+	 if ( codetext.charAt(i+1) == '\n'){
+		 s += s1+'\n'+s2+'\n';
+		 s1 = '';
+		 s2 = '';
+		 i++
+	 }
+}
+if ( s1!='')
+	s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+
+}
+
+function homophonic_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c,s1,x,y;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+	var symbols = 'abcdefghiklmnopqrstuvwxyz'
+
+	plaintext = letters_only(plaintext);
+	plaintext = j_to_i(plaintext);
+	key = letters_only(key);
+	key = j_to_i(key);
+	var key_code = [];
+	for (i=0;i<4;i++){
+		key_code[i] = symbols.indexOf( key.charAt(i) );
+	}
+	var shift  = [1,26,51,76];
+	key_array = [ [],[],[],[] ]; // global
+	for (i=0;i<4;i++){
+		for (j=0;j<25;j++)
+			key_array[i][j] = (25+j-key_code[i])%25 +shift[i];
+	}
+	
+    var code = [];
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+		n = symbols.indexOf(c);
+		x = Math.floor(Math.random()*4);
+		j = (25+n -key_code[x])%25 + shift[x];
+		code.push(j);
+	}
+	var code_text = [];
+	for (i=0;i<code.length;i++){
+		n = code[i];
+		if ( n== 100)
+			code_text[i] = '00';
+		else if ( n<10)
+			code_text[i] = '0'+n;
+		else
+			code_text[i] = ''+n;
+	}
+	var codetext = '';
+	plaintext_groups = '' ;// global
+	for (i=0;i<code_text.length;i++){
+		codetext += code_text[i]+' ';
+		plaintext_groups += plaintext.charAt(i)+ '  ';
+		if ( ((i+1)%22) ==0){
+			codetext += '\n';
+			plaintext_groups += '\n';
+		}
+
+	}
+	return(codetext);
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value;
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = homophonic_decrypt(s,key);
+s = '';
+s += "Homophonic cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+s += '\nKey array;\n'
+s += 'A  B  C  D  E  F  G  H  I  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z\n';
+for (i=0;i<25;i++){
+	n = key_array[0][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[1][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[2][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+for (i=0;i<25;i++){
+	n = key_array[3][i];
+	if (n == 100)
+		s += '00'
+	else if (n<10)
+		s += '0'+n;
+	else	s += n;
+	s += ' ';
+}
+s += '\n'
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+for (i=0;i<plaintext_groups.length;i++){
+	 s1+= codetext_groups.charAt(i);
+	 s2 += plaintext_groups.charAt(i);
+	 if ( plaintext_groups.charAt(i+1) == '\n'){
+		 s += s1+'\n'+s2+'\n';
+		 s1 = '';
+		 s2 = '';
+		 i++
+	 }
+}
+if ( s1!='')
+	s += s1+'\n'+s2+'\n';
+
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+function homophonic_decrypt(codetext,key){
+    var str,i,j,k,n,s,c,s1,x,y,cnt;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+	var symbols = 'abcdefghiklmnopqrstuvwxyz'
+
+	codetext = digits_only(codetext);
+	key = letters_only(key);
+	key = j_to_i(key);
+	var key_code = [];
+	for (i=0;i<4;i++){
+		key_code[i] = symbols.indexOf( key.charAt(i) );
+	}
+	var shift  = [1,26,51,76];
+	key_array = [ [],[],[],[] ]; // global
+	for (i=0;i<4;i++){
+		for (j=0;j<25;j++)
+			key_array[i][j] = (25+j-key_code[i])%25 +shift[i];
+	}
+	codetext_groups = ''; // global
+	cnt = 0;
+    var plain = [];
+	for (i=0;i<codetext.length;i = i+2){
+		c = codetext.charAt(i)+codetext.charAt(i+1);
+		codetext_groups += c+' ';
+		if ( (++cnt )%22 == 0)
+			codetext_groups += '\n';
+		n = parseInt(c);
+		if ( n==0)
+			n = 100;
+		if (n<shift[1])
+			j = (25+n-shift[0]+key_code[0]) % 25
+		else if (n<shift[2])
+			j = (25+n-shift[1]+key_code[1]) % 25
+		else if (n<shift[3])
+			j = (25+n-shift[2]+key_code[2]) % 25
+		else
+			j = (25+n-shift[3]+key_code[3]) % 25
+		plain.push(j);
+	}
+	var plaintext = '';
+	plaintext_groups = ''; //global
+
+	for(i=0;i<plain.length;i++){
+		plaintext += symbols.charAt(plain[i]);
+		plaintext_groups += symbols.charAt(plain[i])+'  ';
+		if ( (i+1)%22 == 0)
+			plaintext_groups += '\n';
+	}
+	return(plaintext);
+}
+
+
+function do_check(status){
+	var s,s1,n,c,s2,i,j,s3,kdigits,m,ka,start_key;
+	var digits='0123456789'; 
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	if( status=='de'){
+		m = 0;
+		for (n=0;n<s.length;n++){
+			c = s.charAt(n);
+			if ( alpha.indexOf(c) != -1){
+				alert("Can't decrypt alphabetic characters!");
+				return(false);
+			}
+			if (digits.indexOf(c) != -1)
+				m++;
+		}
+		if ( (m&1)!=0){
+			alert("ciphertext has odd number of digits!");
+			return(false);
+		}
+	}		
+	else{
+		for (n=0;n<s.length;n++){
+			c = s.charAt(n);
+			if ( digits.indexOf(c) != -1){
+				alert("Can't encrypt digits!");
+				return(false);
+			}
+		}
+	}		
+	
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+	
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	if (s1.length != 4 ){
+		alert("Key length not equal to 4");
+		return(false)
+	}	
+		
+	return(true);
+}
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Homophonic Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+<div >
+Key: <input type="text" name = "key" id="key" > (4 letters)
+</div>
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+
+
+</body>
+</html>
