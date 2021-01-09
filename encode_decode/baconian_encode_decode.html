@@ -1,0 +1,412 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var plain_array;
+
+var baconian_groups,plaintext_groups;
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+
+function replace_ab(str){
+	str = str.toLowerCase();
+	str = str.replace(/a/g,'0')
+	return str.replace(/b/g,'1');
+}
+
+function key_symbols_only(str){
+	str = str.toLowerCase();
+	return str.replace(/[^ab-]/g,'');
+}
+
+
+function do_check(status){
+	var s,s1,n,c,i,cnt;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+    var key_symbols = 'ab-';
+    var ct = [];
+    var kt = [];
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+    s = s.toLowerCase();
+    cnt = 0;
+    for (i=0;i<s.length;i++) {
+        c = s.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n != -1) {
+            ct[cnt] = n;
+            cnt++;
+        }
+    }
+    if ( status == 'de' && ((cnt % 5) != 0) ){
+        alert("Text length not multiple of 5!");
+        return(false);
+    }
+	s = document.getElementById('key').value;
+    s = s.toLowerCase();
+	if (s == ''){
+		alert("No key entered");
+		return(false)
+	}
+    cnt = 0;
+    for (i=0;i<s.length;i++) {
+        c = s.charAt(i);
+        n = key_symbols.indexOf(c);
+        if ( n != -1) {
+            kt[cnt] = n;
+            cnt++;
+        }
+    }
+    if (cnt != 26) {
+        alert("Key does not have 26 entires!");
+        return(false);
+    }
+    if ( status=='de' ) {
+        for (i=0;i<ct.length;i++)
+            if ( kt[ ct[i] ] == 2){
+                s = 'Letter '+alpha.charAt(ct[i]).toUpperCase()+' occurs in ciphertext but has dashed entry in key!';
+                alert(s);
+                return(false);
+            }
+    }
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,s3,cnt;
+
+if (!do_check('in'))
+	return;
+plaintext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = plaintext.toLowerCase();
+codetext = baconian_encrypt(s,key);
+s = '';
+s += "Baconian cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key;
+
+s += '\nKey array\n';
+s += 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z\n'
+key = key_symbols_only(key);
+for (i=0;i<26;i++)
+	s += key.charAt(i)+' ';
+	
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+s3 = '';
+
+var plain = letters_only(plaintext);
+cnt = 0;
+var flag = true;
+for (i=0;i<codetext.length;i++){
+	s1 += codetext.charAt(i).toUpperCase();
+	s2 += baconian_groups.charAt(i);
+	if ( flag){
+		s3 += plain.charAt(cnt++);
+		flag = false;
+	}
+	else
+		s3 += ' ';
+	if (baconian_groups.charAt(i) == ' ')
+		flag = true;
+	
+	if (baconian_groups.charAt(i+1) == '\n') {
+		s += s1+'\n'+s2+'\n'+s3+'\n';
+		s1 = '';
+		s2 = '';
+		s3 = '';
+		i++
+	}
+	
+}
+
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n'+s3+'\n';
+		
+document.getElementById('output_area').value = s;
+
+}
+
+function baconian_encrypt(plaintext,key){
+    var str,i,j,k,n,s,c,s1,v;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+
+    var bacon_dict = { 'a':[0,0,0,0,0],'b':[0,0,0,0,1],'c':[0,0,0,1,0],'d':[0,0,0,1,1],'e':[0,0,1,0,0],
+    'f':[0,0,1,0,1],'g':[0,0,1,1,0],'h':[0,0,1,1,1],'i':[0,1,0,0,0],'j':[0,1,0,0,0],'k':[0,1,0,0,1],
+    'l':[0,1,0,1,0],'m':[0,1,0,1,1],'n':[0,1,1,0,0],'o':[0,1,1,0,1],'p':[0,1,1,1,0],'q':[0,1,1,1,1],
+    'r':[1,0,0,0,0],'s':[1,0,0,0,1],'t':[1,0,0,1,0],'u':[1,0,0,1,1],'v':[1,0,0,1,1],'w':[1,0,1,0,0],
+    'x':[1,0,1,0,1],'y':[1,0,1,1,0],'z':[1,0,1,1,1] };
+
+	key = key_symbols_only(key);
+	key = replace_ab(key);
+
+	var inverse_key = [[],[]];
+    for (i=0;i<26;i++){
+        if (key.charAt(i) == '0')
+            inverse_key[0].push(i)
+        else if (key.charAt(i) == '1')
+            inverse_key[1].push(i);
+	}
+    var plain= letters_only(plaintext);
+    var code = []
+    var work_str = ''
+	for (i=0;i<plain.length;i++){
+		c = plain.charAt(i);
+        v = bacon_dict[c];
+        for (j=0;j<5;j++) {
+            if (v[j] == 0)
+                work_str += 'a'
+            else
+                work_str += 'b'
+			n = Math.floor(Math.random()* inverse_key[v[j]].length );			
+			code.push( inverse_key[ v[j] ][n] );
+		}
+	}
+	var codetext = '';
+	baconian_groups = '' ; //global
+	for (i=0;i<code.length;i++){
+		codetext += alpha.charAt(code[i] );
+		baconian_groups += work_str.charAt(i);
+		if ( (i+1)%5 == 0){
+			codetext += ' ';
+			baconian_groups += ' '
+			if ( (i+1)%55 == 0){
+				codetext += '\n';
+				baconian_groups += '\n';
+			}
+		}
+		
+	}
+	return(codetext);
+
+}
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value.toLowerCase();	
+s = codetext.toLowerCase();
+plaintext = baconian_decrypt(s,key);
+s = '';
+s += "Baconian cipher\n";	
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key;
+
+s += '\nKey array\n';
+s += 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z\n'
+key = key_symbols_only(key);
+for (i=0;i<26;i++)
+	s += key.charAt(i)+' ';
+	
+
+s += '\nWorksheet:\n';
+s1 = '';
+s2 = '';
+s3 = '';
+codetext = letters_only(codetext);
+var plain = letters_only(plaintext);
+cnt = 0;
+var flag = true;
+for (i=0;i<codetext_groups.length;i++){
+	s1 += codetext_groups.charAt(i).toUpperCase();
+	s2 += baconian_groups.charAt(i);
+	if ( flag){
+		s3 += plain.charAt(cnt++);
+		flag = false;
+	}
+	else
+		s3 += ' ';
+	if (baconian_groups.charAt(i) == ' ')
+		flag = true;
+	
+	if (baconian_groups.charAt(i+1) == '\n') {
+		s += s1+'\n'+s2+'\n'+s3+'\n';
+		s1 = '';
+		s2 = '';
+		s3 = '';
+		i++
+	}
+	
+}
+
+if ( s1 != '')
+		s += s1+'\n'+s2+'\n'+s3+'\n';
+
+document.getElementById('output_area').value = s;
+	
+//alert("decrypt");
+}
+
+function baconian_decrypt(codetext,key){
+    var str,i,j,k,n,s,c,s1,v;
+    var out_str;
+    var key_len,index,offset,numb_flag;
+	var digits = '0123456789';
+	var c1,c2,c3,c4,c5;
+
+var baconian_table = [ 0,0,0,0,0,/* A */
+0,0,0,0,1,/*B*/
+0,0,0,1,0,/*C*/
+0,0,0,1,1,/*d*/
+0,0,1,0,0,/*e*/
+0,0,1,0,1,/*f*/
+0,0,1,1,0,/*g*/
+0,0,1,1,1,/*h*/
+0,1,0,0,0,/*i*/
+0,1,0,0,0,/*j same as i*/
+0,1,0,0,1,/*k*/
+0,1,0,1,0,/*l*/
+0,1,0,1,1,/*m*/
+0,1,1,0,0,/*n*/
+0,1,1,0,1,/*o*/
+0,1,1,1,0,/*p*/
+0,1,1,1,1,/*q*/
+1,0,0,0,0,/*r*/
+1,0,0,0,1,/*s*/
+1,0,0,1,0,/*t*/
+1,0,0,1,1,/*u*/
+1,0,0,1,1,/*v same as u*/
+1,0,1,0,0,/*w*/
+1,0,1,0,1,/*x*/
+1,0,1,1,0,/*y*/
+1,0,1,1,1/*z*/
+];
+
+	key = key_symbols_only(key);
+	key = replace_ab(key);
+	codetext = letters_only(codetext);
+	var code = [];
+	for (i=0;i<codetext.length;i++)
+		code.push( alpha.indexOf(codetext.charAt(i) ) );
+    //var code =letters_only(codetext);
+    var plain_text = []
+    var work_str = ''
+	index = 0;
+	for (i=0;i<code.length; i = i+5){
+            c1 = parseInt(key[code[i]]);
+			work_str += key[code[i]];
+			c2 = parseInt(key[code[i+1] ]) ;
+            work_str += key[code[i+1] ];
+			c3 = parseInt(key[code[i+2] ]) ;
+            work_str += key[code[i+2] ];
+			c4 = parseInt(key[code[i+3] ]) ;
+            work_str += key[code[i+3] ];
+			c5 = parseInt(key[code[i+4] ]) ;
+            work_str += key[code[i+4] ];
+            plain_text[index] = 27; /* assume letter not found*/
+            for (k=0;k<26;k++) {
+                x = 5*k;
+                if ( c1 == baconian_table[x] &&
+                        c2 == baconian_table[x+1] &&
+                        c3 == baconian_table[x+2] &&
+                        c4 == baconian_table[x+3] &&
+                        c5 == baconian_table[x+4] ) {
+                        plain_text[index] = k;
+                        break;
+                }
+            } /* next k */
+            index++;
+     } // next i 
+	 work_str = work_str.replace(/0/g,'a');
+	 work_str = work_str.replace(/1/g,'b');
+	 var plaintext = ''
+	 baconian_groups = ''
+	 codetext_groups = ''
+	 //plaintext_groups = ''
+	 cnt = 0;
+	 for (i=0;i<plain_text.length;i++){
+		plaintext += alpha.charAt(plain_text[i]);
+		for (j=0;j<5;j++){
+			codetext_groups += codetext.charAt(cnt);
+			baconian_groups += work_str.charAt(cnt);
+			cnt++;
+		}
+		codetext_groups += ' ';
+		baconian_groups += ' ';
+		if ( (cnt%55) == 0){
+			codetext_groups += '\n';
+			baconian_groups += '\n';
+		}
+		
+	 }
+	 return(plaintext);	 
+}
+		
+	/*
+    for i in range(0,len(code),5):
+        lst = ()
+        for j in range(i,i+5):
+            lst +=( int(nkey[code[j]]),)           
+            work_str += nkey[code[j]]
+        plain.append( bacon_reverse_dict[lst])
+    plaintext = "".join(plain)
+    work_str = work_str.replace('0','a')
+	*/
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Baconian Encrypt/Decrypt</h3></center>
+<form action="/output_action"  name="myform" method="post" onsubmit="return do_check();">
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Key (26 entries of either a, b, or -. The dash (-) indicates a letter not to be used):
+<br><input type="text" name = "key" id="key" size=40 >
+
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</body>
+</html>
+
