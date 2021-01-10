@@ -1,0 +1,639 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var digits = '0123456789';
+
+var rwidth,rheight;
+var matrix = [];
+var code_text = [];
+var worksheet_display;
+
+
+function lefttrim(str) { // remove leading blanks
+	return str.replace(/^\s+/g, '');
+}
+
+function alltrim(str) { // remove leading and trailing blanks
+	return str.replace(/^\s+|\s+$/g, '');
+}
+
+function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
+	return str.replace(/\s+/g, ' ');
+}
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+function do_encrypt(){
+var plaintext,key_width,s,codetext,i,j,s1,s2,cnt,route_in,route_out,flip,reverse_in,reverse_out;
+
+if (!do_check('in'))
+	return;
+//alert("encrypt");
+plaintext = document.getElementById('input_area').value.toLowerCase();
+
+rwidth = parseInt(document.getElementById('key').value); // global
+s1 = document.getElementById('rin');
+s2 = s1.options[s1.selectedIndex].value;
+route_in = parseInt(s2.charAt(0) );
+var route_in_name = s2.substring(2);
+s1 = document.getElementById('rout');
+s2 = s1.options[s1.selectedIndex].value;
+route_out = parseInt(s2.charAt(0) );
+var route_out_name = s2.substring(2);
+s1 = document.getElementById('flip');
+s2 = s1.options[s1.selectedIndex].value;
+flip = parseInt(s2.charAt(0) );
+var flip_name = s2.substring(2);
+if (document.getElementById('rev_in').checked)
+	reverse_in = false;
+else
+	reverse_in = true;
+
+if (document.getElementById('rev_out').checked)
+	reverse_out = false;
+else
+	reverse_out = true;
+
+codetext = route_encrypt(plaintext,rwidth,route_in,route_out,flip,reverse_in,reverse_out);
+s = '';
+s += "Route Transposition cipher\n";
+//s += 'ciph_type: '+ciph_type;
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nwidth: "+rwidth;
+s += '\nRoute in: '+route_in_name;
+if (reverse_in)
+	s += ' reversed';
+	
+s+= '\nRectangle flip: '+flip_name;
+s += '\nRoute out: '+route_out_name;
+if ( reverse_out)
+	s += ' reversed'
+
+var plain = letters_only(plaintext);
+s += '\nWorksheet:\n';
+for ( i = 0;i<plain.length;i++){
+	s += worksheet_display.charAt(i)+' ';
+	if ( (i+1)%rwidth == 0)
+		s += '\n';
+}
+
+document.getElementById('output_area').value = s;
+}
+
+function in_route( route,buffer){
+        var j,k,dr;
+        var index,sx,sy,wd,ht;
+        var cnt;
+
+        index = 0;
+        switch(route) {
+        case 1: // vertical
+        for (j=0;j<rwidth;j++) for (k=0;k<rheight;k++)
+                matrix[k][j] = buffer[index++];
+        break;
+        case 0: // horizontal
+        for  (k=0;k<rheight;k++)for (j=0;j<rwidth;j++)
+                matrix[k][j] = buffer[index++];
+        break;
+        case 2: /* diagonals */
+        for (k=0;k<rheight+rwidth;k++)
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+        break;
+        case 9: /* reverse diagonals */
+        for (k=0;k<rheight+rwidth;k++)
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+        break;        
+        case 3: /* alternating diagonals*/
+        dr = 0;
+        for (k=0;k<rheight+rwidth;k++) {
+                if ( dr==0){
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+                }
+                else {
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+                }
+                dr ^= 1;
+        }
+        break;
+        case 4: /* reverse alternating diagonals*/
+        dr = 1;
+        for (k=0;k<rheight+rwidth;k++) {
+                if ( dr==0){
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+                }
+                else {
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                matrix[k-j][j] = buffer[index++];
+                }
+                dr ^= 1;
+        }
+        break;
+        case 5: /* clockwise spiral */
+                sx = sy = 0;
+                ht = rheight;
+                wd = rwidth;
+                cnt = ht*wd;
+                while( sx<wd) {
+                        for (j=sx;j<wd;j++) {
+                                matrix[sy][j] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for (j=sy+1;j<ht;j++) {
+                                matrix[j][wd-1] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                
+                        for(j=wd-2;j>sx-1;j--) {
+                                matrix[ht-1][j] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                                                
+                        for (j=ht-2;j>sy;j--) {
+                                matrix[j][sx] = buffer[index++];
+                                cnt--;
+                        }
+                        wd--;
+                        ht--;
+                        sx++;
+                        sy++;
+                } /* end while */
+                break;
+        case 6: /* alternating verticals*/
+                dr = 0;
+                for (j=0;j<rwidth;j++){
+                        if(dr==0){
+                                 for (k=0;k<rheight;k++)
+                                        matrix[k][j] = buffer[index++];
+                        }
+                        else {
+                                 for (k=0;k<rheight;k++)
+                                        matrix[rheight-1-k][j] = buffer[index++];
+                        }
+                        dr ^= 1;
+                }
+                break;
+        case 7: /* alternating horizontals*/
+                dr = 0;
+                for (k=0;k<rheight;k++){
+                        if(dr==0){
+                                 for (j=0;j<rwidth;j++)
+                                        matrix[k][j] = buffer[index++];
+                        }
+                        else {
+                                 for (j=0;j<rwidth;j++)
+                                        matrix[k][rwidth-1-j] = buffer[index++];
+                        }
+                        dr ^= 1;
+                }
+                break;
+        case 8: /* counter clockwise spiral */
+                sx = sy = 0;
+                ht = rheight;
+                wd = rwidth;
+                cnt = ht*wd;
+                while( cnt>0) {
+                        for (j=sy;j<ht;j++) {
+                                matrix[j][sx] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for (j=sx+1;j<wd;j++) {
+                                matrix[ht-1][j] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                
+                        for (j=ht-2;j>sy-1;j--) {
+                                matrix[j][wd-1] = buffer[index++];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                
+                        for(j=wd-2;j>sx;j--) {
+                                matrix[sy][j] = buffer[index++];
+                                cnt--;
+                        }
+                        wd--;
+                        ht--;
+                        sx++;
+                        sy++;
+                } /* end while */
+                break;
+        } /* end switch */
+} /* end in_route*/
+
+function out_route(route){
+        var j,k,index,dr;
+        var wd,ht,sx,sy;
+        var cnt;
+
+        code_text = [];
+        index = 0;
+        switch(route) {
+        case 1:
+        for (j=0;j<rwidth;j++) for (k=0;k<rheight;k++)
+                code_text[index++] = matrix[k][j];
+        break;
+        case 0:
+        for  (k=0;k<rheight;k++) for (j=0;j<rwidth;j++)
+                code_text[index++] = matrix[k][j];
+        break;
+        case 2: /* diagonals */
+        for (k=0;k<rheight+rwidth;k++)
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++]=matrix[k-j][j];
+        break;
+        case 9: /* reverse diagonals */
+        for (k=0;k<rheight+rwidth;k++)
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++]=matrix[k-j][j];
+        break;        
+        case 3: /* alternating diagonals*/
+        dr = 0;
+        for (k=0;k<rheight+rwidth;k++) {
+                if ( dr==0){
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++] =matrix[k-j][j];
+                }
+                else {
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++] =matrix[k-j][j];
+                }
+                dr ^= 1;
+        }
+        break;
+        case 4: /*reverse alternating diagonals*/
+        dr = 1;
+        for (k=0;k<rheight+rwidth;k++) {
+                if ( dr==0){
+                for (j=0;j<rwidth;j++)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++] =matrix[k-j][j];
+                }
+                else {
+                for (j=rwidth-1;j>=0;j--)
+                        if ( k-j>=0 && k-j<rheight)
+                                code_text[index++] =matrix[k-j][j];
+                }
+                dr ^= 1;
+        }
+        break;
+        case 5: /* clockwise spiral */
+                sx = sy = 0;
+                ht = rheight;
+                wd = rwidth;
+                cnt = ht*wd;
+                while( cnt>0) {
+                        for (j=sx;j<wd;j++) {
+                                code_text[index++] =matrix[sy][j];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for (j=sy+1;j<ht;j++) {
+                                code_text[index++] = matrix[j][wd-1];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for(j=wd-2;j>sx-1;j--) {
+                                code_text[index++] = matrix[ht-1][j];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                
+                        for (j=ht-2;j>sy;j--) {
+                                code_text[index++] =matrix[j][sx];
+                                cnt--;
+                        }
+                        wd--;
+                        ht--;
+                        sx++;
+                        sy++;
+                } /* end while */
+                break;
+        case 6: /* alternating verticals*/
+                dr = 0;
+                for (j=0;j<rwidth;j++){
+                        if(dr==0){
+                                 for (k=0;k<rheight;k++)
+                                        code_text[index++] = matrix[k][j];
+                        }
+                        else {
+                                 for (k=0;k<rheight;k++)
+                                        code_text[index++] = matrix[rheight-1-k][j];
+                        }
+                        dr ^= 1;
+                }
+                break;
+        case 7: /* alternating horizontals*/
+                dr = 0;
+                for (k=0;k<rheight;k++){
+                        if(dr==0){
+                                 for (j=0;j<rwidth;j++)
+                                        code_text[index++] = matrix[k][j];
+                        }
+                        else {
+                                 for (j=0;j<rwidth;j++)
+                                        code_text[index++] = matrix[k][rwidth-1-j];
+                        }
+                        dr ^= 1;
+                }
+                break;
+        case 8: /* counter clockwise spiral */
+                sx = sy = 0;
+                ht = rheight;
+                wd = rwidth;
+                cnt = ht*wd;
+                while( cnt>0) {
+                        for (j=sy;j<ht;j++) {
+                                code_text[index++] =matrix[j][sx];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for (j=sx+1;j<wd;j++) {
+                                code_text[index++] = matrix[ht-1][j];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;                                
+                        for (j=ht-2;j>sy-1;j--){
+                                code_text[index++] = matrix[j][wd-1];
+                                cnt--;
+                        }
+                        if ( cnt == 0) break;
+                        for(j=wd-2;j>sx;j--){
+                                code_text[index++] = matrix[sy][j];
+                                cnt--;
+                        }
+                        wd--;
+                        ht--;
+                        sx++;
+                        sy++;
+                } /* end while */
+                break;
+        } /* end switch */
+
+} /* end out_route*/
+
+function matrix_manip(x) {
+        var j,k;
+        var temp_matrix = [];
+
+        if ( x==0) return; // no swaps
+        for (j=0;j<rheight;j++) {
+            temp_matrix[j] = [];
+            for (k=0;k<rwidth;k++) 
+                temp_matrix[j][k] = matrix[j][k]
+        }
+        switch(x) {
+        // case 0: /* use original*/
+                // for (j=0;j<rheight;j++)
+                        // for (k=0;k<rwidth;k++)
+                                // matrix[j][k] = temp_matrix[j][k];
+                // break;
+        case 1: /* width rotate*/
+                for (j=0;j<rheight;j++)
+                        for (k=0;k<rwidth;k++)
+                                matrix[j][k] = temp_matrix[j][rwidth-1-k];
+                break;
+        case 2: /* height rotate*/
+                for (j=0;j<rheight;j++)
+                        for (k=0;k<rwidth;k++)
+                                matrix[j][k] = temp_matrix[rheight-1-j][k];
+                break;
+
+        case 3: /* height & width rotate*/
+                for (j=0;j<rheight;j++)
+                        for (k=0;k<rwidth;k++)
+                                matrix[j][k] = temp_matrix[rheight-1-j][rwidth-1-k];
+                break;
+        } /* end switch */
+} // end matrix_manip
+function route_encrypt(plaintext,rwidth,route_in,route_out,flip,rev_in,rev_out){
+    var str,i,j,k,n,s,c;
+    var out_str;
+    var plain = [];
+    //rwidth = width;
+	plaintext = letters_only(plaintext);
+    for (i=0;i<plaintext.length;i++){
+        c = plaintext.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n>=0)
+            plain[plain.length] = c;
+    }
+    rheight = Math.floor(plain.length / rwidth);
+    if (rev_in )
+        plain.reverse();
+    matrix = [];
+    for (i=0;i<rheight;i++)
+        matrix[i] = [];
+    in_route(route_in,plain);
+    matrix_manip(flip);
+	// save matrix for worksheet;
+	worksheet_display = ''
+	for (k=0;k<rheight;k++) for (j=0;j<rwidth;j++) 
+         worksheet_display  += matrix[k][j];
+    out_route(route_out);
+    if (rev_out )
+        code_text.reverse();
+	var codetext="";    
+	for (i=0;i<code_text.length;i++){
+			codetext += code_text[i];
+            if ( ((i+1)%5) == 0)
+                codetext += ' ';
+            if ( ((i+1)%55 ) ==0)
+                codetext += '\n';
+	}
+    return(codetext)
+        
+}
+
+function do_decrypt(){
+var plaintext,key_width,s,codetext,i,j,s1,s2,cnt,route_in,route_out,flip,reverse_in,reverse_out;
+
+if (!do_check('in'))
+	return;
+//alert("encrypt");
+codetext = document.getElementById('input_area').value.toLowerCase();
+
+rwidth = parseInt(document.getElementById('key').value); // global
+s1 = document.getElementById('rin');
+s2 = s1.options[s1.selectedIndex].value;
+route_in = parseInt(s2.charAt(0) );
+var route_in_name = s2.substring(2);
+s1 = document.getElementById('rout');
+s2 = s1.options[s1.selectedIndex].value;
+route_out = parseInt(s2.charAt(0) );
+var route_out_name = s2.substring(2);
+s1 = document.getElementById('flip');
+s2 = s1.options[s1.selectedIndex].value;
+flip = parseInt(s2.charAt(0) );
+var flip_name = s2.substring(2);
+if (document.getElementById('rev_in').checked)
+	reverse_in = false;
+else
+	reverse_in = true;
+
+if (document.getElementById('rev_out').checked)
+	reverse_out = false;
+else
+	reverse_out = true;
+
+// to get plaintext do encrypt in reverse order
+plaintext = route_encrypt(codetext,rwidth,route_out,route_in,flip,reverse_out,reverse_in);
+plaintext = letters_only(plaintext);
+s = '';
+s += "Route Transposition cipher\n";
+//s += 'ciph_type: '+ciph_type;
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nwidth: "+rwidth;
+s += '\nRoute in: '+route_in_name;
+if (reverse_in)
+	s += ' reversed';
+	
+s+= '\nRectangle flip: '+flip_name;
+s += '\nRoute out: '+route_out_name;
+if ( reverse_out)
+	s += ' reversed'
+
+var plain = letters_only(plaintext);
+s += '\nWorksheet:\n';
+for ( i = 0;i<plain.length;i++){
+	s += worksheet_display.charAt(i)+' ';
+	if ( (i+1)%rwidth == 0)
+		s += '\n';
+}
+
+document.getElementById('output_area').value = s;
+}
+
+
+function do_check(status){
+	var s,s1,n,c,x;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+	s = document.getElementById('key').value;
+	if (s == ''){
+		alert("No width entered");
+		return(false)
+	}
+	n = parseInt(s);
+	if (n==0 || isNaN(n)){
+		alert("Must have non-zero width");
+		return(false)
+	}
+	x = Math.floor(s1.length/n);
+	if ( n*x != s1.length){
+		alert("Text does not fill rectangle!");
+		return(false)
+	}
+	return(true);
+}
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    
+}
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Route Transposition Encrypt/Decrypt</h3></center>
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Rectangle Width: <input type="text" name = "key" id="key" size=5 >
+<br><br>
+&nbsp; &nbsp;  Encryption route in:
+<select size=1 name="rin" id="rin">
+<option value='0@Horizontal ' >Horizontal </option>
+<option value='1@Vertical '>Vertical </option>
+<option value='2@Diagonal '>Diagonal </option>
+<option value='3@AlternateDiagonal '>Alternate Diagonal </option>
+<option value='4@RevAlternateDiagonal' >Rev Alernate Diagonal </option>
+<option value='5@Spiral'>Spiral </option>
+<option value='6@AlternateVertical'>Alternate Vertical </option>
+<option value='7@AlternateHorizontal'>Alternate Horizontal </option>
+<option value='8@LeftSpiral'>Left Spiral </option>
+<option value='9@RevDiagonal'>Rev Diagonal </option>
+</select>
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="radio" name="rev_in" value="0" id="rev_in" checked> Forward 
+<input type="radio" name="rev_in" value="1" > Reverse
+
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Rectangle Flip:
+<select size=1 name="flip" id="flip">
+<option value='0@NoFlip ' >No Flip </option>
+<option value='1@LeftRight '>Flip Left-Right </option>
+<option value='2@UpDown '  >Flip Up-Down </option>
+<option value='3@Combined '>Combined Flips </option>
+</select>
+
+<br><br>
+ &nbsp; Encryption route out:
+<select size=1 name="rout" id="rout">
+<option value='0@Horizontal ' >Horizontal </option>
+<option value='1@Vertical '>Vertical </option>
+<option value='2@Diagonal '>Diagonal </option>
+<option value='3@AlternateDiagonal '>Alternate Diagonal </option>
+<option value='4@RevAlternateDiagonal'>Rev Alernate Diagonal </option>
+<option value='5@Spiral'  >Spiral </option>
+<option value='6@AlternateVertical'>Alternate Vertical </option>
+<option value='7@AlternateHorizontal'>Alternate Horizontal </option>
+<option value='8@LeftSpiral'>Left Spiral </option>
+<option value='9@RevDiagonal'>Rev Diagonal </option>
+</select>
+&nbsp; &nbsp; &nbsp; &nbsp; 
+<input type="radio" name="rev_out" value="0" id="rev_out" checked> Forward 
+<input type="radio" name="rev_out" value="1" > Reverse
+
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+
+
+</body>
+</html>
