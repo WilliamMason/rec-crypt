@@ -479,6 +479,8 @@ onload = function() {
     document.getElementById('do_stop1').addEventListener("click",do_stop);    
     document.getElementById('do_clear1').addEventListener("click",do_clear);    
     document.getElementById('do_crib1').addEventListener("click",do_crib);  
+	document.getElementById('search_for_key').addEventListener("click",do_key_search);  
     document.getElementById('custom_table').addEventListener("change", set_reload); 
     document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});         
+	document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});             
 }    
