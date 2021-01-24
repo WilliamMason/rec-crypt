@@ -476,7 +476,7 @@ s += '\nWorksheet:\n';
 	for (i=0;i<codetext_groups.length;i++){
 		s1 += codetext_groups.charAt(i);
 		s2 += plaintext_groups.charAt(i);
-		if ( codetext.charAt(i+1) == '\n'){
+		if ( codetext_groups.charAt(i+1) == '\n'){
 			s += s1+'\n'+s2+'\n';
 			s1= '';
 			s2 = '';
