@@ -285,6 +285,14 @@ function do_search(str){
 	}
 	
         get_next_key(keyword); // entend key_word to l_array
+		var original_key = l_array.slice(0);
+		var keyshift;
+		for (keyshift = 0;keyshift<26;keyshift++){	
+			//l_array = original_key.slice(keyshift)+original_key.slice(0,keyshift);
+			l_array = original_key.slice(keyshift)
+			for (i=0;i<keyshift;i++)
+				l_array.push(original_key[i]);
+		
 		for (starting_shift = 0 ;starting_shift<26;starting_shift++){
 		score = get_score(buf_len);
 		if ( score>max_score){
@@ -304,7 +312,7 @@ function do_search(str){
 			postMessage(out_str);
 		}
 		} // next starting shift;
-
+		} // next keyshift
 		
 	} // next word number
 	postMessage('~');
