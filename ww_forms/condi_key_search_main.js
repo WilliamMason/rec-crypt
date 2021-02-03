@@ -81,6 +81,10 @@ function do_key_search(){
     //alert("custom tet tabel constructed");
    }      
    document.getElementById('status').value = "Start Keys";
+   if ( document.getElementById('shift_keys').checked)
+		worker.postMessage( {op_choice:4, str:'1'});
+	else
+		worker.postMessage( {op_choice:4, str:'0'});
     str = document.getElementById('input_area').value;	
    worker.postMessage( {op_choice:1, str:word_list_string});
    worker.postMessage( {op_choice:2, str:str});

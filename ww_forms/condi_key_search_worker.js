@@ -30,7 +30,7 @@ var key_word = [];
 var used_let = [];
 
 var word_list,word_count;
-
+var key_shift_limit;
 
 function alltrim(str) { // remove leading and trailing blanks
     return str.replace(/^\s+|\s+$/g, '');
@@ -287,7 +287,7 @@ function do_search(str){
         get_next_key(keyword); // entend key_word to l_array
 		var original_key = l_array.slice(0);
 		var keyshift;
-		for (keyshift = 0;keyshift<26;keyshift++){	
+		for (keyshift = 0;keyshift<key_shift_limit;keyshift++){	
 			//l_array = original_key.slice(keyshift)+original_key.slice(0,keyshift);
 			l_array = original_key.slice(keyshift)
 			for (i=0;i<keyshift;i++)
@@ -337,22 +337,11 @@ onmessage = function(event) { //receiving a message with the string to decode, s
     str = event.data.str;
     do_search(str);
   }
-/*
-  var str = event.data; // string to decode
-  
-  debugger;
-  if(str.charAt(0)  == '#') {// construct key table
-    make_word_list(str);
+  else if (state==4) {
+	  if (event.data.str== '1')
+		  key_shift_limit = 26;
+	  else
+		key_shift_limit = 1 
   }
-  
-  else {
-		postMessage("1working...");
-
-		str = one_blank_separator(str);
-		do_search(str);
-			//alert("done");
-			postMessage("1DONE"); // 1 at beginning is signal not to post in output box
-			//close();  
-  }
-*/  
+	  
 };  
