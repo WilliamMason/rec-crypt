@@ -93,6 +93,8 @@ function do_calc(){
                 n = n3;
             if (n1 > n)
                 n = n1;
+			if ( document.getElementById('length_only').checked )
+				n = n1;
             if ( n < crib_len){
                 crib_len = n;
                 min_pos = crib_pos;
@@ -290,20 +292,25 @@ plaintext:<br>
 <textarea id="plain_area" rows = 5 cols=90 >
 </textarea><br>
 <br>
-<input type="button" value="Minimum Crib" onclick=do_calc();>
-&nbsp  &nbsp &nbsp Period: 
+
+Period: 
 <input type = text id="per"  size = 2 >
-&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;
+&nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;
+<input type="checkbox" id = "length_only">
+  Minimum length only 
+
+&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;&nbsp;  
 <input type="radio" id="whole_range" name="krange"  checked > All positions
 &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;
 <input type="radio" id="one_range" name="krange"  > Specific position. (relative to 0): 
 <input type = text id="crib_pos"  size = 2 >
-
 <br><br>
 Output (positions start at 0):<br>
 <textarea id="output_area" rows=7 cols=90>
 </textarea>
+<br><br>
 
+<input type="button" value="Minimum Crib" onclick=do_calc();>
 
 </body>
 </html>
