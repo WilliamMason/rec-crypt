@@ -337,6 +337,7 @@ function do_hill_climbing(str){
 			
 		
 	} // next trial
+	/* ignore old best score, better to make random changes.
     if (primerless_flag == '1'){    
         if (current_best_score > old_best_score)
             old_best_score = current_best_score;
@@ -355,6 +356,7 @@ function do_hill_climbing(str){
             }
         }
     }
+	*/
     if ( (primer_numb%10)==0){
         s = out_str+"\n\n(primer: "+primer_numb+")";
         postMessage(s);
