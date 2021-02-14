@@ -283,6 +283,7 @@ function encrypt(plaintext,key1,route_numb1,key2,route_numb2){
 	plaintext_pairs = '';
 	for (i=0;i<plaintext.length;i++){
 		c = plaintext.charAt(i);
+		if (c=='j') c = 'i';		
 		n = alpha.indexOf(c);
 		if ( n>=0) {
 			if ( state == 0) {
