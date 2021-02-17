@@ -9,6 +9,7 @@ var crib_symbols = 'abcdefghijklmnopqrstuvwxyz ';
 var code = [];
 //var crib = [];
 var mcode_crib;
+var one_pos_flag;
 
 var flag_6x6 = false;
 var numb_symbols;
@@ -142,6 +143,14 @@ var i,j,k,c,n,x,y,s,out_str;
 	var crib_len,numb_pos, crib,result;
 
 	out_str = 'Positions are relative to the ciphertext starting at 0\n';
+	if (document.getElementById('one_pos').checked)
+		one_pos_flag = true; // may be up to 3 placements
+	else
+		one_pos_flag = false; // need one placement at one position
+	if (one_pos_flag)
+		out_str += 'One position but may have up to 3 placements at that position\n';
+	else
+		out_str += 'One placement at one position\n';
 	for (i=skip_amount;i<plaintext.length-start_length+1;i++){
 		for (crib_len = start_length; crib_len < plaintext.length-i+1;crib_len++){
 			if ( crib_len > min_length)
@@ -170,13 +179,17 @@ var i,j,k,c,n,x,y,s,out_str;
 }
 
 function fit_positions(crib){
-	var i,numb_pos,ciphjer_pos;
+	var i,numb_pos,cipher_pos,numb_shifts;
 	numb_pos = 0;
 	cipher_pos = 0;
 	for (i=0;i<code.length-crib.length+1;i++){
-		if ( text_pos(crib,i) ){
+		numb_shifts = text_pos(crib,i);
+		if ( numb_shifts >0 ){
 			cipher_pos = i;
-			numb_pos++;
+			if (one_pos_flag)
+				numb_pos++;
+			else
+				numb_pos += numb_shifts;
 			if (numb_pos >=2)
 				return([2,i])
 		}
@@ -185,22 +198,23 @@ function fit_positions(crib){
 }
 
 function text_pos(crib,cipher_pos){
-var mcode_crib, crib_pattern;
+var mcode_crib, crib_pattern, numb_shifts;
 	mcode_crib = convert_crib_to_morse(crib);
+	numb_shifts = 0;
 	// test mcode starting at letter boundary
 	crib_pattern = get_crib_patterns(0,mcode_crib); // get pattern letters corresponding to morse groups of 3 from mcode_crib.
 	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
-		return(true);
+		numb_shifts++;;
 	// test mcode skipping first two morse symbols in mcode
 	crib_pattern = get_crib_patterns(1,mcode_crib); // get pattern letters corresponding to morse groups of 3 from mcode_crib.		
 	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
-		return(true);
+		numb_shifts++;
 	// test mcode skipping first morse symbol in mcode
 	crib_pattern = get_crib_patterns(2,mcode_crib); // get pattern letters corresponding to morse groups of 3 from mcode_crib.		
 	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
-		return(true);
+		numb_shifts++;
 		
-	return(false);
+	return(numb_shifts);
 }
 
 function convert_crib_to_morse(crib){
@@ -323,11 +337,21 @@ Plaintext:<br>
 <input type="button" value="Minimum crib" onclick=do_calc();>
 &nbsp;  &nbsp; &nbsp; Begining letters to skip:
 <input type = text id="skip_amount" value = "25" size = 2 >
+&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;
+one position<input type="radio" name="r_buttons" id = "one_pos" checked>
+&nbsp;&nbsp;
+One placement at one position<input type="radio" name="r_buttons" id = "one_shift">
+
 <br><br>
 Output:<br>
 <textarea id="output_area" rows=8 cols=90>
 </textarea>
-
+<br><br>
+Note: The "position" in the output is the first ciphertext letter where all 3 Morse symbols are filled by the crib.
+<br> 
+There may be 1 or 2 crib symbols in the previous ciphertext letter. Thus three placements are possible at one ciphertext position. 
+<br>
+If you want just one possible placement for the crib, select that option above.
 
 </body>
 </html>
