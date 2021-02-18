@@ -4061,7 +4061,7 @@ function do_id_test(code){
     s += " , "+ get_bdi(nc);
     s += " , "+ get_cdd(nc);
     s += " , "+ get_sstd(nc);
-    postMessage("Basic stats calculated. Working on binary trigraph scores (make take quite a while). . .");
+    postMessage("Basic stats calculated. Working on binary trigraph scores (may take quite a while). . .");
     x = get_max_progkey_ic(nc);
     test_values[MPIC_index] = x;
     x = get_serp(nc);
