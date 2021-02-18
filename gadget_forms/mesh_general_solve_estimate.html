@@ -1,0 +1,307 @@
+<!-- substitution with homophones, ciphertext consists of digit/alpha pairs or singletons in javascript -->
+<!-- get min mesh with sqrt length solving estimate --->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Minimum mesh estimate of solving difficulty</TITLE>
+<script type="text/javascript">
+
+var code,code_array,crib_pos,cribtext;
+var symbols="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+var digits="0123456789";
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 10;
+var line_len = 90;
+var crib_entered=0;
+var pair_line_limit=28;
+var last_cell,numb_repeats;
+var index_buffer = [];
+var inverse_key = [];
+var enclose_length;
+var key_letters = [];
+var decode = [];
+var temp_decode = [];
+var best_decode = [];
+var numb_lets,numb_pairs;
+var data;
+
+//try associative array for key
+var numb_key = new Array();
+var saved_numb_key = new Array();
+
+function setup_code_pairs() {
+    var state;
+    
+	data = document.ciphertext.cipher_place.value;
+    data = data.toUpperCase();
+	state=0;
+	code = '';
+	if(document.getElementById('p2').checked) { // pairs
+        for (i=0;i<data.length;i++) {
+            c = data.charAt(i);
+            if ( symbols.indexOf(c) >-1) {
+                if (state==0) {
+                    code = code+c;
+                    state=1;
+                }
+                else {
+                    code = code+c+' ';
+                    state=0;
+                }
+            }
+        }
+        solving_flag=1;
+        if (state==1) {
+            alert("Cipher has odd number of symbols!");
+            solving_flag=0;
+            return;
+        }
+    }
+    else { // singletons
+        for (i=0;i<data.length;i++) {
+            c = data.charAt(i);
+            if ( symbols.indexOf(c) >-1) {
+                    code = code+c+' ';
+            }
+        }
+        solving_flag=1;
+    }
+	code_array = code.split(' ');		
+	//document.ciphertext.cipher_place.value = code;
+}	
+
+
+function do_reset() {
+	//do_erase = confirm("Erase the current cipher?")
+    do_erase = true;
+	if ( do_erase == true) {
+		document.ciphertext.cipher_place.value='';
+		document.ciphertext.mn_msh.value = '';
+		//document.ciphertext.sq_frq.value = '';
+		solving_flag=0;
+		//document.solver.clear_output();	
+        document.getElementById('output_area').innerHTML = '';
+	}	
+}	
+
+function get_implied_symbols(current_key){
+		var i,j,k;
+		var flag,n,x, no_good;
+		
+		flag = 1;
+		while (flag==1) {
+			flag = 0;
+			for (n=0;n<numb_pairs;n++){
+				x = index_buffer[n];
+				if (current_key[x] == -1) {// no decryption of x yet)
+					if (n<numb_pairs-1 && x == index_buffer[n+1])
+						j=1; // doubled letter
+					else j=0;
+					no_good=0;
+					for (i=0;i<enclose_length;i++){
+						if (n-i-1 >= 0 && current_key[ index_buffer[n-i-1] ] == -1){
+							no_good = 1;
+							break;
+						}
+						if ( n+i+1+j < numb_pairs && current_key[ index_buffer[n+i+1+j] ] == -1){
+							no_good=1;
+							break;
+						}
+					}
+					if (no_good==1) continue;
+					// enough letters known before and after the symbol so we can deduce it
+					current_key[ x ] = 2; // mark it known by extension
+					flag = 1; // can keep going
+				}
+			}
+		}	
+} // end get_implied symbols
+	
+function get_count(current_key, n){
+		var i,cnt;
+		
+		cnt = 0;
+		for (i=0;i<numb_lets;i++)	
+			if (current_key[i] == n) cnt++;
+		return(cnt);
+}
+
+function get_best_new_letter(){ // add it to the decode array, and return the count of -1's
+		var i,j,n;
+		var cnt;
+		var min_add;
+		
+		cnt = get_count(decode,-1);
+		min_add = 0;
+		for (i=0;i<numb_lets;i++) {
+			if (decode[i] == -1){
+				for (j=0;j<numb_lets;j++)
+					temp_decode[j] = decode[j];
+					temp_decode[i] = 1; 
+					get_implied_symbols(temp_decode);
+					n = get_count(temp_decode,-1);
+					if (n<cnt){
+						cnt = n;
+						min_add = i;
+					}
+			}
+		}
+		decode[min_add] = 1; // ok this is the new letter
+		return(cnt);
+}
+
+
+function min_mesh() {	  
+		var n,i,x,state,c1,j;
+		var c;
+		var tmp_str,s;
+		var flag,minimum_required,min_count;
+		var start_pos;
+
+        enclose_length = 3;	
+        numb_pairs=code_array.length-1;//final entry not a code pair				
+		if ( numb_pairs<5) {
+			alert("cipher too short!");	
+			return(0);
+		}
+        
+		numb_lets = 0;
+		for (i=0;i<numb_pairs;i++) {
+			n = code_array[i];
+			flag = 1;
+			for (j=0;j<numb_lets;j++)
+				if (n ==key_letters[j]){
+					flag = 0;
+					break;
+			}
+			if ( flag == 1) {
+				inverse_key[n]=numb_lets;			
+				key_letters[numb_lets++] = n;
+			}
+		}
+		// set up index buffer
+		for (i=0;i<numb_pairs;i++)
+			index_buffer[i]  = inverse_key[ code_array[i]];
+    	minimum_required = numb_lets;   
+		for (start_pos = 0; start_pos <numb_pairs-6;start_pos++) {
+			for (i=0;i<numb_lets;i++)
+				decode[i] = -1;
+			decode[ index_buffer[start_pos] ] = 1;
+			get_implied_symbols(decode);
+			n = 1;
+			// extend decode to enclosing string  (2*enclose_length+1) unless you solve it immediately!
+			while( get_count(decode,-1)>0 && start_pos+n<numb_pairs && n < 2*enclose_length+1){
+				decode[ index_buffer[start_pos+n] ] = 1;
+				get_implied_symbols(decode);
+				n++;
+			}
+			min_count = get_count(decode,-1);
+			while (min_count>0){
+				min_count = get_best_new_letter();  // added one letter to decode array
+ 				n = get_count(decode,1);
+				if (n>= minimum_required) break; // already got a position as good as this one
+				get_implied_symbols(decode);
+			}
+			if (n<minimum_required){ // new minimum!
+				minimum_required = n;
+				//printf("For position %i, the minimum number of letters is %i\n",start_pos,n);
+				//best_pos = start_pos;
+				for (i=0;i<numb_lets;i++)
+					best_decode[i] = decode[i];
+			}
+		}		// next start_pos
+// 		printf("File : %s , Length : %i , Minimum number of letters : %i , min letters as percent of length %5.2f, log is %5.2f\n",
+// 			in_name,numb_pairs,minimum_required,100.0*(double)minimum_required/(double)numb_pairs,
+// 				log(1+100.0*(double)minimum_required/(double)numb_pairs));
+		
+		return(minimum_required);
+	} // end min_mesh
+
+
+function get_min_mesh() {
+	var n,i,s,str,c,ll;
+
+	setup_code_pairs();
+	if (solving_flag==0) return;//odd number of digits!
+		
+	numb_pairs=code_array.length-1;//final entry not a code pair		
+	n = min_mesh();	
+	str = "Minimum symbols: "+n;
+    // x = log10(100)+log10(min_let)-0.5*log10(length)
+	mesh_ratio = 100.0*n/numb_pairs;
+	x = 2 + (Math.log(n)-0.5*Math.log(numb_pairs))/Math.LN10;
+	str += ", Plaintext length: "+numb_pairs;
+	str += ". Base 10 log of ratio min symbols to square root length: "+x.toFixed(2);
+  if(document.getElementById('p2').checked) { // pairs 
+    if ( x<2.15) str += ". Good chance of solution."
+    else if ( x>2.25) str += ". Tough cipher!."
+    else str += ". Solution may be possible.";
+   }
+	document.ciphertext.mn_msh.value = str;
+  if(document.getElementById('p2').checked)
+    ll = 35;
+  else ll = 55;
+	
+    s='Red symbols are members of minimum symbol set: <br>';
+    n=0;
+   for (i=0;i<numb_pairs;i++){
+        c = code_array[i];
+        if (best_decode[ index_buffer[i] ] == 1)
+            s += '<font color="red">'+c+' </font>';
+        else
+            s += c+' ';
+        if (++n == ll) {
+            s += '<br>';
+            n=0;
+        }
+    }
+    s += '<br><br> The minimum set is : ';
+    for (i=0;i<numb_lets;i++)
+        if (best_decode[i] == 1)
+            s += key_letters[i]+' ';
+            
+   document.getElementById('output_area').innerHTML = s;
+
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Min Mesh Estimate of solving difficulty, numbers or letters</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 17px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+
+<br><br>
+<INPUT onclick=get_min_mesh(); type=button value="Get Estimate" >
+<br>
+<input type = text name=mn_msh  size = 125 >
+<br><br>
+</form>
+Plaintext letter represented by:
+<input type="radio" id="p2" name="ntp" value=2 checked > Pair
+<input type="radio" id="p1" name="ntp" value=1 > Singleton
+
+<span style="float:right; margin-right:100px;padding: 10px;">
+<INPUT onclick=do_reset(); type=button value="clear" >
+</span>
+<br>
+<div id="output_area" style="clear:both; font-family:monospace;">
+</div>
+<br><br>
+<img src="minimum_mesh_chart.png">
+
+<!--
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
