@@ -13,7 +13,9 @@ var plain = [];
 var period, quag_array, inv_array;
 
 var shift = [];
-var rel_shift = []
+var rel_shift = [];
+
+var NO_INFO = 10000; // obviously too big for any minimum
 
 function setup_cipher() {
 	var i,j,state,cnt,c, data,n1,n;
@@ -104,21 +106,33 @@ function do_calc(){
         }
         crib_pos = min_pos;
     }
-    out_str += "Minimum length for crib at position "+crib_pos+" is: "+crib_len;
-    out_str += "\n";
-    for (i=0;i<crib_len;i++)
-        out_str += alpha.charAt(plain[crib_pos+i]);
-    out_str += "\n";        
-    out_str += "Minimum length for code key shifts at position "+crib_pos+" is: "+code_key_len;
-    out_str += "\n";
-    for (i=0;i<code_key_len;i++)
-        out_str += alpha.charAt(plain[crib_pos+i]);
-    out_str += "\n";     
-    out_str += "Minimum length for plain key shifts at position "+crib_pos+" is: "+plain_key_len;
-    out_str += "\n";         
-    for (i=0;i<plain_key_len;i++)
-        out_str += alpha.charAt(plain[crib_pos+i]);
-    out_str += "\n";        
+	if (crib_len == NO_INFO)
+		out_str += "Not enough information  for crib at position "+crib_pos+'\n';
+	else {
+		out_str += "Minimum length for crib at position "+crib_pos+" is: "+crib_len;
+		out_str += "\n";
+		for (i=0;i<crib_len;i++)
+			out_str += alpha.charAt(plain[crib_pos+i]);
+		out_str += "\n";
+	}
+	if (code_key_len == NO_INFO)
+		out_str += "Not enough information  for code key shifts at position "+crib_pos+'\n';
+	else {
+		out_str += "Minimum length for code key shifts at position "+crib_pos+" is: "+code_key_len;
+		out_str += "\n";
+		for (i=0;i<code_key_len;i++)
+			out_str += alpha.charAt(plain[crib_pos+i]);
+		out_str += "\n"; 
+	}
+	if (plain_key_len == NO_INFO)
+		out_str += "Not enough information  for plain key shifts at position "+crib_pos+'\n';
+	else {
+		out_str += "Minimum length for plain key shifts at position "+crib_pos+" is: "+plain_key_len;
+		out_str += "\n";         
+		for (i=0;i<plain_key_len;i++)
+			out_str += alpha.charAt(plain[crib_pos+i]);
+		out_str += "\n";    
+	}
 
     document.getElementById('output_area').value = out_str;        
     
@@ -145,7 +159,8 @@ function check_crib_pos(crib_pos){
         }
     }
     if ( crib_len == buf_len - crib_pos+1) // ran out of room
-        crib_len = buf_len;
+        //crib_len = buf_len;
+		crib_len = NO_INFO;
     return( crib_len );
 }
 
@@ -276,7 +291,8 @@ function get_min_shift_len(start_pos,text_array){
     }
     n = pos - start_pos;
     if (pos == le) // ran out of room
-        n = le;
+        //n = le;
+		n = NO_INFO;
     return(n);
 }
 
