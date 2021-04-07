@@ -1,0 +1,216 @@
+<html>
+<!-- Myszkowski crib
+
+-->
+<head>
+<script type="text/javascript">
+var plaintext,key,wrap_around;
+var key_len,crib_len;
+var skip_length = 25;
+var total_freq;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function max_different_letters(){ // crib with maximum number of different letters 
+	var i,j,k,c,n,used;
+	var tie_score = [];
+	var tie_index = 0;
+	var max_diff = 0;
+	var max_pos = 0;
+	for (i=skip_length;i<plaintext.length - crib_len+1;i++){
+		used = {};
+		for (j=i;j<i+crib_len;j++){
+			c = plaintext.charAt(j);
+			used[c] = 1;
+		}
+		n =  0;
+		for (c in used)
+			n++;
+		if ( n>max_diff)
+			tie_index = 0;
+		if ( n>= max_diff){
+			max_diff = n;
+			max_pos = i;
+			tie_score[tie_index ] = max_pos;
+			tie_index++;
+		}
+	}
+	return([max_diff,max_pos] );
+}
+
+function minimum_letter_frequencies(){
+	var i,j,k,c,n,used;
+	var freq = 0;
+	var min_freq = plaintext.length;
+	var min_pos = 0;
+	for (i=skip_length;i<plaintext.length - crib_len+1;i++){
+		freq = 0;
+		used = {};
+		for (j=i;j<i+crib_len;j++){
+			c = plaintext.charAt(j);
+			if ( c in used)
+				continue;
+			used[c] = 1;
+			freq += total_freq[c];
+		}
+		if ( freq<= min_freq ){
+			min_freq = freq;
+			min_pos = i;
+		}
+	}
+	return( [min_freq,min_pos]);
+}
+
+function vertical_pairs(){
+	var i,j,k,c,n,c1,flag,s;
+	var vert_pairs = {};
+	
+	for (i=skip_length;i<plaintext.length - key_len+1;i++){
+		c = plaintext.charAt(i);
+		c1 = plaintext.charAt(i+key_len);
+		c += c1;
+		if (c in vert_pairs)
+			vert_pairs[c]++;
+		else
+			vert_pairs[c] = 1;
+	}	
+	str = '';
+	var small_count = 0;
+	var max_small_count = -1;
+	var max_pos;
+	for (i=skip_length;i<plaintext.length - crib_len+1;i++){
+		flag = true;
+		small_count = 0;
+		for (j = 0;j< wrap_around;j++){
+			c = plaintext.charAt(i+j);
+			if (total_freq[c]<=2)
+				small_count++;
+			c1 = plaintext.charAt(i+j+key_len);
+			if (total_freq[c1]<=2)
+				small_count++;
+			c += c1;
+			if (vert_pairs[c] != 1){
+				flag = false;
+				break;
+			}
+		}
+		if (flag) {
+			if (small_count>0) {
+				str +='Unique vertical pairs at position '+i;
+				str += ' & '+small_count+' letters appear in plaintext at most twice';
+			str += '\n';
+			}
+			if (small_count> max_small_count){
+				max_small_count = small_count;
+				max_pos = i;
+			}
+			
+		}
+			
+	}
+		if (max_small_count>0){
+			s = plaintext.substring(max_pos,max_pos+crib_len);
+			str += '\ncrib at position ' +max_pos+' ==>: '+s;
+		}
+	
+	return(str);
+}
+
+function do_processing(){
+    var out_str,s,str,c,n,i,j,k,result;
+    
+	out_str="Myszkowski crib\n";
+	str = document.getElementById('input_area').value;
+	if (str == ''){
+		alert("No plaintext entered");
+		return;
+	}
+	plaintext = letters_only(str);
+	n = plaintext.length;
+	out_str += "Plaintext (letters only):\n"+plaintext+' (length: '+n+')';
+	key = document.getElementById('key').value;
+	if (key == ''){
+		alert("No key entered");
+		return;
+	}
+	
+	key = letters_only(key);
+	key_len = key.length;
+	out_str += '\nkey (letters only:)\n==>'+key.toUpperCase()+' (key length: '+key_len+')';	
+	wrap_around = parseInt(document.getElementById('wrap_around').value);
+	out_str += '\nwrap around is: '+wrap_around+' (might try 2 plus number of different repeated letters in key)';
+	skip_length = parseInt(document.getElementById('skip').value);
+	var max_repeat = 0;
+	var repeat_count = 0;
+	var used = {};
+	for (i=0;i<key.length;i++){
+		c = key.charAt(i);
+		if (c in used)
+			continue
+		used[c] = 1;
+		n = key.split(c).length-1;
+		if ( n>1)
+			repeat_count++;
+		if ( n>max_repeat)
+			max_repeat = n;
+		
+	}
+	if ( max_repeat>1){
+		out_str +='\nat least one key letter occurs '+max_repeat+' times';
+		if (repeat_count>1)
+			out_str +=  ', there are '+repeat_count+' different repeated key letters';
+	}
+	else out_str +='\nNo repeated letters in key';
+	crib_len = key.length+wrap_around;
+	out_str += '\nlooking for a crib of length '+crib_len;
+	out_str += '\n(positions are relative to a starting position of 0)';
+	// get letter frequencies in plaintext.
+	total_freq = {};
+	for (i=0;i<plaintext.length;i++){
+		c = plaintext.charAt(i);
+		if (c in total_freq)
+			total_freq[c]++
+		else
+			total_freq[c] = 1;
+	}
+	result = max_different_letters();
+	out_str += '\n\nCrib with maximum number of different letters ('+result[0]+') last occurs at position '+result[1]+':';
+	n = result[1]+crib_len;
+	out_str +='\n=> '+plaintext.substring(result[1], n);
+	
+	result = minimum_letter_frequencies();
+	out_str += '\n\nCrib with minimum letter frequencies ('+result[0]+') last occurs at position '+result[1]+':';
+	n = result[1]+crib_len;
+	out_str +='\n=> '+plaintext.substring(result[1], n);
+	
+	s = vertical_pairs();
+	out_str += '\n\n'+s+'\n\n'
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Myszkowski crib possibilities</h3>
+
+<br><br>
+Plaintext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br><br>
+Key (alphabetic): <input type = "text" id="key">
+&nbsp;&nbsp;&nbsp;
+Wrap around to next line: <input type="text" id="wrap_around" value = 2 size = 3>
+&nbsp;&nbsp;&nbsp;
+Beginning letters to skip: <input type="text" id="skip" value = 25 size = 3>
+
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+<br><br>
+<input type="button" value="Make cribs" onclick=do_processing();>
+<br><br>
+</body>
+</html>
