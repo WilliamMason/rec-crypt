@@ -11,6 +11,7 @@ function alltrim(str) { // remove leading and trailing blanks
 	return str.replace(/^\s+|\s+$/g, '');
 }
 
+
 function condense_white_space(str) { // replace sequences of 1 or more space characters by single blanks
 	return str.replace(/\s+/g, ' ');
 }
@@ -111,7 +112,7 @@ function ragbaby_encrypt(plaintext,key){
 	plaintext_groups = '';
 	var temp_str = '';
 	var temp1_str = '';
-    var special = "-'=" ;//characters that may occur in middle of words
+    var special = "-'=’" ;//characters that may occur in middle of words
 	for (i=0;i<plaintext.length;i++){
 		c = plaintext.charAt(i);
         if (special.indexOf(c) != -1)
@@ -248,7 +249,7 @@ function ragbaby_decrypt(codetext,key){
 	plaintext_groups = '';
 	var temp_str = '';
 	var temp1_str = '';
-    var special = "-'=" ;//characters that may occur in middle of words
+    var special = "-'=’" ;//characters that may occur in middle of words
 	for (i=0;i<codetext.length;i++){
 		c = codetext.charAt(i);
         if (special.indexOf(c) != -1)
