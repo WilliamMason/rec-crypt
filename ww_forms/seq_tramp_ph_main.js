@@ -494,7 +494,7 @@ function numb_trials_default(){
         primerless_flag = 0;
     }
     else {
-        document.getElementById('numb_trials').value="30000";  
+        document.getElementById('numb_trials').value="3000";  
         primerless_flag = 1;
     }
 }
