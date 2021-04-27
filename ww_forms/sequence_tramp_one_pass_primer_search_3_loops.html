@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>Sequence tramp one-pass primer search.</title>
+<script src="seq_tramp_one_pass_main.js"></script>
+</head>
+<body bgcolor="Silver">
+<h3> Sequence tramp one-pass primer search (3 loop version)</h3> <br>
+Directions: Type or paste in ciphertext.Click search button <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 spellcheck="false" >
+</textarea><br>
+<br>
+<input type="button" value="Search" onclick=do_calc();>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<INPUT id="do_stop1" type=button value="Stop search" onclick=do_stop(); >
+
+<!---
+&nbsp  &nbsp &nbsp Primer: 
+<input type = text id="primer"  size = 2 >
+-->
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+<br><br>
+Status from start: 
+<input type="text" value="idle" id="status" size = 20>
+Status from end: 
+<input type="text" value="idle" id="status1" size = 20>
+
+
+
+
+</body>
+</html>
