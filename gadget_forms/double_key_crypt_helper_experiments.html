@@ -1,0 +1,611 @@
+<html>
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Double key Rithm Helper</title>
+<script type="text/javascript">
+var key, key2;
+var digits = '0123456789ABCDEFGHI';
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+function numb10_to_base(n,base){
+	var r,q,i,s;
+
+	r = new Array();
+	q = Math.floor(n/base);
+	i=0;
+	while (q>0){
+		r[i++]=n-q*base;
+		n = q;
+		q = Math.floor(n/base);
+	}
+	r[i++] = n-q*base;
+	s = ''
+	for (n=0;n<i;n++)
+		s += digits.charAt(r[i-1-n]);
+	return(s);
+}
+
+function convert_to10(ns,base){
+	var nl,x,y,i,c,j;
+	
+	y = 0;
+	x = 1;
+	for (j=0;j<ns.length;j++){
+		c = ns.charAt(ns.length-1-j);
+		i = digits.indexOf(c);
+		if ( i>=base){
+			ns+=" has digit too big for base!";
+			alert(ns);
+			return(0);
+		}
+		y += i*x;
+		x *= base;
+	}
+	return(y);
+}
+
+function do_clear(){
+	document.getElementById('base_field').value= '';
+	document.getElementById('input_area').value = '';
+	document.getElementById('input_area2').value = '';
+	document.getElementById('input_10area').value = '';
+	document.getElementById('input_10area2').value = '';
+	document.getElementById('output_area').value = '';
+	document.getElementById('key_area').value = '(none)';	
+	document.getElementById('input_key_area').value = '';	
+	document.getElementById('input_key_area2').value = '';		
+}	
+
+function clear_numbers(){
+	document.getElementById('input_area').value = '';
+	document.getElementById('input_area2').value = '';
+	document.getElementById('input_10area').value = '';
+	document.getElementById('input_10area2').value = '';
+	document.getElementById('output_area').value = '';
+	document.getElementById('input_key_area').value = '';	
+	document.getElementById('input_key_area2').value = '';		
+}	
+
+
+function do_calc(op_num){
+	var str,base,out_str,c,n,x,y,i,j,str2,s,x1,y1,su;
+	var used_let=new Array();	
+	var sol_type,z,r;
+
+	out_str="";
+	
+	base = parseInt(document.getElementById('base_field').value);
+	if (isNaN(base) || base <2 ){
+		alert("Enter base between 2 and 19");
+		return;
+	}
+	if ( base>19){
+		alert("Base too high. Limit is base 19");
+		return;
+	}
+	key = document.getElementById('key_area').value;
+	key = letters_only(key);
+	if ( key ==''){
+		alert("No first key entered");
+		return;
+	}
+	key = key.toUpperCase();
+	if ( key != '(NONE)'){
+		if (base !=key.length){
+			alert("Number of key letters not equal to base!");
+			return;
+		}
+		for (j=0;j<26;j++) used_let[j]=0;
+		for (j=0;j<base;j++){
+			if (used_let[upperC.indexOf(key.charAt(j))] !=0){
+				alert("Key has repeated letters!");
+				return;
+			}
+			used_let[upperC.indexOf(key.charAt(j))]=1;
+		}
+		for (i = 0;i<document.typearea.stype.length;i++) 
+			if (document.typearea.stype[i].checked){
+				sol_type = document.typearea.stype[i].value;
+				break;
+		}
+		if (sol_type == 1){
+			s=key.charAt(0);
+			for (i=base-1;i>0;i--)
+				s += key.charAt(i);
+			key = s;
+		}
+		else if (sol_type == 2){
+			s='';;
+			for (i=base-1;i>=0;i--)
+				s += key.charAt(i);
+			key = s;
+		}
+		else if (sol_type == 3){
+			s=key.charAt(base-1);
+			for (i=0;i<base-1;i++)
+				s += key.charAt(i);
+			key = s;
+		}
+		s = document.getElementById('input_key_area').value;
+		if (s !=''){
+			s = s.toUpperCase();
+			y = 0;
+			x = 1;
+			for (j=0;j<s.length;j++){
+				c = s.charAt(s.length-1-j);
+				i = key.indexOf(c);
+				if (i == -1){
+					s = "Error in number. Letter "+c+" not in key!"
+					alert(s);
+					return;
+				}
+				y += i*x;
+				x *= base;
+			}
+			s=numb10_to_base(y,base);
+			document.getElementById('input_area').value = s;
+		}
+	}
+	// second key
+	key2 = document.getElementById('key_area2').value;
+	key2 = letters_only(key2);
+	if ( key2 ==''){
+		alert("No second key entered");
+		return;
+	}
+
+	key2 = key2.toUpperCase();
+	if ( key2 != '(NONE)'){
+		if (base !=key.length){
+			alert("Number of second key letters not equal to base!");
+			return;
+		}
+		for (j=0;j<26;j++) used_let[j]=0;
+		for (j=0;j<base;j++){
+			if (used_let[upperC.indexOf(key2.charAt(j))] !=0){
+				alert("second key has repeated letters!");
+				return;
+			}
+			used_let[upperC.indexOf(key2.charAt(j))]=1;
+		}
+		for (i = 0;i<document.typearea2.stype2.length;i++) 
+			if (document.typearea2.stype2[i].checked){
+				sol_type2 = document.typearea2.stype2[i].value;
+				break;
+		}
+		if (sol_type2 == 1){
+			s=key2.charAt(0);
+			for (i=base-1;i>0;i--)
+				s += key2.charAt(i);
+			key2 = s;
+		}
+		else if (sol_type2 == 2){
+			s='';
+			for (i=base-1;i>=0;i--)
+				s += key2.charAt(i);
+			key2 = s;
+		}
+		else if (sol_type2 == 3){
+			s=key2.charAt(base-1);
+			for (i=0;i<base-1;i++)
+				s += key2.charAt(i);
+			key2 = s;
+		}
+		s = document.getElementById('input_key_area2').value;
+		s = s.toUpperCase();
+		if (s !=''){
+			//s = s.toLowerCase();
+			y = 0;
+			x = 1;
+			for (j=0;j<s.length;j++){
+				c = s.charAt(s.length-1-j);
+				i = key2.indexOf(c);
+				if (i == -1){
+					s = "Error in number. Letter "+c+" not in second key!"
+					alert(s);
+					return;
+				}
+				y += i*x;
+				x *= base;
+			}
+			s=numb10_to_base(y,base);
+			document.getElementById('input_area2').value = s;
+		}
+	}
+
+	str = document.getElementById('input_area').value;
+	str = str.toUpperCase();
+	x = convert_to10(str,base);
+	if (x==0) {// maybe no number entered, check base 10 box
+		x = parseInt(document.getElementById('input_10area').value);
+		if ( isNaN(x)) x=0;		
+		str = '';
+		str += numb10_to_base(x,base);
+		document.getElementById('input_area').value = str;
+	}
+	else
+		document.getElementById('input_10area').value = x;	
+	out_str = 'Base: '+base;
+	if ( key != '(NONE)'){
+		s=document.getElementById('key_area').value;
+		s=s.toUpperCase();
+		out_str += ' Key: '+s;
+		out_str += ' ,ascending order: '+key;		
+		s='';
+		for (j=0;j<str.length;j++)
+			s += key.charAt(digits.indexOf(str.charAt(j)));
+		document.getElementById('input_key_area').value = s;
+	}
+	out_str += '\n';
+
+	str2 = document.getElementById('input_area2').value;	
+	str2 = str2.toUpperCase();
+	x = convert_to10(str2,base);
+	if (x==0) {// maybe no number entered, check base 10 box
+		x = parseInt(document.getElementById('input_10area2').value);
+		if ( isNaN(x)) x=0;		
+		str2 = '';
+		str2 += numb10_to_base(x,base);
+		document.getElementById('input_area2').value = str2;
+	}
+	else
+		document.getElementById('input_10area2').value = x;	
+
+	
+	if ( key2 != '(NONE)'){
+		s=document.getElementById('key_area2').value;
+		//s=s.toLowerCase();
+		out_str += ' Second key: '+s.toLowerCase();
+		out_str += ' ,ascending order: '+key2.toLowerCase();
+		s = document.getElementById('input_key_area2').value;
+		s = s.toUpperCase();
+		if (s !=''){
+			//s = s.toLowerCase();
+			y = 0;
+			x = 1;
+			for (j=0;j<s.length;j++){
+				c = s.charAt(s.length-1-j);
+				i = key2.indexOf(c);
+				if (i == -1){
+					s = "Error in number. Letter "+c+" not in second key!"
+					alert(s);
+					return;
+				}
+				y += i*x;
+				x *= base;
+			}
+			s=numb10_to_base(y,base);
+			document.getElementById('input_area2').value = s;
+		}
+		
+
+		s='';
+		for (j=0;j<str2.length;j++)
+			s += key2.charAt(digits.indexOf(str2.charAt(j)));
+		document.getElementById('input_key_area2').value = s.toLowerCase();
+	}
+	
+	out_str += '\n';	
+	
+	if (op_num==0){
+		s=document.getElementById('input_key_area2').value;
+		document.getElementById('input_key_area2').value = s.toLowerCase();
+		s=document.getElementById('key_area2').value;		
+		document.getElementById('key_area2').value = s.toLowerCase();
+		document.getElementById('output_area').value = "filled in";
+		return;
+	}
+/*	
+	if (op_num==5){
+		z = Math.floor(Math.sqrt(x));
+		y = numb10_to_base(z,base);
+		out_str += 'square root of '+str+' is '+y;
+		r = numb10_to_base(x-z*z,base);
+		out_str += ' with remainder '+r;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<y.length;j++)
+				s += key.charAt(digits.indexOf(y.charAt(j)));
+			out_str +='\n';
+			out_str += 'square root of '+document.getElementById('input_key_area').value+' is '+s;
+			s='';
+			for (j=0;j<r.length;j++)
+				s += key.charAt(digits.indexOf(r.charAt(j)));
+			out_str += ' with remainder '+s;
+			out_str +='\n';
+			
+		}
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+	if (op_num==6){
+		if ( x !=0)
+			z = Math.floor(Math.pow(x+0.5,1/3));
+		else
+			z=0;
+		y = numb10_to_base(z,base);
+		out_str += 'cube root of '+str+' is '+y;
+		r = numb10_to_base(x-z*z*z,base);
+		out_str += ' with remainder '+r;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<y.length;j++)
+				s += key.charAt(digits.indexOf(y.charAt(j)));
+			out_str +='\n';
+			out_str += 'cube root of '+document.getElementById('input_key_area').value+' is '+s;
+			s='';
+			for (j=0;j<r.length;j++)
+				s += key.charAt(digits.indexOf(r.charAt(j)));
+			out_str += ' with remainder '+s;
+			out_str +='\n';
+			
+		}
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+	if (op_num==7){
+		z = Math.floor(Math.sqrt(Math.sqrt(x)));
+		y = numb10_to_base(z,base);
+		out_str += 'fourth root of '+str+' is '+y;
+		r = numb10_to_base(x-z*z*z*z,base);
+		out_str += ' with remainder '+r;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<y.length;j++)
+				s += key.charAt(digits.indexOf(y.charAt(j)));
+			out_str +='\n';
+			out_str += 'fourth root of '+document.getElementById('input_key_area').value+' is '+s;
+			s='';
+			for (j=0;j<r.length;j++)
+				s += key.charAt(digits.indexOf(r.charAt(j)));
+			out_str += ' with remainder '+s;
+			out_str +='\n';
+			
+		}
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+	
+	if ( key2 != '(NONE)'){
+		s = document.getElementById('input_key_area2').value;
+		if (s !=''){
+			//s = s.toLowerCase();			
+			y1 = 0;
+			x1 = 1;
+			for (j=0;j<s.length;j++){
+				c = s.charAt(s.length-1-j);
+				i = key2.indexOf(c);
+				if (i == -1){
+					s = "Error in second number. Letter "+c+" not in key!"
+					alert(s);
+					return;
+				}
+				y1 += i*x1;
+				x1 *= base;
+			}
+			s=numb10_to_base(y1,base);
+			document.getElementById('input_area2').value = s;
+		}
+	}
+	str2 = document.getElementById('input_area2').value;
+	str2 = str2.toLowerCase();
+	y = convert_to10(str2,base);
+	if (y==0) {// maybe no number entered, check base 10 box
+		y = parseInt(document.getElementById('input_10area2').value);
+		if ( isNaN(y)) y=0;		
+		str2 = '';
+		str2 += numb10_to_base(y,base);
+		document.getElementById('input_area2').value = str2;
+	}
+	else
+		document.getElementById('input_10area2').value = y;	
+	if ( key2 != '(NONE)'){
+		su = str2.toUpperCase();
+		s='';
+		for (j=0;j<str2.length;j++)
+			s += key2.charAt(digits.indexOf(su.charAt(j)));
+		document.getElementById('input_key_area2').value = s;
+	}
+*/	
+	if (op_num==2){
+		x = convert_to10(str,base);
+		y = convert_to10(str2,base);	
+		out_str += str+' times '+str2+' is ';
+		n = numb10_to_base(y*x,base);
+		out_str += n;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key.charAt(digits.indexOf(n.charAt(j)));
+			out_str +='\n';
+			out_str += document.getElementById('input_key_area').value+' times ';
+			out_str += document.getElementById('input_key_area2').value+' is '+s;
+		}
+		if ( key2 != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key2.charAt(digits.indexOf(n.charAt(j)));
+			out_str += ', or '+s.toLowerCase();
+			//out_str +='\n';
+			//out_str += document.getElementById('input_key_area').value+' plus ';
+			//out_str += document.getElementById('input_key_area2').value+' is '+s;
+		}
+		s=document.getElementById('input_key_area2').value;
+		document.getElementById('input_key_area2').value = s.toLowerCase();
+		s=document.getElementById('key_area2').value;		
+		document.getElementById('key_area2').value = s.toLowerCase();
+		
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+
+	if(op_num==1){
+		x = convert_to10(str,base);
+		y = convert_to10(str2,base);
+		out_str += str+' plus '+str2.toLowerCase()+' is ';
+		n = numb10_to_base(y+x,base);
+		out_str += n;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key.charAt(digits.indexOf(n.charAt(j)));
+			out_str +='\n';
+			out_str += document.getElementById('input_key_area').value+' plus ';
+			out_str += document.getElementById('input_key_area2').value.toLowerCase()+' is '+s;
+		}
+		if ( key2 != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key2.charAt(digits.indexOf(n.charAt(j)));
+			out_str += ', or '+s.toLowerCase();
+			//out_str +='\n';
+			//out_str += document.getElementById('input_key_area').value+' plus ';
+			//out_str += document.getElementById('input_key_area2').value+' is '+s;
+		}
+		s=document.getElementById('input_key_area2').value;
+		document.getElementById('input_key_area2').value = s.toLowerCase();
+		s=document.getElementById('key_area2').value;		
+		document.getElementById('key_area2').value = s.toLowerCase();
+		
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+/*	
+	if(op_num==3){
+		out_str += str+' minus '+str2+' is ';
+		if (x<y) {
+			alert("Negative differences not allowed!");
+			return;
+		}
+		n = numb10_to_base(x-y,base);
+		out_str += n;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key.charAt(digits.indexOf(n.charAt(j)));
+			out_str +='\n';
+			out_str += document.getElementById('input_key_area').value+' minus ';
+			out_str += document.getElementById('input_key_area2').value+' is '+s;
+		}
+		if ( key2 != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key2.charAt(digits.indexOf(n.charAt(j)));
+			out_str += ', or '+s
+			//out_str +='\n';
+			//out_str += document.getElementById('input_key_area').value+' plus ';
+			//out_str += document.getElementById('input_key_area2').value+' is '+s;
+		}
+		
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+	if(op_num==4){
+		out_str += str+' divided by '+str2+' is ';
+		if (y==0) {
+			alert("Zero division  not allowed!");
+			return;
+		}
+		z = Math.floor(x/y);
+		n = numb10_to_base(z,base);
+		out_str += n;
+		r = numb10_to_base(x-z*y,base);
+		out_str += ' with remainder '+r;
+		if ( key != '(NONE)'){
+			s='';
+			for (j=0;j<n.length;j++)
+				s += key.charAt(digits.indexOf(n.charAt(j)));
+			out_str +='\n';
+			out_str += document.getElementById('input_key_area').value+' divided by ';
+			out_str += document.getElementById('input_key_area2').value+' is '+s;
+			s='';
+			for (j=0;j<r.length;j++)
+				s += key.charAt(digits.indexOf(r.charAt(j)));
+			out_str += ' with remainder '+s;
+			out_str +='\n';
+			
+		}
+		document.getElementById('output_area').value = out_str;
+		return;
+	}
+*/
+}
+
+</script>
+</head>
+<body bgcolor="Silver" >
+<center><h3>Double key  Cryptarithm Helper</h3></center>
+Enter the base, alphabetic keys, and one or two numbers either in the given base, in base 10, 
+or as key letters. Click a button. 
+<br>
+<br>
+<div style = "background-color:pink; padding:10px;" >
+<form name="typearea">
+Base is: 
+<input type="text" id="base_field" size=5 >
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; First Key is: 
+<input type="text" id="key_area"  size=30>
+
+ Key order: 
+<input type="radio" checked name="stype" value=0> (0-base)
+<input type="radio" name="stype" value=1> (0-1)
+<input type="radio" name="stype" value=2> (base-0)
+<input type="radio" name="stype" value=3> (1-0)
+</form>
+
+<br>
+Number in given base is: 
+<input type="text" id="input_area" size=5>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Number in base 10 is:
+<input type="text" id="input_10area" size=10 >
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Number's Key letters:
+<input type="text" id="input_key_area" size=10 >
+</div>
+<br><br>
+<div style = "background-color:yellow; padding:10px;" >
+<form name="typearea2">
+Second key is:
+<input type="text" id="key_area2"  size=30>
+
+ second key order: 
+<input type="radio" checked name="stype2" value=0> (0-base)
+<input type="radio" name="stype2" value=1> (0-1)
+<input type="radio" name="stype2" value=2> (base-0)
+<input type="radio" name="stype2" value=3> (1-0)
+</form>
+<br>
+Second number in given base (for sum, product, etc):
+<input type="text" id="input_area2" size=5 >
+&nbsp; &nbsp; &nbsp; &nbsp; Second Number in base 10 is:
+<input type="text" id="input_10area2" size=5 >
+&nbsp; &nbsp; &nbsp;  Second Number's Key letters:
+<input type="text" id="input_key_area2" size=8 >
+<br>
+</div>
+<br>
+<br>
+Result:<br>
+<textarea id="output_area" cols=80 rows=17>
+</textarea>
+<br>
+<input type="button" value="Fill in blank fields" onclick=do_calc(0);>
+<input type="button" value="Sum" onclick=do_calc(1);>
+<input type="button" value="Product" onclick=do_calc(2);>
+<!--
+<input type="button" value="Difference" onclick=do_calc(3);>
+<input type="button" value="Quotient" onclick=do_calc(4);>
+
+<input type="button" value="Square Root" onclick=do_calc(5);>
+<input type="button" value="Cube Root" onclick=do_calc(6);>
+<input type="button" value="Fourth Root" onclick=do_calc(7);>
+-->
+<input type="button" value="Clear Number(s)" onclick=clear_numbers();>
+<input type="button" value="Clear All" onclick=do_clear();>
+</body>
+</html>
