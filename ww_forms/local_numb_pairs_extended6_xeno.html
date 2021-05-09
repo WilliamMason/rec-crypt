@@ -1,0 +1,245 @@
+<!-- substitution with homophones, ciphertext consists of digit pairs, includes crib dragging, in javascript -->
+<!------- this version has added frequency info --->
+<!------- version 2 allows clicking directly beneath cipher pairs --->
+<!-- version 3 allows multiple crib entries  -->
+<!-- version 4 can show list of fitting words at specified point in plaintext  --->
+<!-- version 5 allows storing work in browser's local disk storage  -->
+<!-- version 6 convert to manifest vesion 2 and new style packaged apps  -->
+<HTML lang="en-US" style="overflow-y:scroll;">
+<!-- written by BION -->
+<HEAD>
+<TITLE>Number Pairs Xeno Worksheet</TITLE>
+<!-- load word_list array -->
+<!-- next two files must be loaded in this order so that "onload" function comes last -->
+<script type="text/javascript" src = "local_grannumbkey_main_xeno.js">
+</script>
+<script type="text/javascript" src = "local_numb_pairs_main_xeno.js">
+
+
+</script>
+<style type="text/css">
+option.even {background-color:#909090;color:#ffffff;}
+option.odd {background-color:#999999;color:#00008b;}
+select {width:150px; font-family:monospace;}
+
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:100px;
+	width:200px;
+	height:200px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+/* message display box */
+#ms_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:100px;
+	width:500px;
+	height:450px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+#c_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:200px;
+	top:300px;
+	width:400px;
+	height:200px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
+.black_overlay{
+	display: none;
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	z-index:1001;
+	-moz-opacity: 0.7;
+	opacity:.70;  /* the higher the more opaque */
+	filter: alpha(opacity=70);
+}
+.white_content {
+	display: none;
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 25%;
+	padding: 16px;
+    background: #EEEEEE;
+    color: #000;
+    border:10px ridge black;
+	z-index:1002;
+	overflow: auto;
+}
+
+</style>
+
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Number Pairs Xeno Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 17px; height:200px; margin-right:50px; padding: 10px; cursor: crosshair; background:white;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+</form>
+Click on one of the blue symbols below , then click on a cell in the key table or beneath a cipher pair in the box above. 
+(? symbol for possible words) <BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 17px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:5px; padding:5px">
+</div>
+<BR>
+Key Table:<br>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 17px; cursor: crosshair; float:left;
+	  padding:10px">
+</div>
+
+<!-- container for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+<INPUT id="do_undo" type=button value="undo" > <br><br>
+<INPUT id="do_redo" type=button value="redo" disabled > <br><br>
+<!---
+<INPUT id="save_keys" type=button value="save current key" > <br><br>
+<INPUT id="restore_keys" type=button value="restore saved key" ><br><br>
+--->
+<INPUT id="start_over" type=button value="start over" >
+&nbsp
+<INPUT id="reset" type=button value="erase cipher" ><br>
+<b>Frequency Legend:</b> <br><br>
+<span id="freq_legend">
+</span>
+&nbsp; &nbsp;
+</div>
+<div id = "speech_result"  style="float:left; border:1px ridge black; height:40px;width:300px;margin-top:5px;background: #DDDDDD; padding:5px;">
+Speech Output. (space bar activates) </div>
+
+<!-- container for crib dragging -->
+<div id="cribblock"
+style="float:left; margin-left:50px; margin-top:30px;">
+<INPUT id="drag_crib" type=button value="Enter a crib" >
+<br>
+<INPUT id="drag_left" type=button value="<- (crib left)" >
+<INPUT id="drag_right" type=button value="(crib right) ->" >
+<br>
+	<span id="crib_repeats">
+there are 0 repeated pairs at current crib position <br>
+	</span>
+<INPUT id="show_sol" type=button value="Get current plaintext" >    
+</div>
+<!--- local storage buttons ---->
+<div style = "clear:left;">
+<INPUT id="save_to_disk" type=button value="save work to disk" >
+<INPUT id="get_from_disk" type=button value="retrieve work from disk" >
+<INPUT id="clear_disk" type=button value="clear work from disk" >
+&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;
+Word search file: <input type="file" id="input4" >
+<br><br>
+<span id="send_messages">
+</span>
+</div>
+
+<!--- for crib --->
+<div id = "cm_display" >
+</div>	
+
+<!---- light box display --->
+<div id="light" class="white_content">
+</div>
+<div id="fade" class="black_overlay"></div>
+
+<!-----------
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+--->
+<!-- hill-climber output starts here -->
+<span id="hill_climb_start">
+<h3>Grandpre/Numbered Key PH solver using Web Workers</h3> (scoring by logs of pentagraphs and word/phrase list)
+</span><br><br>
+Ciphertext:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea>
+<br><br>
+Best trial decrypt:<br>
+<textarea id="output_area2" cols=100 rows = 15>
+</textarea>
+<br>
+<br><br>
+<input type="button" value="Solve" id="do_solve1" >
+Status 0:
+<input type="text" value="idle" id="status" size = 5>
+Status 1:
+<input type="text" value="idle" id="status1" size = 5>
+Status 2:
+<input type="text" value="idle" id="status2" size = 5>
+
+Number of trial decrypts:
+<input type="text" value="3000000" id="numb_trials" size = 8>
+<INPUT id="do_stop1" type=button value="Stop solving" >
+<input type="button" value="Clear" id="do_clear1" >
+
+<br><br>
+<b>Number of hill-climbers to use:</b>
+<input type="radio" id="ww1" name="nww" value=1 > 1
+<input type="radio" id="ww2" name="nww" value=2 checked > 2
+<input type="radio" id="ww3" name="nww" value=3 > 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+Fudge 0: <input type = text id="fudgefactor0" value = "0.4" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.5" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "0.3" size = 3>
+<input type="button" value="Copy selected plaintext to worksheet" id="copy_selection2" >
+
+<br><br>
+Score words by:
+<input type="radio" id="sct1" name="sct" value=1 checked> forward extended
+<input type="radio" id="sct2" name="sct" value=2 > forward prefix
+<input type="radio" id="sct3" name="sct" value=2 > reverse extended
+<input type="radio" id="sct4" name="sct" value=2 > reverse suffix
+
+&nbsp;&nbsp; Accept % targets: bot <input type = text id="range_bot" value = "1.5" size = 2>
+top <input type = text id="range_top" value = "15.0" size = 2>
+<br>
+<input type="radio" id="sct5" name="sct" value=2 > sloppy grandpre
+<br><br>
+
+<!--
+<input type="button" id="input2" value="Choose book file" > 
+&nbsp;&nbsp; filename: <span id = "book_name"> (none chosen) </span>
+-->
+Book file: <input type="file" id="input2" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox" id="word_list_option" > Include addtional word/phrase list:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Word list file: 
+<input type="file" id="input3" >
+<br><br>
+</BODY>
+</HTML>
