@@ -1,0 +1,67 @@
+<!-- Running key scratchpad, in javascript,  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Running Key Solver</TITLE>
+<script src="runkey_solver_main.js"></script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Running Key Solver</span></center><br>
+
+<form name="runform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Type or paste cipher into the box labeled cipher. Then click the Initialize button.<BR><br>
+</div>
+Cipher: <br>
+<div id = "controlArea"
+<!-- mark space for cipher -->
+<textarea id="cipher"  name = "cipherarea" cols=90; wrap="off" 
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+</div>
+Top Plaintext:<br>
+<!-- mark area for key-->
+<textarea  id="keytext" name = "keyarea" cols=91 wrap="off" 
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px; 
+background:white;">
+</textarea>
+
+<br>
+Bottom Plaintext:<br>
+<!-- mark area for plaintext-->
+<textarea id="plaintext" name = "plainarea" cols=91 wrap="off" 
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px; 
+background:white;">
+</textarea>
+</form>
+
+<div id="col_position">
+</div>
+
+<div id="button_actions" 
+style="float:left; margin-left:10px; margin-top:10px;">
+<INPUT id="initialize" type=button value="Initialize" >
+</div>
+
+<!-- container for crib dragging -->
+<div id="cribblock"
+style="float:left; margin-left:50px; margin-top:30px;">
+</div>
+
+<div id="computerblock"
+style="clear:left; margin-left:5px; margin-top:20px;">
+</div>
+
+<!--
+<Form name=debug>
+<br><br><br><br>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90 ></TEXTAREA><BR>
+</Form>
+-->
+
+</BODY>
+</HTML>
+
