@@ -1,10 +1,5 @@
 <html>
 <head>
-<link rel="shortcut icon" href="Bicon16_alt2.ico">
-<TITLE>Syllabary crib drag</TITLE>
-<!-- specify ANSI encoding to handle Ø symbol -->
-<META http-equiv=Content-Type content="text/html; charset=windows-1252">
-
 <script type="text/javascript">
 
 var SIMPLE = true; // whether or not to show the simplified substitution table
@@ -17,6 +12,9 @@ var EMPTY = '-1';
 var sub_table_flag = false;
 var known_keysquare_flag = false;
 var min_repeats = 0;
+
+var known_cord_flag = false;
+var key_len;
 
 var english_basic_key = ["a","1","al","an","and","ar","are","as","at","ate",
 "ati","b","2","be","c","3","ca","ce","co","com",
@@ -91,7 +89,7 @@ function setup_code_pairs() {
 	
 	data = document.getElementById("cipher_area").value;
     data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0');
+    data = data.replace(/Ã˜/g,'0');
 	state=0;
 	code = '';
 	for (i=0;i<data.length;i++) {
@@ -155,6 +153,39 @@ function known_keysquare_check(keysquare){
     return(true); // passed all matching tests
 }
 
+function known_cord_check(current_keysquare,key_len){
+// current_keysquare is an array of strings, that is indexed by digit strings '00','01',... etc
+var i,j,k,c,n,s;
+// check that current_keysquare entries that are not in cipher key	are in same order as basic_key
+	var cnt, n1,n2,c2;
+	cnt = -1;
+	for (i=0;i<10;i++) for (j=0;j<10;j++){
+		if (++cnt < key_len) continue;
+		// have skipped over cipher key territory
+		if (cnt == 100)
+			return(false); // crib is OK, don't reject		
+		c = ''+i+j; // convert to digit string
+        if (current_keysquare[c] != EMPTY){
+			n1 = basic_key.indexOf(current_keysquare[c])
+			for (k=cnt+1;k<100;k++){
+				c2 = ''+k;
+				if (current_keysquare[c2] != EMPTY){
+					n2 = basic_key.indexOf(current_keysquare[c2]);
+					if ( n2<n1){
+						//console.log('reject, out of order');
+						return(true); // not in same order as basic_key, reject this crib table
+					}
+					if (k-cnt > n2-n1){
+						//console.log('reject, gap too wide');
+						return(true); // current_keysquare entries are farther apart than in basic_key, reject this crib table.
+					}
+				}
+				
+			}
+				
+        }
+	}
+}	
 
 
 function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_keysquare){
@@ -187,6 +218,13 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                         cnt++;
             if ( cnt < min_repeats)
                 return;
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(current_keysquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+				
             out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
             if ( cnt>0)
                 out_str += " with "+cnt+" repeats";
@@ -236,7 +274,14 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                     if (code_array[i] == code_array[j])
                         cnt++;
             if ( cnt<min_repeats)
-                return;
+                return
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(newsquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+			
             out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
             if ( cnt>0)
                 out_str += " with "+cnt+" repeats";
@@ -291,12 +336,20 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                                 cnt++;
                     if ( cnt<min_repeats)
                         return;
+						
                     newsquare = [];
                     for (i=0;i<10;i++) for (j=0;j<10;j++){
                         c = ''+i+j; // convert to digit string
                         newsquare[c] = current_keysquare[c];
                     }
                     newsquare[ct] = basic_key[n]; // add it to table
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(newsquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+					
                     flag = false;                        
                     out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                        
                     if ( cnt>0)
@@ -346,6 +399,13 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                         cnt++;
             if (cnt<min_repeats)
                 return;
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(newsquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+				
             out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
             if ( cnt>0)
                 out_str += " with "+cnt+" repeats";
@@ -397,12 +457,20 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                                 cnt++;
                     if ( cnt<min_repeats)
                         return;
+						
                     newsquare = [];
                     for (i=0;i<10;i++) for (j=0;j<10;j++){
                         c = ''+i+j; // convert to digit string
                         newsquare[c] = current_keysquare[c];
                     }
                     newsquare[ct] = basic_key[n]; // add it to table
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(newsquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+					
                     flag = false;
                     out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                        
                     if ( cnt>0)
@@ -453,6 +521,13 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                         cnt++;
             if ( cnt<min_repeats)
                 return;
+// Insert known coordinate check here!
+			if (known_cord_flag){
+				if (known_cord_check(newsquare,key_len) ) // return true if fails check
+					return;
+			}
+// now resume orignal code			
+				
             out_str += "\nOK at cipher-pair pos "+cipher_start_pos;                
             if ( cnt>0)
                 out_str += " with "+cnt+" repeats";
@@ -503,6 +578,13 @@ function do_drag(){
       known_keysquare_flag = true; // global var
     else
       known_keysquare_flag = false;
+    if (document.getElementById("known_cord").checked){
+      known_cord_flag = true; // global var
+	  key_len = parseInt( document.getElementById("key_len").value );
+	}
+    else
+      known_cord_flag = false;
+	  
     min_repeats = parseInt(document.getElementById("min_rep").value); // global var  
     out_str = ''; // global
     out_str += 'Crib is: '+crib_str;
@@ -592,9 +674,13 @@ Key Table:
 <input type="radio" onclick="switch_basic_block()" id="latin" name="lang"  > Latin
 
 <br><br>
-Keysquare:
-<input type="radio"  id="known_key" name="key_info"  > Known
-<input type="radio"  id="unknown_key" name="key_info"  checked > Unknown
+<input type="radio"  id="known_key" name="key_info"   > Known keysquare, unknown coordinates: 
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+<input type="radio"  id="unknown_key" name="key_info" checked > Unknown keysquare, unknown coordinates
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; 
+<input type="radio"  id="known_cord" name="key_info"  > Unknown keysquare, known coordinates
+with key length of <input type="text" id="key_len" size=3 value='10'>
+<br><br>
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;
 Minimum cipher-pair repeats: 
 <input type="text" id="min_rep" size=3 value='0'>
