@@ -18,6 +18,7 @@ var work_buffer=[];
 var buf_len, plain_len;
 var noise_step, cycle_limit, begin_level;
 var fudge_factor = 0.2; // for backup in case I forget to send it.
+var key_len;
 
 var english_basic_key = ["a","1","al","an","and","ar","are","as","at","ate",
 "ati","b","2","be","c","3","ca","ce","co","com",
@@ -92,6 +93,9 @@ var basic_work_key = [];
 var work_key  =  [];
 var cipher_type = 1; // known keysquare, unknown coordinates.
 var left_col_key = [], right_col_key = [];
+// for known coordinates
+var basic_digit_pos = [];
+var basic_a_j_pos = [];
 
 // unknown keysquare, fixed crib stuff
 var used_symbols = [];
@@ -257,10 +261,13 @@ function do_hill_climbing(str){
 	//var max_trials; // now global
 	var s,mut_flag,inx1,inx2,s1,k;
     var used_sym = [], extra;
+	var op_choice,max_key_len;
 
     debugger;
     // get basic work key & basic v=count for langauge in question
     // to begin fix on english
+	basic_digit_pos = [];
+	basic_a_j_pos = [];
     for (i=0;i<100;i++)
         basic_count[i] = basic_key[i].length;
     for (i=0;i<100;i++){
@@ -269,6 +276,11 @@ function do_hill_climbing(str){
             c = basic_key[i].charAt(j);
             n = symbols.indexOf(c);
             basic_work_key[i][j] = n;
+			if (n >25) {// digit
+				basic_digit_pos.push(i);
+				k = i-1;
+				basic_a_j_pos.push(k);
+			}
         }
     }
     buf_len=0;
@@ -308,6 +320,91 @@ function do_hill_climbing(str){
         }
             
     }
+    else if ( cipher_type == 2){ // known coordinates
+		//var key_len = 10;
+		
+        if (crib_flag != 1) {// no fixed crib    
+            for (i=0;i<100;i++)
+                work_key[i] = i;
+            // randomize work key
+/*			
+            for (j=key_len;j>2;j--){
+                i = Math.floor(Math.random()*( (j-1)));
+                n1 = work_key[j];
+                work_key[j] = work_key[i];
+                work_key[i] = n1;
+            }
+*/			
+			var key_array = [];
+			//key_array = work_key.slice(0); // make separate from work key
+			// leave digit positions out of key_array
+			n = 0;
+			j = basic_digit_pos[n];
+			for (i=0;i<100;i++){
+				if ( i == j){
+					n += 1;
+					j = basic_digit_pos[n]
+					continue;
+				}
+				key_array.push(i);
+			}
+			if (key_array.length != 90)
+				console.log('key array does not have length 90');
+            for (j=key_len;j>0;j--){
+                i = Math.floor(Math.random()*( (j-1)));
+                n1 = key_array[j];
+                key_array[j] = key_array[i];
+                key_array[i] = n1;
+            }
+				
+            free_len = 100;
+            for (i=0; i<free_len;i++)
+                free_indexs[i] = i;
+			var used_let = [];
+			var old_key_len;
+        }
+		/*
+        else { //fixed crib
+            for (i=0;i<100;i++)
+                work_key[i]= -1;
+            for (i=0;i<100;i++)
+                used_symbols[i]=used_indexs[i]=0;
+            // decode crib string.
+            //s = crib.split('\n');
+            s = crib.split(',');
+            fixed_crib_len = parseInt(s[0]);
+            for (i=1;i<= fixed_crib_len;i++) {
+                s1 = s[i].split(' ');
+                n = parseInt(s1[0]);
+                k = parseInt(s1[1]);
+                work_key[ n ] = k;
+                used_indexs[n] = 1;
+                used_symbols[k]=1;
+            }
+            free_len = 0;
+            for (i=0;i<100;i++){
+                if (used_indexs[i]==1) continue;
+                free_indexs[free_len++]=i;
+            }
+            n=0;
+            for (i=0;i<100;i++){
+                if (used_symbols[i]==1) continue;
+                free_symbols[n++]=i;
+            }
+            if ( n != free_len) {
+                //printf("Free indices and free symbols don't match!\n");
+                postMessage("Free indices and free symbols don't match!");
+                return;
+            }
+            n = 0;
+            for (i=0;i<100;i++) {
+                if ( work_key[i] == -1) {
+                    work_key[i] = free_symbols[n++];
+                }
+            }
+        } // end fixed crib        
+		*/
+	}
     else { // unknown keysquare
         if (crib_flag != 1) {// no fixed crib    
             for (i=0;i<100;i++)
@@ -449,7 +546,49 @@ function do_hill_climbing(str){
                     right_col_key[n2]=v1;
                 }
         }
-        else { // unknown keysquare
+		else if ( cipher_type == 2 ) { //known coordinates
+			//max_key_len = 20;
+			//op_choice = Math.floor(Math.random()*100)
+			//if ( op_choice <75){
+				inx1 = Math.floor(Math.random()*key_len);
+				inx2 = Math.floor(Math.random()*key_array.length);
+				v1 = key_array[inx1];
+				v2 = key_array[inx2];
+				key_array[inx1]= v2;
+				key_array[inx2] = v1;
+				used_let = [];
+				for (i=0;i<100;i++)
+					used_let[i] = 0;
+				n = 0;
+				for (i=0;i<key_len;i++){
+					work_key[n] = key_array[i];
+					used_let[ key_array[i] ] = 1;
+					for (k=0;k<10;k++){
+						if (work_key[n] == basic_a_j_pos[k]){
+							n++;
+							work_key[n] = basic_digit_pos[k];
+							used_let[ work_key[n] ] = 1;
+						}
+					}
+					n++;
+
+				}
+				//n = key_len;
+				for (i=0;i<100;i++)
+					if (used_let[i] == 0)
+						work_key[n++] = i;
+			//}
+			/*
+			else { //op_choice >= 75
+				old_key_len = key_len;
+				if ( key_len< max_key_len && (Math.random()*100) < 50)
+					key_len++;
+				else if (key_len > 2)
+					key_len--;
+			}
+			*/
+		}
+        else { // unknown keysquare, unknown coordinates
             inx1 = Math.floor(Math.random()*free_len);
             inx2 = Math.floor(Math.random()*free_len);
             n1 = free_indexs[inx1];
@@ -480,6 +619,33 @@ function do_hill_climbing(str){
                 for (i=0;i<10;i++) 
                     out_str += digits.charAt(right_col_key[i]);
             }
+			else if ( cipher_type == 2) {
+                out_str += "\nKey:\n   0   1   2   3   4   5   6   7   8   9   \n0  ";
+                k = 1;
+                for (i=0;i<100;i++) used_sym[i] = false;
+                for (i=0;i<buffer.length;i++)
+                    used_sym[ buffer[i] ] = true;
+                j = 0;
+                for (i=0;i<100;i++){
+                    if ( used_sym[ i ] ){
+                        out_str += basic_key[work_key[i]]+' ';
+                        extra = 3-basic_key[work_key[i]].length;
+                        if ( extra == 2)
+                            out_str += '  ';
+                        else if ( extra == 1)
+                            out_str += ' ';
+                    }
+                    else
+                        out_str += '-   ';
+                    if (++j == 10 ){
+                        out_str += '\n';                    
+                        if ( k<10) out_str += k+'  ';
+                        j=0;
+                        k++;
+                    }
+                }
+				
+			}
             else { 
                 out_str += "\nKey:\n   0   1   2   3   4   5   6   7   8   9   \n0  ";
                 k = 1;
@@ -528,6 +694,16 @@ function do_hill_climbing(str){
                     right_col_key[n2]=v2;
                 }
             }
+			else if ( cipher_type == 2 ) {
+				//if (op_choice < 75) {
+					key_array[inx1] = v1;
+					key_array[inx2] = v2;
+				///}
+				//else
+					//key_len = old_key_len;
+			}
+			
+		
             else {
                 work_key[n1]=v1;
                 work_key[n2]=v2;
@@ -574,8 +750,11 @@ onmessage = function(event) { //receiving a message with the string to decode, s
         basic_key = latin_basic_key;            
     if (s[4] == '1')
         cipher_type = 1;
+	else if (s[4] == '2')
+		cipher_type = 2;
     else
         cipher_type = 0;
+	key_len = parseInt(s[5]);
   }
   else if(str.charAt(0)  == '#') {// construct custom tet table
     make_table(str);

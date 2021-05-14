@@ -204,7 +204,7 @@ function do_check(){
 
 function do_solve(){
 	var str,max_trials,s,n;
-	var period,key_type,key_info;
+	var period,key_type,key_info,key_len
 	
 	if (!do_check()) return;
 
@@ -238,6 +238,11 @@ function do_solve(){
         key_info = '1';
     else
         key_info = '0';
+    if( document.getElementById('known_cord').checked)
+        key_info = '2';
+    else
+        key_info = '0';
+	key_len = document.getElementById("key_len").value;	
 	max_score  = -10000.0;
 	max_trials = parseInt(document.getElementById('numb_trials').value);	
 	str = '@'+max_trials;
@@ -250,6 +255,7 @@ function do_solve(){
 	str = str+':'+n;
     str += ':'+key_type;
     str += ':'+key_info;
+	str += ':'+key_len;
 	hclimber.postMessage(str);  
 	if(numb_workers>1) {
 		str = '@'+max_trials;
@@ -343,5 +349,7 @@ onload = function() {
     document.getElementById('float_crib').addEventListener("click",floating_crib);       
     document.getElementById('fixed_crib').addEventListener("click",fixed_crib);           
     document.getElementById('known_key').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = true;});           
-    document.getElementById('unknown_key').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = false;});           
+    document.getElementById('unknown_key').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = false;});
+    document.getElementById('known_cord').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = true;});                       
+	//document.getElementById('unknown_cord').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = false;});
 }

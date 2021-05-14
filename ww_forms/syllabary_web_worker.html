@@ -1,8 +1,7 @@
 <html>
 <head>
-<link rel="shortcut icon" href="Bicon16_alt2.ico">
-<TITLE>Syllabary Solver</TITLE>
 <script src="syllabary_ph_main.js" ></script>
+
 </head>
 <body bgcolor="Silver" >
 <h3>Syllabary PH solver using Web Workers</h3> (scoring by logs of tetragraphs)<br><br>
@@ -55,12 +54,17 @@ Make custom tet table from book.
 Book file: 
 <input type="file" id="input" >
 <br><br>
-Keysquare: 
-<input type="radio"  id="known_key" name="key_info"  checked > Known
-<input type="radio"  id="unknown_key" name="key_info"  > Unknown
-&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+
+<input type="radio"  id="known_key" name="key_info"  checked > Known keysquare, unknown coordinates: 
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; 
+<input type="radio"  id="known_cord" name="key_info"  > Unknown keysquare, known coordinates
+with key length of <input type="text" id="key_len" size=3 value='10'>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+<input type="radio"  id="unknown_key" name="key_info"  > Unknown keysquare, unknown coordinates
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
 <input type=button id = "float_crib" value = "floating crib">
-&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; 
 <input type=button id = "fixed_crib" value = "fixed crib" disabled >
 <br><br>
 <b>Fixed crib format. </b>Fields separated by commas. First field is number of crib entries, followed by optional comment. Rest of fields are: cipher symbol (digit pair) followed by blank followed by basic working key symbol (digit pair) optionally followed by blank and letter(s) represented by key symbol.
