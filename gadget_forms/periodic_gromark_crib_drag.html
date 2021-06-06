@@ -20,6 +20,9 @@ var primer;
 var chain = [];
 var chain_start = [];
 
+var key_letter_position;
+var key_index;
+
 function digits_only(str){ // remove everthing except digits
 	str = str.toLowerCase();
 	return str.replace(/[^0-9]/g,'');
@@ -104,6 +107,37 @@ function do_calc(){
     out_str = "primer "+primer+" "; 
 	period = primer.length;
     get_chain();
+var minimum_col_height = Math.floor(26/period); // also equals number of complete rows
+var extra_letter_columns = 26-minimum_col_height*period;
+
+
+key_index = [];
+var key_offset = [];
+for (i=0;i<period;i++){
+	key_index[i] = (10+primer[i]-1)%10; // asuume (1-0) letter order
+	key_offset[ key_index[i] ] = i;
+}	
+	
+key_letter_position = [];
+var index = 0;
+var offset_index = key_offset[index];
+key_letter_position[index] = 0;
+for (i=1;i<period;i++){
+	n = key_letter_position[index]+minimum_col_height;
+	if ( offset_index<extra_letter_columns)
+		n++;
+	index++;
+	key_letter_position[index ] = n;
+	offset_index = key_offset[index];
+}	
+
+s = key_index;
+//console.log(s);
+s = key_offset;
+//console.log(s);
+s = key_letter_position;
+//console.log(s);
+	
     construct_crib(0);
     document.getElementById('output_area').value = out_str;        
     
@@ -119,6 +153,9 @@ function construct_crib( stage){
 	var x1,x2,x3,co;
 
     var alpha="abcdefghijklmnopqrstuvwxyz";    
+var combined_key = [];
+var inv_combined=[];
+
 
 	for (start_pos=0;start_pos<buf_len - crib[stage].length+1;start_pos++) {
 		if ( stage ==0 ) {
@@ -132,6 +169,11 @@ function construct_crib( stage){
                 for (k=0;k<26;k++)
                     quag_array[0][j][k] = inv_array[0][j][k] = -1;
             }
+			for (i=0;i<26;i++){
+				combined_key[i] = -1;
+				inv_combined[i] = -1;
+			}
+			
 		}
 		else {
             quag_array[stage] = [];
@@ -182,13 +224,29 @@ function construct_crib( stage){
                 }
                 quag_array[stage][index][x3 ] = co;
                 inv_array[stage][index][ co] = x3;
+				
+				x4 = (key_letter_position[key_index[index] ]+x3)%26;
+				c1 = combined_key[x4];
+				if ( c1 != -1 && c1 != co){
+					//return(0);
+					flag = 1;
+					break;
+				}
+				
+				c2 = inv_combined[co];
+				if ( c2 != -1 && c2 != x4){
+					//return(0);
+					flag = 1;
+					break;
+				}
+				combined_key[x4] = co;
+				inv_combined[co] = x4;
+				
 				cnt++;
 				if ( cnt == period){
 					index = (index+1)%period;
 					cnt = 0;
 				}
-                //c1 = quag_array[stage][index][c]; // = crib at j
-                //index = (index+1) % period;
                 
         }
         if ( flag) continue;
@@ -215,6 +273,7 @@ function construct_crib( stage){
       }
     }
 	if (document.getElementById('show_key').checked) {
+/*
 	out_str += '\n\nkey array:\na b c d e f g h i j k l m n o p q r s t u v w x y z\n';
 	for (i=0;i<period;i++){
 		for (j=0;j<26;j++){
@@ -228,15 +287,15 @@ function construct_crib( stage){
 		out_str += '\n';
 				
 	}
-            out_str += '\n';
-	var s = get_combined_row(stage);
-	s = get_final_key(s,stage);	
-	out_str += '\ncombined key:\n'
+*/	
+    out_str += '\n\ncombined key:\nabcdefghijklmnopqrstuvwxyz\n';			
+	s = combined_key;
 	for (i=0;i<26;i++)
 		if (s[i] == -1)
 			out_str += '-';
 		else
 			out_str += upperC.charAt(s[i]);
+
 	}
      out_str +='\n==========\n';	
 	
@@ -244,127 +303,6 @@ function construct_crib( stage){
         }
         
 	}
-}
-
-function get_combined_row(stage){
-var i,j,k,x,c,n,s;
-var flag;
-var max_count,cnt,max_index;
-var combined_row;
-max_count = 0;
-max_index = 0;
-for (i=0;i<period;i++){
-	flag = false;
-	cnt = 0;
-	for (j=0;j<26;j++)
-		if (quag_array[stage][i][j] != -1){
-			flag = true;
-			cnt++
-		}
-	if ( flag){
-		if (cnt> max_count){
-			ma_count = cnt;
-			max_index = i;
-		}
-	}
-		
-}		
-combined_row = quag_array[stage][max_index].slice(0); //  
-//n = max_index+1;
-flag = true;
-while(flag ){
-for (i=0;i<26;i++){
-	flag = false;
-	c = combined_row[i] // say i = 2 and k = 5
-	if ( c == -1) continue;
-	for (j=0;j<period;j++){
-		for (k=0;k<26;k++)
-			if (quag_array[stage][j][k] == c) { // combine with row j, using shifts i, k
-				for (x = 0;x<26;x++){
-					if (combined_row[x]  != -1) continue;
-					combined_row[x] = quag_array[stage][j][ (26+x+k-i)%26 ]
-					if (combined_row[x]  != -1) flag = true; // added new letter
-				}
-				break;
-			}
-	
-}			
-
-}
-return(combined_row);
-
-
-}
-}
-
-function get_final_key(combined_row,stage){
-var i,j,k,x,c,n,s;
-var column_offset;
-
-
-var minimum_col_height = Math.floor(26/period); // also equals number of complete rows
-var extra_letter_columns = 26-minimum_col_height*period;
-
-
-var key_index = [];
-var key_offset = [];
-for (i=0;i<period;i++){
-	key_index[i] = (10+primer[i]-1)%10; // asuume (1-0) letter order
-	key_offset[ key_index[i] ] = i;
-}	
-	
-var key_letter_position = [];
-var index = 0;
-var offset_index = key_offset[index];
-key_letter_position[index] = 0;
-for (i=1;i<period;i++){
-	n = key_letter_position[index]+minimum_col_height;
-	if ( offset_index<extra_letter_columns)
-		n++;
-	index++;
-	key_letter_position[index ] = n;
-	offset_index = key_offset[index];
-}	
-
-s = key_index;
-//console.log(s);
-s = key_offset;
-//console.log(s);
-s = key_letter_position;
-//console.log(s);
-
-var shift = -1;
-for (column_offset =  0; column_offset < 26; column_offset++){
-index = -1;
-while(index< period-1){
-	index++;
-	var key_letter = quag_array[stage][index][column_offset];
-	if ( key_letter == -1){
-	continue;
-	}
-	
-	var target = (key_letter_position[ key_index[index] ]+column_offset)%26;
-	
-	var actual = combined_row.indexOf(key_letter);
-	if ( actual != -1){
-		shift = target-actual;
-		break;
-	}
-	else
-		continue;
-}
-if ( shift!= -1)
-	break;
-} // nexy column offset
-if (key_letter ==-1 ) // no key letters found
-	return(combined_row);
-var final_key = [];
-for (x=0;x<26;x++){
-final_key[x] = combined_row[ (26+x-shift)%26 ];
-}
-s = final_key;
-//console.log(s);
-return(final_key);
 }
 
 </script>
