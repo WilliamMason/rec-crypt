@@ -337,9 +337,11 @@ function xlate() {
 		c = key_lookup(pos);
 		if ( c != old_xlation[pos]){
             old_xlation[pos]=c;
-			c = '<font color="red">'+c+'</font>';
+			pl = pl+'<font color="red"><span class = "plain'+pos+'">'+c+'&nbsp;</span></font>';					
         }
-		pl = pl+c+'&nbsp';
+		else
+			pl = pl+'<span class = "plain'+pos+'">'+c+'&nbsp;</span>';
+		//pl = pl+c+'&nbsp';
 		pos++;
 		cnt++;
 		cnt2++;
@@ -361,6 +363,28 @@ function xlate() {
 	}
 	document.getElementById('outputblock').innerHTML=str;
 	show_transposition_block();
+}
+
+function plain_letter_encrypt(c, pos){
+	var n,i, index, cnt,k,
+
+	index = 0;
+	cnt = 0;
+	k = 0;
+	while(k<pos){
+		k++;
+		cnt++;
+		if ( cnt == period ){
+			index = (index+1)%period;
+			cnt = 0;
+			}
+	}
+	i = symbols.indexOf(c);
+    n = (26+i+chain[pos])%26;
+	
+	n = (26+n+key_letter_position[ key_index[index] ])%26;
+    return(n); 
+
 }
 
 
@@ -418,6 +442,45 @@ function selectmouse(e){
 	  //document.debug.output_area.value= s; 	
       return false;
   }
+  else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
+	  dobj = fobj;
+	  x = fobj.className.slice(5);
+	  let_pos = parseInt(x);
+	  p_letter= symbols.charAt(cpos);
+	  cell = code_array[ let_pos];
+
+	  letter = cell;
+      update_undo();
+      document.getElementById('redo_button').disabled = true;          
+     
+	  letter_selected=0;
+	  
+	  //remove any previous copy of the cipher letter 
+      for (i=0;i<26;i++){
+		  	c = symbols.charAt(i);
+		  	if (gro_key[i] == letter){
+			  	s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	  			s=s+'-'+'</span>';
+	  			document.getElementById(c+'keymatrix').innerHTML= s;
+	  			gro_key[i]='-';	
+  	         }
+      }
+	  if ( p_letter != '-') {// code position for this plaintext letter and insert cipher letter there	  
+		n = plain_letter_encrypt(p_letter, let_pos);
+	    gro_key[ n ] = letter;
+		c = symbols.indexOf(n);
+	    s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	    s=s+letter+'</span>';
+	    document.getElementById(symbols.charAt(n)+'keymatrix').innerHTML= s;      
+      }
+	  //reset letter block
+	  letterblock_setup();
+	  //last_cell=cell;
+	  xlate();
+	  //restore_original();	  
+      return false;	  
+	}    
+  
 }
 document.onmousedown=selectmouse;
 
@@ -425,7 +488,7 @@ function letterblock_setup() {
 	var s,i,c;
 	
 	
-	s='Click on one of the blue symbols below , then click on a cell inside the key table<BR>	';
+	s='Click on one of the blue symbols below , then click on a cell inside the key table or beneath a cipher letter in the box above.<BR>	';
 	document.getElementById('directions').innerHTML=s;	
 	s=''
     /*
@@ -451,12 +514,33 @@ function letterblock_setup() {
 }
 
 function keyblock_setup() {
-	var s,i,c;
+	var s,i,c,j,n;
 	
 	s='';
 	//s=s+'<br>';	
 	//s += '<br>Key Table:<br>';
 	s += 'Key Table:<br><br>';
+// get key_letter_positions	
+if (solving_flag==0){
+	get_chain();
+	get_key_position();
+}
+	n = 0;
+	for (i=0;i<26;i++){
+		if (i== key_letter_position[n]){
+			j = n+1;
+			c = ''+j;
+			n++;
+		}
+		else 
+			c = '&nbsp;';
+		s = s+'<span width="75" height="75" style="border:2px solid chartreuse;" >';
+		s=s+'&nbsp<span width="75" height = "75"  style="color:black">';		
+		s=s+c+'</span> </span>';
+			
+	}
+	s=s+'<br>';
+	
 	//letters across the top
 	for (i=0;i<26;i++) {
 		c = symbols.charAt(i);
@@ -466,8 +550,6 @@ function keyblock_setup() {
 
 	}		
 	s=s+'<br>';
-
-
 	//row of key cells
 	for (j=0;j<26;j++) {
 		c=symbols.charAt(j);
@@ -485,12 +567,28 @@ function keyblock_setup() {
 }
 
 function update_keyblock() {
-	var s,i,c;
+	var s,i,c,j,k,n;
 	
 	s='';
 	//s=s+'<br>';	
 	//s += '<br>Key Table:<br>';
 	s += 'Key Table:<br><br>';
+	n = 0;
+	for (i=0;i<26;i++){
+		if (i== key_letter_position[n]){
+			j = n+1;
+			c = ''+j;
+			n++;
+		}
+		else 
+			c = '&nbsp;';
+		s = s+'<span width="75" height="75" style="border:2px solid chartreuse;" >';
+		s=s+'&nbsp<span width="75" height = "75"  style="color:black">';		
+		s=s+c+'</span> </span>';
+			
+	}
+	s=s+'<br>';
+	
 	//letters across the top
 	for (i=0;i<26;i++) {
 		c = symbols.charAt(i);
@@ -500,8 +598,6 @@ function update_keyblock() {
 
 	}		
 	s=s+'<br>';
-
-
 	//row of key cells
 	for (j=0;j<26;j++) {
 		c=symbols.charAt(j);
@@ -749,7 +845,7 @@ Click on one of the blue symbols below , then click on a cell inside the key tab
 Enter cipher and its primer, then click initialize button.
 
 <br><br>
-Primer: <input type="text" id="primer" size=10 >
+Primer: <input type="text" id="primer" size=10  >
 <INPUT onclick=initialize(); type=button value="initialize" >
 </span>
 <div class="wrapper">
