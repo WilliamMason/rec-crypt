@@ -143,6 +143,8 @@ s = key_letter_position;
     
 }
 
+
+
 function construct_crib( stage){
 	var i,j,k,n,index;
 	var start_pos,flag;
@@ -296,7 +298,39 @@ var inv_combined=[];
 		else
 			out_str += upperC.charAt(s[i]);
 
-	}
+	
+	// get transposition block
+ s = '\n\ntransposition block:\n';
+ for (i=0;i<period;i++)
+	s += primer[i]+' ';
+ s += '\n';
+ for (i=0;i<period;i++){
+	n= combined_key[ key_letter_position[ key_index[i] ] ];
+	if (n==-1)
+		s += '- ';
+	else
+		s += upperC.charAt(n)+' ';
+	
+ }
+ s += '\n';
+ cnt = period;
+ k = period;
+ j = 1;
+ while(k<26){
+	for(i=0;i<period;i++){
+		n= combined_key[ key_letter_position[ key_index[i] ] + j ];
+		if (n == -1)
+			s += '- ';
+		else
+			s += upperC.charAt(n)+' ';
+			if (++k >= 26)
+				break;
+		}
+		s += '\n';
+		j++;
+ }
+	out_str += s;
+}	
      out_str +='\n==========\n';	
 	
 //console.log(out_str);
@@ -304,6 +338,7 @@ var inv_combined=[];
         
 	}
 }
+
 
 </script>
 </head>

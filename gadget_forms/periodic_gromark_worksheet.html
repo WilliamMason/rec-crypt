@@ -539,7 +539,7 @@ if (solving_flag==0){
 		s=s+c+'</span> </span>';
 			
 	}
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	
 	//letters across the top
 	for (i=0;i<26;i++) {
@@ -549,7 +549,7 @@ if (solving_flag==0){
 		s=s+c+'</span> </span>';
 
 	}		
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	//row of key cells
 	for (j=0;j<26;j++) {
 		c=symbols.charAt(j);
@@ -557,7 +557,7 @@ if (solving_flag==0){
 		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
 		s=s+'-'+'</span> </span>';
 	}
-	s=s+'<br>';	
+	s=s+'&nbsp;<br>';	
 
 
 	document.getElementById('keyblock').innerHTML=s;	
@@ -587,7 +587,7 @@ function update_keyblock() {
 		s=s+c+'</span> </span>';
 			
 	}
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	
 	//letters across the top
 	for (i=0;i<26;i++) {
@@ -597,7 +597,7 @@ function update_keyblock() {
 		s=s+c+'</span> </span>';
 
 	}		
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	//row of key cells
 	for (j=0;j<26;j++) {
 		c=symbols.charAt(j);
@@ -605,7 +605,7 @@ function update_keyblock() {
 		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
 		s=s+gro_key[j]+'</span> </span>';
 	}
-	s=s+'<br>';	
+	s=s+'&nbsp;<br>';	
 
 
 	document.getElementById('keyblock').innerHTML=s;	
