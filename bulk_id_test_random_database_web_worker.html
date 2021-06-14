@@ -1,0 +1,35 @@
+<HTML><HEAD><TITLE>Bulk Neural Net ID, random database</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<script src="bulk_id_test_random_database_main.js"></script>
+
+</HEAD>
+<BODY bgcolor="Silver" >
+<Center>
+<H2>Bulk Neural net ID test, shiffman routines, random ciphers database using web worker</H2>
+</Center>
+
+
+<FORM name=puzzle>
+Cipher: <BR><TEXTAREA id="ciphertext" styLe="font-family:monospace" spellcheck="false" name=ciphertext rows=8 cols=85></TEXTAREA><BR>
+Stats: <BR><TEXTAREA id="cipherstats" styLe="font-family:monospace" name=cipherstats rows=15 cols=85></TEXTAREA><BR>
+<BR><BR>
+<!---
+<INPUT onclick=do_compare(); type=button value="Compare" >
+-->
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<!--
+<INPUT onclick=do_id_test(); type=button value="ID test" >
+-->
+<input type="button" value="ID test" id="do_processing">
+&nbsp &nbsp &nbsp &nbsp Maximum period 15 if cipher longer than: <input type = text name=period_entry  id="period_entry" size = 3 value="135" >
+symbols,  otherwise maximum period of 10
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<INPUT onclick=do_halt(); type=button value="Halt processing" >
+</FORM>
+<br>
+<BR> <B>Directions:</B> Paste unknown ciphers, one per line, into cipher box. Click ID test button.
+Results appear in Stats box.<BR>
+ 
+</BODY></HTML>
