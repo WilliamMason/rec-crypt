@@ -139,7 +139,7 @@ function crib_test(pos){
 		}
 	}
 	//letter changed its row/column?
-	//for n in range(period):
+	// if put in an RC option, then skip this routine if RC selected
 	for (n=0;n<period;n++)
 	 //for y in range(25):
 	 for (y=0;y<25;y++){
@@ -147,11 +147,10 @@ function crib_test(pos){
 	 	if (c != EMPTY){
 	 		r = ck_alphabets(c,y,0)
 	 		if (r!=0)
-	 			return([2,reps])//RC maybe OK
+				return( [0,0] ); // RC not an option yet
 	 	}
-	return([1,reps])//passed all tests
 	}
-
+	return([1,reps])//passed all tests
 }
 
 function do_drag(){
