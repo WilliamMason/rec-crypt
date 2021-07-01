@@ -142,7 +142,7 @@ key = document.getElementById('key').value.toLowerCase();
 codetext = checkerboard_encrypt(s,key,selected_route,boundary_keys);
 
 s = '';
-s += "Checkerboard cipher\n";
+s += "6x6 Checkerboard cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
 s += "\nvertical key: "+document.getElementById('vkey1').value.toUpperCase();
@@ -363,7 +363,7 @@ key = document.getElementById('key').value.toLowerCase();
 //alert("decrypt");
 plaintext = checkerboard_decrypt(s,key,selected_route,boundary_keys);
 s = '';
-s += "checkerboard cipher\n";
+s += "6x6 Checkerboard cipher\n";
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
 
