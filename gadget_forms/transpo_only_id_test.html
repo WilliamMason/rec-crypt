@@ -1,0 +1,337 @@
+<html>
+<head>
+<title>Transposition only ID test.</title>
+<style>
+.other_stats{
+width: 800px;
+height: 200px;
+background:yellow;
+}
+</style>
+<script type="text/javascript" src="shiffman_bias_weights_tramps_only.js"></script>
+<script src="get_seq_tr_bt_main.js"></script>
+<SCRIPT language=JavaScript>
+
+var cipher_name_normalized_order = ["amsco","cadenus","columnar","grille","myszkowski","nihilistTramp","redefence","routeTramp","sequenceTramp","Swagman"
+];
+
+
+// does not use chi-sq test, 37 input stats only
+// Daniel Shiffman
+// Nature of Code: Intelligence and Learning
+// https://github.com/shiffman/NOC-S17-2-Intelligence-Learning
+
+// Based on "Make Your Own Neural Network" by Tariq Rashid
+// https://github.com/makeyourownneuralnetwork/
+
+// This is my own ridiculous Matrix implemenation
+// Would probably make more sense to use math.js or something else!
+class Matrix {
+
+// Make a matrix full of zeros
+constructor(rows, cols) {
+  this.rows = rows;
+  this.cols = cols;
+  this.data = new Array(rows);
+  for (var i = 0; i < this.rows; i++) {
+    this.data[i] = new Array(cols);
+    for (var j = 0; j < this.cols; j++) {
+      this.data[i][j] = 0;
+    }
+  }
+}
+
+// This fills the matrix with random values
+randomize() {
+  for (var i = 0; i < this.rows; i++) {
+    for (var j = 0; j < this.cols; j++) {
+      this.data[i][j] = Math.random()*2-1;
+      //this.data[i][j] = randomGaussian();
+      //this.data[i][j] = random(-1, 1);
+    }
+  }
+}
+
+// Take the matrix and make it a 1 dimensional array
+toArray() {
+  // Add all the values to the array
+  var arr = [];
+  for (var i = 0; i < this.rows; i++) {
+    for (var j = 0; j < this.cols; j++) {
+      arr.push(this.data[i][j]);
+    }
+  }
+  return arr;
+}
+
+
+// This transposes a matrix
+// rows X cols --> cols X rows
+transpose() {
+  var result = new Matrix(this.cols, this.rows);
+  for (var i = 0; i < result.rows; i++) {
+    for (var j = 0; j < result.cols; j++) {
+      result.data[i][j] = this.data[j][i];
+    }
+  }
+  return result;
+}
+
+// This makes a copy of the matrix
+copy() {
+  var result = new Matrix(this.rows, this.cols);
+  for (var i = 0; i < result.rows; i++) {
+    for (var j = 0; j < result.cols; j++) {
+      result.data[i][j] = this.data[i][j];
+    }
+  }
+  return result;
+}
+
+/*
+// This adds a single value to each element
+add(other) {
+  // Are we trying to add a Matrix?
+  if (other instanceof Matrix) {
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        this.data[i][j] += other.data[i][j];
+      }
+    }
+    // Or just a single scalar value?
+  } else {
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        this.data[i][j] += other;
+      }
+    }
+  }
+}
+*/
+
+// a scalar multiply
+multiply(other) {
+    // Or just a single scalar value?
+
+    for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        this.data[i][j] *= other;
+      }
+    }
+
+}
+
+map(fn) {
+
+   for (let i = 0; i < this.rows; i++) {
+      for (let j = 0; j < this.cols; j++) {
+        this.data[i][j] = fn(this.data[i][j]) ;
+      }
+    }
+
+}
+
+
+static multiply(a,b){
+  if (a.cols != b.rows) {
+    console.log("Incompatible matrix sizes!");
+    return;
+  }
+  // Make a new matrix
+  var result = new Matrix(a.rows, b.cols);
+  for (let i = 0; i < a.rows; i++) {
+    for (let j = 0; j < b.cols; j++) {
+      // Sum all the rows of A times columns of B
+      var sum = 0;
+      for (var k = 0; k < a.cols; k++) {
+        sum += a.data[i][k] * b.data[k][j];
+      }
+      // New value
+      result.data[i][j] = sum;
+    }
+  }
+  return result;
+
+}
+
+static add(a,b){
+  // Make a new matrix
+  var result = new Matrix(a.rows, a.cols);
+  for (let i = 0; i < result.rows; i++) {
+    for (let j = 0; j < result.cols; j++) {
+      result.data[i][j] = a.data[i][j] + b.data[i][j];
+    }
+  }
+  return result;
+
+}
+
+
+static fromArray(ar){
+    let m = new Matrix(ar.length,1);
+    for (let i = 0; i<ar.length;i++)
+        m.data[i][0] = ar[i];
+    return(m);
+}
+
+} // end Matrix class
+
+
+class NeuralNetwork{
+
+/*
+ constructor(input_nodes,hidden_nodes,output_nodes){
+    this.input_nodes = input_nodes;
+    this.hidden_nodes = hidden_nodes;
+    this.output_nodes = output_nodes;
+    this.weights_ih = new Matrix(this.hidden_nodes,this.input_nodes);
+    this.weights_ho = new Matrix(this.output_nodes,this.hidden_nodes);
+    this.weights_ih.randomize();
+    this.weights_ho.randomize();
+    this.bias_h = new Matrix(this.hidden_nodes,1);
+    this.bias_o = new Matrix(this.output_nodes,1);
+    this.bias_h.randomize();
+    this.bias_o.randomize();
+    
+ }
+*/
+ constructor(input_nodes,hidden_nodes,output_nodes,weights_ih,weights_ho,bias_h,bias_o){
+    this.input_nodes = input_nodes;
+    this.hidden_nodes = hidden_nodes;
+    this.output_nodes = output_nodes;
+    this.weights_ih = weights_ih;
+    this.weights_ho = weights_ho
+    this.bias_h = bias_h;
+    this.bias_o = bias_o;
+    
+ }
+
+ feedforward(input_array){
+ 
+    // generate hidden outputs
+    let inputs = Matrix.fromArray(input_array);
+    let hidden = Matrix.multiply(this.weights_ih,inputs);
+    //hidden.add(this.bias_h);
+    hidden = Matrix.add(hidden,this.bias_h);
+    hidden.map(relu);
+    // generate final output
+    let output = Matrix.multiply(this.weights_ho,hidden);
+    //output.add(this.bias_o)
+    output = Matrix.add(output,this.bias_o);
+    //output.map(sigmoid);
+    output.map(softmax);
+    let ar = output.toArray();
+    return( ar );
+ }
+ 
+ 
+} // end neural network class
+
+function neural_net_get_id(input_array){
+    var i,j,k,n,c,s;
+    var sum,max_out,max_index;
+    let numb_outputs = 10;
+    
+    
+   var outputs = nnet.feedforward(input_array);
+    
+        // get index of the max output
+    max_out = 0;
+    for (i=0;i<numb_outputs;i++)
+        if (outputs[i]>max_out){
+            max_out = outputs[i];
+            max_index = i;
+        }
+        
+    // get result in percent (softmax)
+    sum = 0;
+    for (i=0;i<numb_outputs;i++)
+        sum += outputs[i];
+    // sort in frequency order
+    var freq_list = [];
+    for (i=0;i<numb_outputs;i++)
+        freq_list[i] = [cipher_name_normalized_order[i],outputs[i]/sum];
+    freq_list.sort(function(a,b){return(b[1]-a[1])});
+    return([max_index,freq_list]);
+     
+}
+
+function sigmoid(x){
+return( 1.0/(1.0+Math.exp(-x)) )
+}
+
+function relu(x){
+    if (x<0) return(0);
+    return(x);
+}
+
+function softmax(x){
+    return( Math.exp(x) )
+}
+
+function neural_net_setup(){
+debugger;
+	let numb_inputs = 23;
+    let numb_hidden = hidden_bias.length;
+    let numb_outputs = 10;
+
+    var hb = new Matrix(numb_hidden,1);
+    for (i=0;i<numb_hidden;i++)
+        hb.data[i][0] = hidden_bias[i][0];
+        
+    var ob = new Matrix(numb_outputs,1);
+    for (i=0;i<numb_outputs;i++)
+        ob.data[i][0] = output_bias[i][0];
+    //out_str = "bias martices constructed\n";
+    var iw  = new Matrix(numb_hidden,numb_inputs);
+    for (i=0;i<numb_hidden;i++)
+        for (j=0;j<numb_inputs;j++)
+            iw.data[i][j] = input_weights[i][j]; 
+    var ow  = new Matrix(numb_outputs,numb_hidden);
+    for (i=0;i<numb_outputs;i++)
+        for (j=0;j<numb_hidden;j++)
+            ow.data[i][j] = hidden_weights[i][j]; 
+    //out_str += "weight matrices constructed\n";
+    
+    nnet = new NeuralNetwork(numb_inputs,numb_hidden,numb_outputs,iw,ow,hb,ob);
+
+}
+
+</script>
+</head>
+<body bgcolor="Silver" onload = "neural_net_setup()" >
+<h3> Transposition only ID test</h3> <br>
+Directions: Type or paste in ciphertext.Click get ID button <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 spellcheck="false" >
+</textarea><br>
+<br>
+<input type="button" value="Get ID" onclick=do_calc();>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<INPUT id="do_stop1" type=button value="Stop" onclick=do_stop(); >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+Max period (or leave as default): 
+<input type = "text" id="max_period" value="(default)" size = 8 >
+
+<!---
+&nbsp  &nbsp &nbsp Primer: 
+<input type = text id="primer"  size = 2 >
+-->
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+<br><br>
+<div id="processing_status">
+Status from start: 
+<input type="text" value="idle" id="status" size = 20>
+Status from end: 
+<input type="text" value="idle" id="status1" size = 20>
+</div>
+
+
+
+
+</body>
+</html>
