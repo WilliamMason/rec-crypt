@@ -185,7 +185,8 @@ function do_hill_climbing(str){
     n = 0;
 	for (i=0;i<numb_symbols;i++) { // skip J and X
         key[i] = n++;
-        if ( n == 9 || n == 23) n++;
+		if (numb_symbols == 24)
+			if ( n == 9 || n == 23) n++;
 	}
 	// random start;
 	for (i=numb_symbols-1;i>0;i--) {
@@ -279,7 +280,11 @@ onmessage = function(event) { //receiving a message with the string to decode, s
 	s = str.split(':'); // variable values separated by colons
   	max_trials = parseInt(s[0].slice(1));
   	fudge_factor = parseFloat(s[1]);
-  	n = parseInt(s[2]);
+	if (s[2] == '1')
+		numb_symbols = 26;
+	else
+		numb_symbols = 24;
+  	n = parseInt(s[3]);
   	Math.random(n); // seed for hill-climbing
   }
   else if(str.charAt(0)  == '#') {// construct tet table

@@ -184,6 +184,7 @@ function do_check(){
 function do_solve(){
 	var str,max_trials,s,n;
 	var period;
+	var key_type;
 	
 	if (!do_check()) return;
 
@@ -203,11 +204,16 @@ function do_solve(){
 	}
 	max_score  = -10000.0;
 	max_trials = parseInt(document.getElementById('numb_trials').value);	
+	if (document.getElementById('key26').checked )
+		key_type = '1';
+	else
+		key_type = '0';
 	str = '@'+max_trials;
 	//ff = parseFloat(document.settings.fudgefactor.value);	
 	s = document.getElementById('fudgefactor0').value;
 	//s = 0.23;
 	str += ':'+s; // use colons to separate values
+	str += ':'+key_type;;
 	// use different random number seeds for different web workers
 	n = Math.floor( Math.random()*1000);
 	str = str+':'+n;
@@ -218,6 +224,7 @@ function do_solve(){
 		s = document.getElementById('fudgefactor1').value;
 		//s = 0.23;
 		str += ':'+s; // use colons to separate values
+		str += ':'+key_type;;		
 		// use different random number seeds for different web workers
 		n = Math.floor( Math.random()*2000);
 		str = str+':'+n;
@@ -229,6 +236,7 @@ function do_solve(){
 		s = document.getElementById('fudgefactor2').value;
 		//s = 0.23;
 		str += ':'+s; // use colons to separate values
+		str += ':'+key_type;;				
 		// use different random number seeds for different web workers
 		n = Math.floor( Math.random()*3000);
 		str = str+':'+n;
