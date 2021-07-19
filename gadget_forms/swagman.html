@@ -278,6 +278,36 @@ function get_possible_heights(){
 	return s;
 }
 
+function rotate_up(){
+	var i,j,c,n,t,b;
+
+	update_undo();
+	// rotate plaintext up
+	for (j=0;j<numb_cols;j++){
+		t = code_col[j][key_len];
+		for (i=0;i<key_len-1;i++)
+			code_col[j][i+key_len] = code_col[j][i+key_len+1];
+		code_col[j][2*key_len-1]	 = t;
+	}
+	update_display();
+}
+
+function rotate_down(){
+	var i,j,c,n,t,b;
+
+	update_undo();
+// rotate plaintext down
+	for (j=0;j<numb_cols;j++){
+		b = code_col[j][2*key_len-1];
+		for (i=key_len-1;i>0;i--)
+			code_col[j][i+key_len] = code_col[j][i+key_len-1];
+		code_col[j][key_len]	 = b;
+	}
+	
+	update_display();
+}
+
+
 function checkEnter(e){ //e is event object passed from function invocation by entering a new key_len
 	var characterCode //literal character code will be stored in this variable
 	var data;
@@ -331,7 +361,11 @@ function checkEnter(e){ //e is event object passed from function invocation by e
 		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=color_scheme(); type=button value="Explain colors" >';	
         s += '&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp';
         s += '<INPUT onclick=do_undo(); type=button value="undo" >';
-        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+		s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		s +=  '<INPUT onclick=rotate_up(); type=button value="rotate plaintext up" >';
+		s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		s +=  '<INPUT onclick=rotate_down(); type=button value="rotate plaintext down" >';
         s += '<br><br>';
         s += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
         s += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >';
@@ -382,7 +416,11 @@ function setup_from_disk(){
 		s += '&nbsp &nbsp &nbsp &nbsp  <INPUT onclick=color_scheme(); type=button value="Explain colors" >';	
         s += '&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp';
         s += '<INPUT onclick=do_undo(); type=button value="undo" >';
-        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+        s += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled >';
+		s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		s +=  '<INPUT onclick=rotate_up(); type=button value="rotate plaintext up" >';
+		s += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		s +=  '<INPUT onclick=rotate_down(); type=button value="rotate plaintext down" >';
         s += '<br><br>';
         s += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
         s += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >';
@@ -478,7 +516,8 @@ function clear_disk(){
 <div id="outputblock"
 style="overflow:auto; cursor: crosshair; font-family:monospace; font-size: 15px; height:400px; margin-right:10px; padding: 10px; background:white;">
 Ciphertext: (Type or paste cipher into this box, then enter the column height)<BR>
-<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90>
+</TEXTAREA><BR>
 </div>
 <!-- place to enter key_len -->
 <span id="key_lenblock">
