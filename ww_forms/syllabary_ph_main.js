@@ -236,9 +236,7 @@ function do_solve(){
         key_type = '5';            
     if( document.getElementById('known_key').checked)
         key_info = '1';
-    else
-        key_info = '0';
-    if( document.getElementById('known_cord').checked)
+    else if( document.getElementById('known_cord').checked)
         key_info = '2';
     else
         key_info = '0';
