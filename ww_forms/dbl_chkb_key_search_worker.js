@@ -4,6 +4,7 @@ var word_list = [];
 var search_pattern = [];
 var word_pattern_string2;
 var key_width;
+var all_key_letters_in_cphertext = false;
 
 function search_word_list(b_array){
 	var s,n;
@@ -86,22 +87,24 @@ function do_search(){
             if (n==2) break;
         }
         if (n==2) continue; // word has repeated key letters
+		if ( all_key_letters_in_cphertext){
 		// reject word if it contains letters not in pattern_len
-		for (j=0;j<key_width;j++) {
-            n = 0;
-                for (k=0;k<pattern_len;k++) 
-                if ( word_list[i].charAt(j) == search_pattern[k]) {
-                    if (n==1) {
-                        n = 2; // word has repeated key letter, can't use
-                        break;
-                    }
-                    sum++;
-                    n = 1;
-            }
-			if (n==0) break; 
-            
-        }
-		if (n==0) continue; 
+			for (j=0;j<key_width;j++) {
+				n = 0;
+					for (k=0;k<pattern_len;k++) 
+					if ( word_list[i].charAt(j) == search_pattern[k]) {
+						if (n==1) {
+							n = 2; // word has repeated key letter, can't use
+							break;
+						}
+						sum++;
+						n = 1;
+				}
+				if (n==0) break; 
+				
+			}
+			if (n==0) continue;
+		}
         if ( sum >= min_len) // this word is possible
 			work_list[cnt++] = i;
     } 
@@ -174,21 +177,23 @@ function do_search(){
             if (n==2) break;
         }
         if (n==2) continue; // word has repeated key letters
+		if ( all_key_letters_in_cphertext){
 		// reject word if it contains letters not in pattern_len
-		for (j=0;j<key_width;j++) {
-            n = 0;
-                for (k=0;k<pattern_len;k++) 
-                if ( word_list[i].charAt(j) == search_pattern[k]) {
-                    if (n==1) {
-                        n = 2; // word has repeated key letter, can't use
-                        break;
-                    }
-                    sum++;
-                    n = 1;
-            }
-            if (n==0) break; 
-        }
-		if (n==0) continue; 
+			for (j=0;j<key_width;j++) {
+				n = 0;
+					for (k=0;k<pattern_len;k++) 
+					if ( word_list[i].charAt(j) == search_pattern[k]) {
+						if (n==1) {
+							n = 2; // word has repeated key letter, can't use
+							break;
+						}
+						sum++;
+						n = 1;
+				}
+				if (n==0) break; 
+			}
+			if (n==0) continue; 
+		}
         if ( sum >= min_len) // this word is possible
 			work_list[cnt++] = i;
     } 
@@ -250,6 +255,7 @@ debugger;
         key_width = 6;
     else
         key_width = 5;
+	all_key_letters_in_cphertext = event.data.flag;
     do_search();
   }
 }
