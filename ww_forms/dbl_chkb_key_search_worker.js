@@ -86,6 +86,22 @@ function do_search(){
             if (n==2) break;
         }
         if (n==2) continue; // word has repeated key letters
+		// reject word if it contains letters not in pattern_len
+		for (j=0;j<key_width;j++) {
+            n = 0;
+                for (k=0;k<pattern_len;k++) 
+                if ( word_list[i].charAt(j) == search_pattern[k]) {
+                    if (n==1) {
+                        n = 2; // word has repeated key letter, can't use
+                        break;
+                    }
+                    sum++;
+                    n = 1;
+            }
+			if (n==0) break; 
+            
+        }
+		if (n==0) continue; 
         if ( sum >= min_len) // this word is possible
 			work_list[cnt++] = i;
     } 
@@ -158,6 +174,21 @@ function do_search(){
             if (n==2) break;
         }
         if (n==2) continue; // word has repeated key letters
+		// reject word if it contains letters not in pattern_len
+		for (j=0;j<key_width;j++) {
+            n = 0;
+                for (k=0;k<pattern_len;k++) 
+                if ( word_list[i].charAt(j) == search_pattern[k]) {
+                    if (n==1) {
+                        n = 2; // word has repeated key letter, can't use
+                        break;
+                    }
+                    sum++;
+                    n = 1;
+            }
+            if (n==0) break; 
+        }
+		if (n==0) continue; 
         if ( sum >= min_len) // this word is possible
 			work_list[cnt++] = i;
     } 
@@ -206,6 +237,7 @@ function do_search(){
 onmessage = function(event) { //receiving a message
 	var str,s;
 
+debugger;
   var state = event.data.op_choice;
   if ( state == 1){ // word list
     var word_list_array = new Uint8Array(event.data.buf); // need to set char view of arrayBuffer that was passed
