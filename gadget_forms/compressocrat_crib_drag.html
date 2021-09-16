@@ -1,0 +1,248 @@
+<html>
+<!--
+compressocrat crib drag
+-->
+<head>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<title>Compressocrat crib drag</title>
+<script type="text/javascript">
+var shmoo_code = {E:'31',I:'322', P:'3212', B:'32112',
+T:'12', R:'323', F:'3213', G:'32113',
+A:'13', S:'112', C:'1112', V:'11111',
+O:'22', H:'113', U:'1113', K:'11112',
+N:'23', L:'212', M:'2111', Q:'11113',
+D:'213', W:'2112', X:'321111', Y:'2113',
+J:'321112', Z:'321113' };
+
+var encoding_alphabet = [
+'111','112','113','121','122','123','131','132','133',
+'211','212','213','221','222','223','231','232','233',
+'311','312','313','321','322','323','331','332']; // no '333'
+
+
+function letters_only(str){ // remove everything except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var crib_symbols = 'abcdefghijklmnopqrstuvwxyz';
+var code = [];
+var crib = [];
+var scode_crib;
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('input_area').value;
+  data = letters_only(data);
+  data = data.toUpperCase();
+  //data = data.replace(/�/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	return(true);
+}
+
+
+function do_drag(){
+var result,s,n,c,i,cnt,crib_pos,out_str,j,k,x,m_cnt;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var temp_key,wrk_code,plain;
+
+
+	result = setup_code(); // get code and convert to numbers
+	if ( result == false)
+		return;
+	s = document.getElementById('crib').value;
+	s = letters_only(s);
+	if ( s==''){
+		alert("No crib entered!");
+		return;
+	}
+	plain = s.toUpperCase();
+	// translate into '123' code.
+	wrk_code = '';
+	for (i=0;i<plain.length;i++){
+		c = plain.charAt(i);
+		n = symbols.indexOf(c);
+        if ( n != -1){
+            wrk_code += shmoo_code[c];
+            //work_sheet += shmoo_code[c]+':'+c.toLowerCase()+', ';
+        }
+    }
+	/* don't append symbols on the end
+    if ( (wrk_code.length%3) ==1 ){
+        wrk_code+= '11';
+        //work_sheet += '11';
+    }
+    else if ( (wrk_code.length%3) ==2 ){
+        wrk_code += '1';
+        //work_sheet += '1';
+    }
+	*/
+ out_str = "Shmoo code for crib is: "+wrk_code+" \n==============\n";
+ scode_crib = wrk_code.split('');
+ get_crib_patterns(0);
+ 	//document.getElementById('output_area').value = out_str;
+ 	//return;
+	out_str += 'Crib positions (positions start at 0, starting at letter boundary):\n';
+	for (crib_pos=0;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+		result = test_pos(crib_pos);
+		if ( result != -1) {
+			out_str += "Position "+crib_pos+" OK, ";
+			// show putative key
+			temp_key = [];
+			for (i=0;i<26;i++)
+			  temp_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
+			}
+			out_str += 'key: ';
+			for (i=0;i<26;i++)
+			  out_str += temp_key[i];
+			out_str += '\n';
+			//out_str += '\n\n';
+		}
+	}
+	 get_crib_patterns(1);
+	out_str += '==============\nCrib positions (positions start at 0, skip first two Shmoo symbols):\n';
+	for (crib_pos=1;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+		result = test_pos(crib_pos);
+		if ( result != -1) {
+			out_str += "Position "+crib_pos+" OK, ";
+			// show putative key
+			temp_key = [];
+			for (i=0;i<26;i++)
+			  temp_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
+			}
+			out_str += 'key: ';
+			for (i=0;i<26;i++)
+			  out_str += temp_key[i];
+			out_str += '\n';
+			//out_str += '\n\n';
+		}
+	}
+	 get_crib_patterns(2);
+ 	//document.getElementById('output_area').value = out_str;
+ 	//return;
+	out_str += '==============\nCrib positions (positions start at 0, skip first Shoo symbol):\n';
+	for (crib_pos=1;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+		result = test_pos(crib_pos);
+		if ( result != -1) {
+			out_str += "Position "+crib_pos+" OK, ";
+			// show putative key
+			temp_key = [];
+			for (i=0;i<26;i++)
+			  temp_key[i] = '?';
+			for (i=0;i<crib_pattern.length;i++){
+			  n = symbols.indexOf(crib_pattern[i]);
+			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
+			}
+			out_str += 'key: ';
+			for (i=0;i<26;i++)
+			  out_str += temp_key[i];
+			out_str += '\n';
+			//out_str += '\n\n';
+		}
+	}
+
+	document.getElementById('output_area').value = out_str;
+	
+}
+
+function get_crib_patterns(first_pos){
+          var j,k,index,x,y,i,n,cnt,full_len;
+        var c,c1,c2,c3,c4;
+
+        var flag;
+    // divide crib morse starting at beginning of cipher letter
+    crib_pattern = [];
+    cnt = 0;
+    if ( first_pos == 0){
+      full_len = 3*Math.floor(scode_crib.length/3)
+      for (i=0;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+    else if (first_pos == 1){
+      full_len = 3*Math.floor( (scode_crib.length-2)/3)
+      for (i=2;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+    else{
+      full_len = 3*Math.floor( (scode_crib.length-1)/3)
+      for (i=1;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+};
+
+
+function test_pos(start_pos){
+var i,j,k,n,c;
+
+  for (i=0;i<crib_pattern.length-1;i++)
+    for (j=i+1;j<crib_pattern.length;j++)
+      if ( (crib_pattern[i] == crib_pattern[j]) != (code[i+start_pos] == code[j+start_pos]))
+        return(-1);
+	return(0);
+        
+} /* end test_pos */
+
+	
+	
+</script>
+</head>
+<body bgcolor="Silver">
+<center><h3>Compressocrat crib drag</h3></center>
+Enter cipher and crib. Click Drag button.
+<br><br>
+Cipher:<br>
+<textarea id="input_area" cols=80 rows=10>
+</textarea>
+<br><br>
+Crib :
+<input type="text" size=25 id="crib"  >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Drag" onclick="do_drag()" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+
+<br>
+</body>
+</html>
