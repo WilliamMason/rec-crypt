@@ -1,0 +1,293 @@
+<html>
+<!--
+compressocrat minimum crib
+-->
+<head>
+<script type="text/javascript">
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var crib_symbols = 'abcdefghijklmnopqrstuvwxyz';
+var code = [];
+//var crib = [];
+var scode_crib;
+var one_pos_flag;
+
+var flag_6x6 = false;
+var numb_symbols;
+var keysquare_width;
+
+var crib_len;
+var used_let = [];
+
+var shmoo_code = {E:'31',I:'322', P:'3212', B:'32112',
+T:'12', R:'323', F:'3213', G:'32113',
+A:'13', S:'112', C:'1112', V:'11111',
+O:'22', H:'113', U:'1113', K:'11112',
+N:'23', L:'212', M:'2111', Q:'11113',
+D:'213', W:'2112', X:'321111', Y:'2113',
+J:'321112', Z:'321113' };
+
+var encoding_alphabet = [
+'111','112','113','121','122','123','131','132','133',
+'211','212','213','221','222','223','231','232','233',
+'311','312','313','321','322','323','331','332']; // no '333'
+
+
+function letters_only(str){ // remove everything except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+  data = document.getElementById('cipher_area').value;
+  data = letters_only(data);
+  data = data.toUpperCase();
+  //data = data.replace(/�/g,'0');
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	return(true);
+}
+
+
+function get_minimum_crib(plaintext,ciphertext){ // assume ciphertext and plaintext have superfluous symbols removed
+var i,j,k,c,n,x,y,s,out_str;
+	var skip_amount = parseInt(document.getElementById('skip_amount').value);
+	var min_length = ciphertext.length;
+	var start_length = 5;
+	var crib_len,numb_pos, crib,result;
+
+	out_str = 'Positions are relative to the ciphertext starting at 0\n';
+	if (document.getElementById('one_pos').checked)
+		one_pos_flag = true; // may be up to 3 placements
+	else
+		one_pos_flag = false; // need one placement at one position
+	if (one_pos_flag)
+		out_str += 'One position but may have up to 3 placements at that position\n';
+	else
+		out_str += 'One placement at one position\n';
+	for (i=skip_amount;i<plaintext.length-start_length+1;i++){
+		for (crib_len = start_length; crib_len < plaintext.length-i+1;crib_len++){
+			if ( crib_len > min_length)
+				break;
+			crib = plaintext.substring(i,i+crib_len);
+			result = fit_positions(crib);
+			numb_pos = result[0];
+			if (numb_pos == 0){
+				alert("plaintext doesn't fit anywhere!");
+				return;
+			}
+			if (numb_pos>1) // no unique position
+				continue;
+			if (crib_len <= min_length){
+				min_length = crib_len;
+				//add crib and position to output string.
+				out_str += '\nOK at position '+result[1]+' with length '+crib_len;
+				out_str += '\n'+crib+'\n';
+				break;
+			}
+			
+		}
+	}
+	
+	return(out_str);
+}
+
+function fit_positions(crib){
+	var i,numb_pos,cipher_pos,numb_shifts;
+	numb_pos = 0;
+	cipher_pos = 0;
+	for (i=0;i<code.length-crib.length+1;i++){
+		numb_shifts = text_pos(crib,i);
+		if ( numb_shifts >0 ){
+			cipher_pos = i;
+			if (one_pos_flag)
+				numb_pos++;
+			else
+				numb_pos += numb_shifts;
+			if (numb_pos >=2)
+				return([2,i])
+		}
+	}
+	return([numb_pos,cipher_pos]);
+}
+
+function convert_crib_to_trits(crib){
+var i,j,n,c,k;
+var wrk_code,score;
+	var plain = crib.toUpperCase();
+	// translate into '123' code.
+	wrk_code = '';
+	for (i=0;i<plain.length;i++){
+		c = plain.charAt(i);
+		n = symbols.indexOf(c);
+        if ( n != -1){
+            wrk_code += shmoo_code[c];
+            //work_sheet += shmoo_code[c]+':'+c.toLowerCase()+', ';
+        }
+    }
+	/* don't append symbols on the end
+    if ( (wrk_code.length%3) ==1 ){
+        wrk_code+= '11';
+        //work_sheet += '11';
+    }
+    else if ( (wrk_code.length%3) ==2 ){
+        wrk_code += '1';
+        //work_sheet += '1';
+    }
+	*/
+
+	scode = wrk_code.split('');
+	return(scode);
+
+}
+
+function text_pos(crib,cipher_pos){
+var scode_crib, crib_pattern, numb_shifts;
+	//scode_crib = convert_crib_to_morse(crib);
+	scode_crib = convert_crib_to_trits(crib);
+	numb_shifts = 0;
+	// test scode starting at letter boundary
+	crib_pattern = get_crib_patterns(0,scode_crib); // get pattern letters corresponding to morse groups of 3 from scode_crib.
+	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
+		numb_shifts++;;
+	// test scode skipping first two morse symbols in mcode
+	crib_pattern = get_crib_patterns(1,scode_crib); // get pattern letters corresponding to morse groups of 3 from scode_crib.		
+	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
+		numb_shifts++;
+	// test scode skipping first morse symbol in mcode
+	crib_pattern = get_crib_patterns(2,scode_crib); // get pattern letters corresponding to morse groups of 3 from scode_crib.		
+	if (test_pos(cipher_pos,crib_pattern)) // test to see if ciphertext letters have same pattern at ciher_pos
+		numb_shifts++;
+		
+	return(numb_shifts);
+}
+
+function get_crib_patterns(first_pos,scode_crib){
+          var j,k,index,x,y,i,n,cnt,full_len;
+        var c,c1,c2,c3,c4;
+
+        var flag;
+    // divide crib  starting at beginning of cipher letter
+    var crib_pattern = [];
+    cnt = 0;
+    if ( first_pos == 0){
+      full_len = 3*Math.floor(scode_crib.length/3)
+      for (i=0;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+    else if (first_pos == 1){
+      full_len = 3*Math.floor( (scode_crib.length-2)/3)
+      for (i=2;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+    else{
+      full_len = 3*Math.floor( (scode_crib.length-1)/3)
+      for (i=1;i<full_len;i = i+3){
+        c1 = scode_crib[i];
+        c2 = scode_crib[i+1];
+        c3 = scode_crib[i+2];
+        c = c1+c2+c3;
+        n = encoding_alphabet.indexOf(c);
+        crib_pattern[cnt++]= symbols.charAt(n);
+      }
+    }
+	return(crib_pattern);
+};
+
+
+function test_pos(start_pos,crib_pattern){ // code is global variable
+var i,j,k,n,c;
+
+  for (i=0;i<crib_pattern.length-1;i++)
+    for (j=i+1;j<crib_pattern.length;j++)
+      if ( (crib_pattern[i] == crib_pattern[j]) != (code[i+start_pos] == code[j+start_pos]))
+        return(false);
+	return(true);
+        
+} /* end test_pos */
+
+function do_calc(){
+var result,s,n,c,i,cnt,crib_pos,out_str,j,k,x,m_cnt;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+var temp_key;
+
+
+	result = setup_code(); // get code and convert to numbers, getting code array
+	if ( result == false)
+		return;
+	s = document.getElementById('plain_area').value;
+	s = letters_only(s);
+	//s = s.toLowerCase();
+	if ( s==''){
+		alert("No plaintext entered!");
+		return;
+	}
+	
+	//s = one_blank_separator(s);
+	//alert(s);
+	out_str = get_minimum_crib(s,code);
+	document.getElementById('output_area').value = out_str;
+	
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Compressocrat minimum crib</h3> <br>
+Directions: Type or paste in ciphertext and plaintext strings. Click Minimum crib button. <br><br>
+Ciphertext:<br>
+<textarea id="cipher_area" rows = 5 cols=90 >
+</textarea><br>
+Plaintext:<br>
+<textarea id="plain_area" rows = 3 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Minimum crib" onclick=do_calc();>
+&nbsp;  &nbsp; &nbsp; Begining letters to skip:
+<input type = text id="skip_amount" value = "25" size = 2 >
+&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;&nbsp;  &nbsp; &nbsp;
+one position<input type="radio" name="r_buttons" id = "one_pos" checked>
+&nbsp;&nbsp;
+One placement at one position<input type="radio" name="r_buttons" id = "one_shift">
+
+<br><br>
+Output:<br>
+<textarea id="output_area" rows=8 cols=90>
+</textarea>
+<br><br>
+Note: The "position" in the output is the first ciphertext letter where all 3 Shmoo symbols are filled by the crib.
+<br> 
+There may be 1 or 2 crib symbols in the previous ciphertext letter. Thus three placements are possible at one ciphertext position. 
+<br>
+If you want just one possible placement for the crib, select that option above.
+
+</body>
+</html>
