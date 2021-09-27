@@ -227,6 +227,8 @@ function ragbaby_decrypt(codetext,key){
 			if (extended_key.indexOf(c) == -1)
 				extended_key +=c;
 		}
+		codetext = codetext.replace(/j/g,'i');
+		codetext = codetext.replace(/x/g,'w');
 	}
 	else{
 		var extended_key = ''; // assume key is already extended ,consisting of 24,25, or 26 letters
