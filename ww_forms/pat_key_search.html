@@ -1,0 +1,53 @@
+<html>
+<head>
+<TITLE>Patristocrat Key Search</TITLE>
+<script src="pat_key_main.js"></script>
+</head>
+<body bgcolor="Silver" >
+<Center>
+<H2>Patristocrat Key Search</H2>
+</Center>
+Cipher: <BR><TEXTAREA id=ciphertext styLe="font-family:monospace" name=ciphertext rows=8 cols=90></TEXTAREA>
+<br><br>
+Pat Type: 
+<input type="radio" id="k1" name="kt" value=1 > 1
+<input type="radio" id="k2" name="kt" value=2  checked> 2
+<input type="radio" id="k3" name="kt" value=3 > 3
+
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="button" id="do_search" value="Search" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+ <input type="button" id="stop_search" value="Stop" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp;
+ <input type="button" id="clear" value="clear" >
+
+<br><br>
+Best Decrypt: <BR><TEXTAREA id="output_area" styLe="font-family:monospace" rows=8 cols=90></TEXTAREA><BR>
+<br>
+&nbsp; &nbsp; Status/score: 
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; 
+1 <input type="text" id="status" size=7 value="idle" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; 
+2 <input type="text" id="status2" size=7 value="idle" >
+
+<br><br><br>
+<input type="checkbox" id = "custom_list" >
+Use custom word/phrase list
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; 
+List file: 
+<input type="file" id="input" >
+<br><br>
+<input type="checkbox" id = "custom_tet_table" >
+Custom tetragraph table
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; 
+book file: 
+<input type="file" id="input2" >
+
+
+</body>
+</html>
+
