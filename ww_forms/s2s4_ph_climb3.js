@@ -59,7 +59,7 @@ function make_table(str) {
         c = str.charAt(i);
         n = alpha.indexOf(c);
         if ( n == -1) continue; //not a letter
-        if (state = 0) {
+        if (state == 0) {
             n1 = n;
             c1 = c;
         }
@@ -462,7 +462,7 @@ function do_hill_climbing6(str){
     var result;
   
 	str = str.toUpperCase();
-    //str = str.replace(/Ø/g,'0');    
+    //str = str.replace(/Ã˜/g,'0');    
 	buf_len = 0;
 	for ( i=0;i<str.length;i++){
 		c = str.charAt(i);
