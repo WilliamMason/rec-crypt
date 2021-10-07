@@ -119,7 +119,7 @@ function initialize_pent_table(str){
         c = str.charAt(i);
         n = alpha.indexOf(c);
         if ( n == -1) continue; //not a letter
-        if (state = 0) {
+        if (state == 0) {
             n1 = n;
             c1 = c;
         }
@@ -669,7 +669,7 @@ function make_word_list(word_list_string){
     word_list_len = 0;
 	for (i=0;i<word_list_string.length;i++){
 		c = word_list_string.charAt(i);
-        if (c=="'" || c=="’") continue; // skip apostrophes, so don't for example will become dont
+        if (c=="'" || c=="Â’") continue; // skip apostrophes, so don't for example will become dont
 		n = alpha.indexOf(c);
 		if ( n>=0) {
             if (white_space) { // starting new word
