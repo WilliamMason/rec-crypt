@@ -80,7 +80,7 @@ function make_table(str) {
         n = alpha3.indexOf(c);
         if ( n == -1) continue;
         if ( n<26) spaceFlag = 0;
-        if (state = 0) {
+        if (state == 0) {
             n1 = n;
             c1 = c;
         }
