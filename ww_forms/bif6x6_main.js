@@ -399,7 +399,11 @@ onload = function() {
     document.getElementById('do_solve1').addEventListener("click",do_solve);    
     document.getElementById('do_stop1').addEventListener("click",do_stop);    
     document.getElementById('do_clear1').addEventListener("click",do_clear);   
-    document.getElementById('do_crib1').addEventListener("click",do_crib);            
+    document.getElementById('do_crib1').addEventListener("click",do_crib);   
+	
+    document.getElementById('search_for_key').addEventListener("click",do_key_search);    
+    document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});             
+	
 }
     
     
