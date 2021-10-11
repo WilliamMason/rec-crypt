@@ -45,7 +45,7 @@ function make_table(str) {
         c = str.charAt(i);
         n = alpha.indexOf(c);
         if ( n == -1) continue; //not a letter
-        if (state = 0) {
+        if (state == 0) {
             n1 = n;
             c1 = c;
         }
@@ -191,7 +191,7 @@ function do_hill_climbing(str){
         square_width = 5;
     }  
 	str = str.toUpperCase();
-    str = str.replace(/Ø/g,'0');    // in case of 6x6 with Ø for zero.
+    str = str.replace(/Ã˜/g,'0');    // in case of 6x6 with Ã˜ for zero.
 	buf_len = 0;
 	for ( i=0;i<str.length;i++){
 		c = str.charAt(i);
