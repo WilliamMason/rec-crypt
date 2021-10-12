@@ -2,6 +2,7 @@
 <head>
 <link rel="shortcut icon" href="Bicon16_alt2.ico">
 <TITLE>Bifid PH solver</TITLE>
+<script src="bif_key_search.js" ></script>
 <script src="bif_ph_main.js"></script>
 <style>
 
@@ -87,6 +88,15 @@
   padding: 10px;
 }
 
+.key_search{
+  grid-column: 1 / 5;
+  grid-row: 6;
+  background-color: Moccasin;
+  padding: 5px;
+
+}
+
+
 </style>
 
 </head>
@@ -150,6 +160,11 @@ Make custom tet table from book.
 &nbsp; &nbsp; &nbsp; &nbsp;
 Book file: 
 <input type="file" id="input" >
+</div>
+<div class="key_search">
+<input type="button" id="search_for_key" value = "Key Search">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Word/Phrase list for key search: <input type="file" id="input2" >
 </div>
 
 </div> <!-- end of wrapper div -->
