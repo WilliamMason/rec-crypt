@@ -1,0 +1,173 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+
+var period;
+var ciph_type;
+
+var VSLIDEFAIR = 0;
+var BSLIDEFAIR = 1;
+var VIGENERE = 2;
+var VARIANT = 3;
+var BEAUFORT = 4;
+var VAUTOKEY = 5;
+var BAUTOKEY = 6;
+var VEAUTOKEY = 7;
+var PORTA = 8;
+var PAUTOKEY = 9;
+
+var family_type;
+var codetext_groups,key_groups,plaintext_groups;
+
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+function do_check(status){
+	var s,s1,n,c;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+	s = document.getElementById('period').value;
+	if (s == ''){
+		alert("No period entered");
+		return(false);
+	}
+	if (parseInt(s) == 0){
+		alert("Period must be number!");
+		return(false)
+	}
+	
+	return(true);
+}
+
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt,prog_index;
+
+if (!do_check('de'))
+	return;
+
+codetext = document.getElementById('input_area').value.toLowerCase();
+period = parseInt(document.getElementById('period').value);
+codetext = letters_only(codetext);
+
+s = '';
+s += "Progresssive Key cipher with indices removed\n";
+s += "ciphertext:\n"+codetext.toUpperCase();
+s+='\n\n';
+for (prog_index = 1;prog_index<26;prog_index++) {
+plaintext = progressive_key_decrypt(codetext,prog_index).toUpperCase();
+s += "Index: "+prog_index+" "+plaintext;
+s+= '\n';
+}
+
+document.getElementById('output_area').value = s;
+}
+
+function progressive_key_decrypt(codetext,progression_index){ 
+    var i,c,n,key_len,cnt,cp,ct;
+    var k_sign, i_sign;
+    var num_key = [];
+    var current_indx = 0;
+    var cnt2;
+	var first_code,second_code,code,plain;
+c_type = 2; // vigenere
+    cnt = 0;
+   //cnt2 = 0;
+//    plaintext = '';
+	first_code = '';
+	//second_code = '';
+	//plain = '';
+	//code = '';
+	for (i=0;i<codetext.length;i++){
+		c = codetext.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0) {
+			code += c;
+			ct = decode_let(n,current_indx,c_type);
+			//second_code += alpha.charAt(current_indx);			
+			//cp = decode_let(ct,num_key[cnt],c_type);
+			first_code+= alpha.charAt(ct);
+
+			//plaintext += alpha.charAt(cp);
+			//plain += alpha.charAt(cp);
+			//codetext += alpha.charAt( (52+k_sign[0]*n+k_sign[1]*num_key[cnt]+i_sign*current_indx)%26 ) ;
+            cnt++;
+            if (cnt == period){
+                cnt= 0;
+                current_indx = (current_indx + progression_index) % 26;
+            
+            }
+        }
+	}
+	return(first_code);
+}
+
+function decode_let(ct,ky,num_type){
+	var cp;
+	if (num_type == VIGENERE || num_type == VEAUTOKEY)
+		cp = (26+ct-ky)%26;
+	else if (num_type == VARIANT || num_type == VAUTOKEY)
+		cp = (ct+ky)%26;
+	else if (num_type == BEAUFORT || num_type == BAUTOKEY)
+		cp = (26+ky-ct)%26;
+	else { // PORTA
+		ky = Math.floor(ky/2);
+		cp = ct;
+		if (cp < 13){
+			cp += ky;
+			if (cp < 13) cp += 13;
+		}
+		else {
+			cp -= ky;
+			if (cp > 12) cp -= 13;
+		}
+	}
+	return( cp );
+}	
+
+
+onload = function() {
+
+    //document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    //document.getElementById('do_clear_all').addEventListener("click",do_clear_all);
+
+    
+}
+
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Remove Progression index from Progressive Key cipher</h3></center>
+(uses Vigenere progression index, which is always good enough)
+<br><br>
+<div>Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Period: <input type="text" name = "period" id="period" size=3>
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Remove indices" id="do_decrypt" >
+
+</body>
+</html>
