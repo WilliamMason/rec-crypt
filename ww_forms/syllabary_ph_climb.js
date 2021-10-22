@@ -129,7 +129,7 @@ function make_table(str) {
         c = str.charAt(i);
         n = alpha.indexOf(c);
         if ( n == -1) continue; //not a letter
-        if (state = 0) {
+        if (state == 0) {
             n1 = n;
             c1 = c;
         }
