@@ -105,11 +105,9 @@ String.prototype.reverse= function(){
  return s;
 }
 
-
-var word1 = ['one','two','three','four','five','six','seven','eight','nine']
-var word2 = ['eleven','twelve','thirteen','fourteen','fifteen','sixteen', 'seventeen','eighteen','nineteen']
-var word3 = ['error','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
-
+var word1 = ['','one','two','three','four','five','six','seven','eight','nine']
+var word2 = ['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen', 'seventeen','eighteen','nineteen']
+var word3 = ['','ten','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
 var pos_digits = '123456789';
 var alpha="abcdefghiklmnopqrstuvwxyz";
 var digits = '0123456789';
@@ -145,17 +143,16 @@ function get_6x6_score(plain){
     return(score);
 }    
 
-
-function xlate_baz(numb_str){
+function xlate_baz(numb_str){ // version that allows zeros in key
     var numb,i,n,word_len;
     var to_go, txt;
 
     numb = [];
     word_len = 0;
     for (i=0;i<numb_str.length;i++){
-         n = pos_digits.indexOf(numb_str.charAt(i));
-         if (n== -1){
-            //alert("No zeros or non digit characters allowed in number!");
+         n = digits.indexOf(numb_str.charAt(i));
+         if (i==0 && n== 0){
+            alert("No leading zeros in number!");
             return('Q'); // error signal
          }
          numb[word_len++] = n;
@@ -170,7 +167,7 @@ function xlate_baz(numb_str){
 		if (to_go==6||to_go==4||to_go==3||to_go==1) // in [6,4,3,1]:
 			txt += word1[ numb[word_len-to_go]]
 		else {
-			if (numb[word_len-to_go] == 0){
+			if (numb[word_len-to_go] == 1){
 				to_go -= 1			
 				txt += word2[ numb[word_len-to_go]]
             }
@@ -179,13 +176,13 @@ function xlate_baz(numb_str){
         }
 		if (to_go == 4)
 			txt += "thousand"
-		else if (to_go==3 || to_go==6)// in [3,6]:
+		else if ( (to_go==3 && numb[word_len-to_go]!= 0) || to_go==6)// in [3,6]:
 			txt += "hundred"		
 		to_go -= 1
     }
 	return(txt);
 }        
-    
+
 function expand_key(text){
     var i,n,c;
 	var key;
@@ -259,8 +256,12 @@ function do_6x6_solve(str,start_numb,end_numb){
         if ( s1=='Q') continue; // contains 0
         key = expand_6x6_key(s1);
         nl = []
-        for (i=0;i<numb_str.length;i++)
-            nl[i] = digits.indexOf(numb_str.charAt(i));
+		x=0;
+        for (i=0;i<numb_str.length;i++){
+			if (numb_str.charAt(i) == '0')
+				continue;
+            nl[x++] = digits.indexOf(numb_str.charAt(i));
+		}
         pos = index = 0;
         plain = [];
         while(pos<code_len){
@@ -277,7 +278,7 @@ function do_6x6_solve(str,start_numb,end_numb){
             }
             pos += nl[index];
             index++;
-            if ( index == numb_str.length)
+            if ( index == nl.length)
                 index = 0;
         }
         score = get_6x6_score(plain);
@@ -320,9 +321,13 @@ function do_solve(str,start_numb,end_numb){
         s1 = xlate_baz(numb_str);
         if ( s1=='Q') continue; // contains 0
         key = expand_key(s1);
-        nl = []
-        for (i=0;i<numb_str.length;i++)
-            nl[i] = digits.indexOf(numb_str.charAt(i));
+        nl = [];
+		x=0;
+        for (i=0;i<numb_str.length;i++){
+			if (numb_str.charAt(i) == '0')
+				continue;
+            nl[x++] = digits.indexOf(numb_str.charAt(i));
+		}
         pos = index = 0;
         plain = [];
         while(pos<code_len){
@@ -340,7 +345,7 @@ function do_solve(str,start_numb,end_numb){
             }
             pos += nl[index];
             index++;
-            if ( index == numb_str.length)
+            if ( index == nl.length)
                 index = 0;
         }
         score = get_score(plain);
@@ -363,7 +368,7 @@ function do_solve(str,start_numb,end_numb){
 
 onmessage = function(event) { //receiving a message
 	var str,s;
-
+debugger;
   var state = event.data.op_choice;
   if ( state == 1){ 
     str = event.data.str;
