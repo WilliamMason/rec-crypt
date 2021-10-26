@@ -2,9 +2,9 @@
 <head>
 <SCRIPT language=JavaScript>
 
-var word1 = ['one','two','three','four','five','six','seven','eight','nine']
-var word2 = ['eleven','twelve','thirteen','fourteen','fifteen','sixteen', 'seventeen','eighteen','nineteen']
-var word3 = ['error','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
+var word1 = ['','one','two','three','four','five','six','seven','eight','nine']
+var word2 = ['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen', 'seventeen','eighteen','nineteen']
+var word3 = ['','ten','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
 
 var pos_digits = '123456789';
 var alpha="abcdefghiklmnopqrstuvwxyz";
@@ -24,6 +24,12 @@ function digits_only(str){ // remove everthing except digits
 	str = str.toLowerCase();
 	return str.replace(/[^0-9]/g,'');
 }
+
+function positive_digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^1-9]/g,'');
+}
+
 
 function j_to_i(str){
 	str = str.toLowerCase();
@@ -75,16 +81,16 @@ document.getElementById('output_area').value = s;
 
 }
 
-function xlate_baz(numb_str){
+function xlate_baz(numb_str){ // version that allows zeros in key
     var numb,i,n,word_len;
     var to_go, txt;
 
     numb = [];
     word_len = 0;
     for (i=0;i<numb_str.length;i++){
-         n = pos_digits.indexOf(numb_str.charAt(i));
-         if (n== -1){
-            //alert("No zeros or non digit characters allowed in number!");
+         n = digits.indexOf(numb_str.charAt(i));
+         if (i==0 && n== 0){
+            alert("No leading zeros in number!");
             return('Q'); // error signal
          }
          numb[word_len++] = n;
@@ -99,7 +105,7 @@ function xlate_baz(numb_str){
 		if (to_go==6||to_go==4||to_go==3||to_go==1) // in [6,4,3,1]:
 			txt += word1[ numb[word_len-to_go]]
 		else {
-			if (numb[word_len-to_go] == 0){
+			if (numb[word_len-to_go] == 1){
 				to_go -= 1			
 				txt += word2[ numb[word_len-to_go]]
             }
@@ -108,13 +114,12 @@ function xlate_baz(numb_str){
         }
 		if (to_go == 4)
 			txt += "thousand"
-		else if (to_go==3 || to_go==6)// in [3,6]:
+		else if ( (to_go==3 && numb[word_len-to_go]!= 0) || to_go==6)// in [3,6]:
 			txt += "hundred"		
 		to_go -= 1
     }
 	return(txt);
 }        
-
 
 function expand_key(text){
     var i,n,c;
@@ -145,6 +150,7 @@ function bazeries_encrypt(s,key,alpha_key){
     var out_str;
     var plaintext,codetext;
 	var row,col,cnt,index,cnt1;
+	var pos_key;
 
 	key = digits_only(key);
 	if (alpha_key == '')
@@ -169,8 +175,9 @@ function bazeries_encrypt(s,key,alpha_key){
 	plaintext_groups = ''
 	cnt1 = 0;
 	var reversed_code = [];
+	pos_key = positive_digits_only(key);
 	while(cnt<code.length){
-		n = parseInt(key.charAt(index));
+		n = parseInt(pos_key.charAt(index));
 		s1 = code.slice(cnt,cnt+n);
 		s1.reverse();
 		for (j=0;j<s1.length;j++){
@@ -188,7 +195,7 @@ function bazeries_encrypt(s,key,alpha_key){
 		}
 		cnt += n;
 		index++;
-		if (index == key.length)
+		if (index == pos_key.length)
 			index = 0;
 	}
 	codetext = '';
@@ -257,6 +264,7 @@ function bazeries_decrypt(s,key,alpha_key){
     var out_str;
     var plaintext,codetext;
 	var row,col,cnt,index,cnt1;
+	var pos_key;
 
 	key = digits_only(key);
 	if (alpha_key == '')
@@ -280,8 +288,9 @@ function bazeries_decrypt(s,key,alpha_key){
 	plaintext_groups = ''
 	cnt1 = 0;
 	var reversed_plain = [];
+	pos_key = positive_digits_only(key);	
 	while(cnt<plain.length){
-		n = parseInt(key.charAt(index));
+		n = parseInt(pos_key.charAt(index));
 		if (cnt+n>plain.length)
 			n = plain.length-cnt;
 		s1 = plain.slice(cnt,cnt+n);
@@ -303,7 +312,7 @@ function bazeries_decrypt(s,key,alpha_key){
 		}
 		cnt += n;
 		index++;
-		if (index == key.length)
+		if (index == pos_key.length)
 			index = 0;
 	}
 	plaintext = '';
@@ -344,10 +353,12 @@ function do_check(status){
 	flag=0;
 	for (n=0;n<s.length;n++){
 		c = s.charAt(n);
+		/*
 		if ( c=='0'){
 			alert("Sorry, no zeros allowed in number key");
 			return(false);
 		}
+		*/
 		if (digits.indexOf(c) != -1)
 			flag=1;
 	}
@@ -376,7 +387,7 @@ onload = function() {
 <textarea name="text" rows="5" cols="100" id="input_area">
 </textarea></div>
 <br><br>
-<div>Number Key: <input type="text" name = "key" id="key"  > (non-zero digits only)
+<div>Number Key: <input type="text" name = "key" id="key"  > 
 <br><br>
 Alphabetic Key: <input type="text" name = "al_key" id="al_key" size = 60> (Can leave blank for standard English)
 <br><br>
