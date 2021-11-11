@@ -1,6 +1,19 @@
 // PH hill-climber with log tetragraph scoring
 importScripts('tettable.js'); 
 
+var k2m_key = false;
+
+// crib stuff
+var crib_flag=0;
+var crib;
+var crib_buffer = [];
+//var crib_len;
+// allow multiple floating cribs. To be practical restrict to 3, never had more than that in the Cryptogam. 
+var float_crib;
+var MAX_CRIBS = 3;
+var numb_cribs;
+
+
 //postMessage("tet_values loaded");
 var tet_table = new Array();
 var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
@@ -129,19 +142,47 @@ max_trials = 1000000;
 function get_trial_decrypt(){
     var i,j,k,x,y,n,c;
     var ar,indx;
-    var work_key;
+    var work_key, work_key2;
     var used_let;
     work_key = [];
     used_let = {};
     
-    for (i=0;i<key_len;i++){
-        work_key[i] = key[i];
-        used_let[ key[i] ] = 1;
+    debugger;
+    // warning: use key_len, not key.length -- key.length is 26!
+    if ( k2m_key){
+        work_key2 = [];
+        for (i=0;i<key_len;i++){
+            work_key2[i] = key[i];
+            used_let[ key[i] ] = 1;
+        }
+        j = key_len;
+        for (i=0;i<26;i++){
+            if( !(i in used_let) )
+                work_key2[j++] = i;
+        }
+        work_key = [];
+        indx = 0;
+        for (i=0;i<26;i++){
+            for (j=0;j<key_len;j++)
+                if ( key[j]==i){
+                        while(j<work_key2.length){
+                            work_key[indx++] = work_key2[j];
+                            j += key_len;
+                        }
+                        break;
+                }
+        }
     }
-    j = key_len;
-    for (i=0;i<26;i++){
-        if( !(i in used_let) )
-            work_key[j++] = i;
+    else {
+        for (i=0;i<key_len;i++){
+            work_key[i] = key[i];
+            used_let[ key[i] ] = 1;
+        }
+        j = key_len;
+        for (i=0;i<26;i++){
+            if( !(i in used_let) )
+                work_key[j++] = i;
+        }
     }
 	for (i=0;i<26;i++) {
 		inverse_key[ work_key[i] ] = i;
@@ -178,8 +219,75 @@ function get_score(buf_len){
 		score += tet_table[n];
 	}
     //score = 100*score/plain_text.length; // will be variable length, so normalize
+    if ( crib_flag != 0) 
+        score += get_crib_score();        	
     return(score);
 }
+
+function get_crib_score(){
+    var score,crib_pos,match,y, best_match;
+    var crib_start0, crib_start1,crib_len // floating cribs    
+    score = 0;
+    if (crib_flag == 2){ // floating crib
+        best_match = 0;
+        crib_start0 = crib_start1 = -1;
+        crib_len = float_crib[0].length;
+        //for ( crib_pos=0;crib_pos<buf_len-crib_len+1;crib_pos++)
+		for ( crib_pos=0;crib_pos<plain_text.length-crib_len+1;crib_pos++)
+            if ( plain_text[crib_pos] == float_crib[0][0]) {
+                     match = 0.0;
+                    for (y=0;y<crib_len;y++)
+                            if ( plain_text[crib_pos+y] == float_crib[0][y]) {
+                                    match += 1.0
+                    }
+                    if (match>best_match) {
+                            best_match = match;
+                            crib_start0 = crib_pos;
+                    }
+        }
+        score += 100.0*best_match;
+        if ( numb_cribs > 1) {
+            best_match = 0;        
+            crib_len = float_crib[1].length;        
+            for ( crib_pos=0;crib_pos<plain_text.length-crib_len+1;crib_pos++) {
+                if (crib_pos == crib_start0 ) continue;
+                if ( plain_text[crib_pos] == float_crib[1][0]) {
+                        match = 0.0;
+                        for (y=0;y<crib_len;y++)
+                                if ( plain_text[crib_pos+y] == float_crib[1][y]) {
+                                        match += 1.0
+                        }
+                        if (match>best_match) {
+                                best_match = match;
+                                crib_start1 = crib_pos;
+                        }
+                }
+            }
+            score += 100.0*best_match;
+        }
+        if ( numb_cribs > 2) {
+            best_match = 0;        
+            crib_len = float_crib[2].length;        
+            for ( crib_pos=0;crib_pos<plain_text.length-crib_len+1;crib_pos++) {
+                if (crib_pos == crib_start0 || crib_pos == crib_start1 ) continue;
+                if ( plain_text[crib_pos] == float_crib[2][0]) {
+                        match = 0.0;
+                        for (y=0;y<crib_len;y++)
+                                if ( plain_text[crib_pos+y] == float_crib[2][y]) {
+                                        match += 1.0
+                        }
+                        if (match>best_match) {
+                                best_match = match;
+                                crib_start1 = crib_pos;
+                        }
+                }
+            }
+            score += 100.0*best_match;
+        }        
+    }    
+    return(score);
+}
+
 
 function do_hill_climbing(str){
 	var  out_str,c,n,v,score,i,j,trial;
@@ -201,6 +309,39 @@ function do_hill_climbing(str){
 			buffer[buf_len++] = n;
 			//plain_text[buf_len++] = n;
 	}
+    if (crib_flag >= 1){
+            crib = crib.toLowerCase();    
+         // crib_flag ==2, floating crib
+            crib_len = 0;
+            float_crib = [];
+            numb_cribs = 0;
+            float_crib[numb_cribs] = [];
+            for (var i=0;i<crib.length;i++){
+                c = crib.charAt(i);
+                if ( c == '\n'){
+                    numb_cribs++;
+                    float_crib[numb_cribs] = [];
+                    crib_len = 0;
+                    continue;
+                }
+                n = lowerC.indexOf(c);
+                if ( n>=0)
+                    float_crib[numb_cribs][crib_len++] = n;
+            }
+            /* // this should already be checked 
+            if ( numb_cribs==0 && crib_len == 0){
+                alert("No crib entered!");
+                return;
+            }
+            */ 
+            while (numb_cribs>0 && float_crib[numb_cribs].length == 0) // last crib string ended in a new line, remove empty crib
+                numb_cribs--;
+            // but now final crib doesn't end in line feed, increment to get actual crib count.
+            numb_cribs++;
+            if ( numb_cribs > MAX_CRIBS) // allows 3, usually no more than 2
+                numb_cribs = MAX_CRIBS;
+    }        
+	
 	for (i=0;i<26;i++) {
 		key[i] = i;
 	}
@@ -226,7 +367,7 @@ function do_hill_climbing(str){
 		v1 = key[n1];
 		v2 = key[n2];
 		key[n1]=v2;
-		key[n2]=v1;
+		key[n2]=v1;        
 		score = get_score(buf_len);
 		if ( score>max_score){
 			max_score = score;
@@ -293,6 +434,22 @@ onmessage = function(event) { //receiving a message with the string to decode, s
   	Math.random(n); // seed for hill-climbing
     key_len = parseInt(s[3]);
     max_p_len = parseInt(s[4]);
+    if (s[5]=='1')
+        k2m_key = true;
+    else
+        k2m_key = false;
+  }
+  else if (str.charAt(0)  == ')')  { // crib indicator, then 0, no crib, 1 fixed crib,2 floating crib
+    if (str.charAt(1)=='1') { // not currently used. 
+        crib_flag = 1;
+        crib = str.slice(2);
+    }
+    else if (str.charAt(1)=='2') {
+        crib_flag = 2;
+        crib = str.slice(2);
+    }
+    else crib_flag = 0;
+	
   }
   else {
 		postMessage("1working...");

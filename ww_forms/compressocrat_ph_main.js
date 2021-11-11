@@ -7,6 +7,11 @@ var max_score = -10000.0;
 var numb_workers = 0;
 var table_loaded = 0;
 
+// new crib stuff
+var crib=''; // new global variable
+var crib_status_flag = 0; // 0= no crib, 1 = fixed crib, 2 = floating crib (to do)
+
+
 function initialize(){
 	var str;
 	var s;
@@ -154,7 +159,11 @@ function do_solve(){
 	str = str+':'+key_len;    
     p_len = document.getElementById('max_p_len').value;
 	str = str+':'+p_len;    
-    
+   if( document.getElementById('k2m').checked )
+        c='1';
+   else
+        c = '0';
+    str = str+':'+c;
 	hclimber.postMessage(str);  
 	if(numb_workers>1) {
 		str = '@'+max_trials;
@@ -167,6 +176,7 @@ function do_solve(){
 		str = str+':'+n;
         str = str+':'+key_len;
         str = str+':'+p_len;    
+        str = str+':'+c;
 		hclimber2.postMessage(str);  
 	}
 	if(numb_workers>2) {
@@ -179,9 +189,20 @@ function do_solve(){
 		n = Math.floor( Math.random()*3000);
 		str = str+':'+n;
         str = str+':'+key_len;
-        str = str+':'+p_len;            
+        str = str+':'+p_len;
+        str = str+':'+c;
 		hclimber3.postMessage(str);  
 	}
+    // post whether to use crib
+    if ( crib_status_flag == 2) { // use floating crib
+        save_crib();
+        str = ')2'+crib;
+    }
+    else str = ')0';
+	hclimber.postMessage(str);  
+	if(numb_workers>1) hclimber2.postMessage(str);  
+	if(numb_workers>2) hclimber3.postMessage(str);      
+	
 	str = document.getElementById('input_area').value;	
 	hclimber.postMessage(str);  
 	if(numb_workers>1) hclimber2.postMessage(str);  
@@ -209,10 +230,64 @@ function do_clear(){
 	document.getElementById('status2').value = 'Idle';	
 }
 
+function do_crib(){
+    var s;
+    
+    if (crib==''){
+        s = "Enter floating crib(s). If multiple crib strings put them on separate lines."
+    }
+    else
+        s = crib;
+    display_message(s);
+}    
+
+function display_message(message){
+	var s;
+	
+	s = '<span id="m_display">';
+	//s += message;
+    s += '<textarea id="crib_area" cols=80 rows=5 spellcheck="false" ></textarea>';
+	s += '<br><br><center>';
+    s += '<input type="checkbox" id = "crib_status" > use crib in solving &nbsp;&nbsp;&nbsp;';
+    s += '<input value="Close" id="hide_message2" type="button">';
+    s += '<input value="Clear" id="clear_crib_display2" type="button"></center>';
+	s += '</span>';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('m_display').style.visibility="visible";
+    document.getElementById('crib_area').value = message;
+    document.getElementById('crib_area').focus();
+    document.getElementById('crib_status').addEventListener("click", save_crib);   
+    document.getElementById('hide_message2').addEventListener("click", hide_message);   
+    document.getElementById('clear_crib_display2').addEventListener("click", clear_crib_display);   
+}
+
+function hide_message(){
+    save_crib();
+	document.getElementById('m_display').style.visibility="hidden";
+}
+
+function save_crib(){
+    crib = document.getElementById("crib_area").value;
+    if (document.getElementById("crib_status").checked)
+        crib_status_flag = 2; // floating cribs only
+    else crib_status_flag = 0;
+}    
+
+function clear_crib_display(){
+    if (crib != ''){
+        var do_confirm = confirm("Clear crib?");
+        if (do_confirm == false) return;
+    }
+    document.getElementById('crib_area').value = '';
+    document.getElementById('crib_area').focus();
+}
+
+
 onload = function() {
     document.getElementById('do_solve1').addEventListener("click",do_solve);    
     document.getElementById('do_stop1').addEventListener("click",do_stop);    
     document.getElementById('do_clear1').addEventListener("click",do_clear);  
+	document.getElementById('crib1').addEventListener("click",do_crib);               
     document.getElementById('search_for_key').addEventListener("click",do_key_search);    
     document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});         
    

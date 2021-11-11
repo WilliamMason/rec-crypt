@@ -1,10 +1,23 @@
 <html>
 <head>
-<link rel="shortcut icon" href="Bicon16_alt2.ico">
-<TITLE>Compressocrat hill-climb</TITLE>
 <script src="compressocrat_key_search.js" ></script>
 <script src="compressocrat_ph_main.js" ></script>
 <style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;	
+}
+
 .wrapper {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -92,6 +105,7 @@ Status 2:
 <div class="numb_decrypts">
 Number of trial decrypts: 
 <input type="text" value="3000000" id="numb_trials" size = 8>
+
 </div>
 
 <div class = "do_clear">
@@ -107,7 +121,11 @@ Max plaintext length: <input type = text id="max_p_len" value = "500" size = 3>
 
 <div class = "k2m_key">
 <input type = checkbox id="k2m" > K2M key 
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
+<input type="button" value="crib" id="crib1" >
+
 </div>
+
 
 <div class="numb_climbers">
 <b>Number of hill-climbers to use:</b>
@@ -134,6 +152,8 @@ Word/Phrase list for key search: <input type="file" id="input2" >
 <textarea id="debug_area" cols=80 rows = 5>
 </textarea><br>
 ------------>
+<div id = "cm_display" >
+</div>	
 
 </body>
 </html>
