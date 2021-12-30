@@ -1,0 +1,161 @@
+<html>
+<head>
+  
+<style>
+  div {width:300px;}
+</style>
+<SCRIPT language=JavaScript>
+var word_list_string = '';
+var worker;
+var word_list_loaded_flag = false;
+
+function handleFiles2(obj){
+	var str, fname;
+	fname = obj[0];
+	str = "handle list file: "+fname.fileName;
+	//alert(str);
+    book_type = false;
+	getAsText(fname);
+	
+}
+
+function getAsText(readFile) {
+        
+  var reader = new FileReader();
+  // Handle progress, success, and errors
+  //reader.onprogress = updateProgress;
+  reader.onload = loaded;
+  reader.onerror = errorHandler;
+  
+  // Read file into memory as UTF-16      
+  //reader.readAsText(readFile, "UTF-16");
+  reader.readAsText(readFile);
+  
+}
+
+function loaded(evt) {  
+  // Obtain the read file data    
+  var fileString = evt.target.result;
+  var s;
+  //alert("got to loaded");
+  // Handle UTF-16 file dump
+    //document.getElementById('output_area').value = fileString;  
+  s = "The length of the file is "+fileString.length;
+  document.getElementById('output_area').value = s;
+  if (book_type) book_string = fileString;
+  else word_list_string = fileString;
+  stop_flag = 1; // restart with the new files
+  word_list_loaded_flag = false; // reload before next search
+  
+}
+
+function errorHandler(evt) {
+  if(evt.target.error.code == evt.target.error.NOT_READABLE_ERR) {
+    // The file could not be read
+    alert("got error handler");
+  }
+}
+
+/*
+function do_calc(){
+var s,s1,s2;
+
+s = document.getElementById('pat1').value;
+if ( s==""){
+    alert("Pattern1 not entered")
+    return(false);
+}
+
+if (document.getElementById('count_only').checked) {
+    document.getElementById('count)only').value="1";
+}
+else{
+    document.getElementById('only_count').value="0";
+}
+
+
+
+return(true);
+}
+*/
+function do_search(){
+   if ( word_list_string.length==0){
+        alert("Must Choose word list file!");
+        return;
+   }
+if (!word_list_loaded_flag){   
+	xfer = {};
+	xfer["op_choice"] = 1;
+	xfer["str"] = word_list_string;
+	worker.postMessage(xfer);
+	word_list_loaded_flag = true;
+}
+//alert("search");
+xfer = {};
+xfer["op_choice"] = 2;
+xfer["pat1"] = 	document.getElementById('pat1').value;
+xfer["pat2"] = 	document.getElementById('pat2').value;
+xfer["pat3"] = 	document.getElementById('pat3').value;
+if (document.getElementById('count_only').checked)
+	xfer["count_only"] = '1';
+else
+	xfer["count_only"] = '0';
+	
+if ( document.getElementById('known_letters').value =='')
+	xfer["known_letters"] = ' \n ';
+else
+	xfer["known_letters"] = document.getElementById('known_letters').value;
+	
+worker.postMessage(xfer);
+
+}
+
+function initialize_worker(){
+   worker = new Worker('keyphrase_word_search_worker.js');
+   worker.onmessage = function(event) {
+   	 str = event.data;
+        document.getElementById('output_area').value = str;	
+   }
+   // allow for webkit prefix or its removal
+   worker.postMessage = worker.webkitPostMessage || worker.postMessage;
+   //alert("worker initialized");
+}
+
+onload = function() {
+    document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});             
+	initialize_worker();
+    
+}    
+</script>
+</head>
+<body bgcolor="Silver">
+<h3>Keyphrase/Tridigital word search</h3>
+<br>
+Fill in up to three keyphrase or tridigital word patterns. Select word list file. Click search.
+
+
+<br><br>
+Pattern 1: <input type = "text" id = "pat1" name="pat1" value=''>
+<br><br>
+Pattern 2: <input type = "text" id = "pat2" name="pat2" value=''>
+<br><br>
+Pattern 3: <input type = "text" id = "pat3" name="pat3" value=''>
+<br><br>
+<input type="checkbox" id = "count_only" checked > Return count of pattern matches only
+
+<br><br>
+Known letters: <br>
+<textarea id="known_letters"  name = "known_letters" cols = 30 rows = 3></textarea>
+  (Plaintext letters on top line, corresponding ciphertext letters or digits on second line)
+<br><br>
+Word list file: <input type="file" id="input2" >
+
+<p><input type="button" value = "search" onclick="do_search()"></p>
+<br><br>
+Output:<br>
+<textarea id="output_area" rows = 15 cols=80>
+</textarea>
+
+</body>
+</html>
+
