@@ -270,15 +270,7 @@ onmessage = function(event) { //receiving a message
 	postMessage("word list received")
   }
   else if (state == 2){
-    //word_pattern_string = event.data.str;
-	/*
-    str = event.data.pat1;
-	str += ','+event.data.pat2;
-	str += ','+event.data.pat3;
-	str += ','+event.data.count_only;	
-	str += ','+event.data.known_letters;	
-    do_search(str);
-	*/
+
 	do_search( event.data.pat1,event.data.pat2,event.data.pat3,event.data.count_only,event.data.known_letters );
   }
 }
