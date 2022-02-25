@@ -1,0 +1,45 @@
+<html>
+<!--
+recursive keyphrase solver
+-->
+<head>
+
+<script src="recursive_keyphrase_main.js"   ></script>
+
+
+</head>
+<body bgcolor="Silver">
+<h3> Recursive keyphrase solver</h3>
+Choose word list. Paste the cipher into the input area. Click the initialize button, which will index the words.
+
+Fill in the indices of the words to skip. Put in any initial key letters. Then click solve button.
+<br><br>
+Input:<br>
+<textarea id="input_area" cols=80 rows= 10 >
+</textarea><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=7>
+</textarea>
+<br><br>
+<input type="button" value="Initialize" onclick=initialize();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Indices of the words to skip: <input tpe=text id="skip_numbs" size=60 > (Separate index numbers by blanks.)
+<br><br>
+<div>
+Initial key: (26 letters, dash '-' for unknowns) <input type = "text" size = 35  value='- - - - - - - - - - - - - - - - - - - - - - - - - -' id = "start_key">
+</div>
+
+
+<br><br>
+<input type="button" value="Solve" onclick=do_processing(); disabled id='process'>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<INPUT onclick=do_stop(); type=button value="Stop solving" disabled id='stop'>
+<br><br><br><br>
+Word list file:
+<input type="file" id="input" >
+<br><br>
+</body>
+</html>
