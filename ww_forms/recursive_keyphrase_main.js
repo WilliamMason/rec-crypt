@@ -190,6 +190,7 @@ function initialize(){
 	document.getElementById('input_area').value = out_str;
 	document.getElementById('process').disabled = false;
 	document.getElementById('stop').disabled = false;
+	document.getElementById('insert').disabled = false;
 	
   
 }
@@ -216,6 +217,13 @@ function do_stop(){
 	//stop_flag = 1;
 }
 
+function do_insert(){
+	var i,s;
+	s = '';
+	for (i=0;i<cipher_words.length;i++)
+		s += i+' ';
+	document.getElementById('skip_numbs').value = s;
+}
 
 onload = function() {
     document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});
