@@ -115,8 +115,12 @@ function ragbaby_encrypt(plaintext,key){
     var special = "-'=’" ;//characters that may occur in middle of words
 	for (i=0;i<plaintext.length;i++){
 		c = plaintext.charAt(i);
-        if (special.indexOf(c) != -1)
+        if (special.indexOf(c) != -1){ // don't update index just put in the aprostophe etc and continue
+			temp_str += c ;
+			temp1_str += c;
+
             continue;
+		}
         if (c=='j' && extended_key.indexOf('j')== -1) c = 'i';
         if ( c=='x'&& extended_key.indexOf('x')== -1) c = 'w';
 		n = extended_key.indexOf(c);
@@ -254,8 +258,13 @@ function ragbaby_decrypt(codetext,key){
     var special = "-'=’" ;//characters that may occur in middle of words
 	for (i=0;i<codetext.length;i++){
 		c = codetext.charAt(i);
-        if (special.indexOf(c) != -1)
+        if (special.indexOf(c) != -1){ // don't increae index, special symbols don't count
+			temp_str += c ;
+			temp1_str += c;
+			plaintext += c;
             continue;
+		}
+
 		//if ( c=='\n') c = ' ';
 		n = extended_key.indexOf(c);
 		if ( n>=0) {
