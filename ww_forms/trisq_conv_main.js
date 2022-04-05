@@ -218,7 +218,7 @@ function get_routes(){
     var i,j,c,n,s;
     
     selected_routes = [];
-    for (i=0;i<40;i++){
+    for (i=0;i<50;i++){
         s = 'r'+i;
         if (document.getElementById(s).checked )
             selected_routes.push(i);
@@ -353,43 +353,50 @@ function setup_route_grid(){
     var str,j,i,c,n;
     
     str = '';
-    str += '<div class= "label"> horizontal </div>';
-    str += '<div class= "label"> vertical </div>';    
-    str += '<div class= "label"> diagonal down </div>';    
-    str += '<div class= "label"> diagonal up-down </div>';    
-    str += '<div class= "label"> diagonal down-up </div>';    
-    str += '<div class= "label"> cc spiral </div>';    
-    str += '<div class= "label"> left-right </div>';    
-    str += '<div class= "label"> vertical down-up </div>';    
-    str += '<div class= "label"> spiral </div>';    
-    str += '<div class= "label"> diagonal up </div>';    
+    str += '<div class= "label_h"> horizontal </div>';
+    str += '<div class= "label_h"> vertical </div>';    
+    str += '<div class= "label_h"> diagonal down </div>';    
+    str += '<div class= "label_h"> diagonal up-down </div>';    
+    str += '<div class= "label_h"> diagonal down-up </div>';    
+    str += '<div class= "label_h"> cc spiral </div>';    
+    str += '<div class= "label_h"> left-right </div>';    
+    str += '<div class= "label_h"> vertical down-up </div>';    
+    str += '<div class= "label_h"> spiral </div>';    
+    str += '<div class= "label_h"> diagonal up </div>';    
     str += '<div class="directions"> select routes </div>';    
     j = 0;
     for (i=0;i<10;i++){
         str += '<div class="entry"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
         j++;
     }
-    str += '<div class="label"> No Flips </div>';
+    str += '<div class="label"> Left, No-flip </div>';
     for (i=0;i<10;i++){
         str += '<div class="entry"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"> </div>';
         j++;
     }
-    str += '<div class="label"> Up-Down </div>';
+    str += '<div class="label"> Left,Up-Down </div>';
     for (i=0;i<10;i++){
-        str += '<div class="entry"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
+        str += '<div class="entry_top"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
         j++;
     }
-    str += '<div class="label"> Left-Right </div>';
+    str += '<div class="label_top"> Top, No-flip </div>';
     for (i=0;i<10;i++){
-        str += '<div class="entry"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
+        str += '<div class="entry_top"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
         j++;
     }
-    str += '<div class="label"> Both flips </div>';
+    str += '<div class="label_top"> Top Left-right </div>';
+    for (i=0;i<10;i++){
+        str += '<div class="entry_middle"> <input type="checkbox" class="largerCheckbox" id="r'+j+'"></div>';
+        j++;
+    }
+    str += '<div class="label_middle"> Middle, No-flip </div>';
     
     document.getElementById('wrapper').innerHTML = str;
     document.getElementById('r0').checked = true;
     document.getElementById('r1').checked = true;
     document.getElementById('r8').checked = true;
+	document.getElementById('r20').checked = true;
+	document.getElementById('r40').checked = true;
 }
 
 onload = function() {

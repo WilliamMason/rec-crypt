@@ -3,6 +3,8 @@ importScripts('tettable.js');
 importScripts('routes.js'); 
 
 var order; // routes to use
+var left_order,top_order,middle_order;
+
 
 //postMessage("tet_values loaded");
 var tet_table = new Array();
@@ -214,6 +216,34 @@ function get_6x6key_array(le){
 }
 
 
+function set_up_routes(){
+var i,j,k,c,n,s;
+
+left_order = [];
+top_order = [];
+middle_order = [];	
+
+for (i=0;i<order.length;i++){
+		j = order[i];
+		if (j<20)
+			left_order.push(j);
+		else if ( j<30){
+			k = j-20;
+			top_order.push(k);
+		}
+		else if (j<40){
+				k = j-10;
+				top_order.push(k);
+		}
+		else { // j>=40 &% j<50
+			k = j-40;
+			middle_order.push(k);
+		}
+}
+	
+	
+} // end set_up_routes
+
 function do_key_search(str){
 	var  out_str,c,n,v,score,i,j,trial;
 	var n1,n2,v1,v2,best_score,current_hc_score;
@@ -278,15 +308,16 @@ function do_key_search(str){
 			buffer[buf_len++] = n;
 			//plain_text[buf_len++] = n;
 	}
-	var NUMB_ROUTES = routes.length;
-	if ( numb_routes > NUMB_ROUTES) numb_routes = NUMB_ROUTES;
+	set_up_routes();
+	//var NUMB_ROUTES = routes.length;
+	//if ( numb_routes > NUMB_ROUTES) numb_routes = NUMB_ROUTES;
     // select key and route for left square at random
     left_index = Math.floor( Math.random() * word_count);
-    left_route = Math.floor( Math.random()* numb_routes);
+    left_route = Math.floor( Math.random()* left_order.length);
     right_index = Math.floor( Math.random() * word_count);
-    right_route = Math.floor( Math.random()* numb_routes);
+    right_route = Math.floor( Math.random()* top_order.lrngth);
     mid_index = Math.floor( Math.random() * word_count);
-    mid_route = Math.floor( Math.random()* numb_routes);
+    mid_route = Math.floor( Math.random()* middle_order.length);
     
 	le = word_list[left_index].length;
 	for (i=0;i<le;i++) {
@@ -296,8 +327,8 @@ function do_key_search(str){
 	}
 	get_next_key(le);
     for (j=0;j<keysquare_width*keysquare_width;j++)
-        if ( flag6x6) work_key[j] = key_array[ routes6[order[left_route]][j] ];  
-        else work_key[j] = key_array[ routes[order[left_route]][j] ];  
+        if ( flag6x6) work_key[j] = key_array[ routes6[left_order[left_route]][j] ];  
+        else work_key[j] = key_array[ routes[left_order[left_route]][j] ];  
     n = 0;
     for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
         l_sqr[i][j] = work_key[n++];
@@ -312,8 +343,8 @@ function do_key_search(str){
 	}
 	get_next_key(le);
     for (j=0;j<keysquare_width*keysquare_width;j++)
-        if ( flag6x6) work_key[j] = key_array[ routes6[order[mid_route]][j] ];  
-        else work_key[j] = key_array[ routes[order[mid_route]][j] ];  
+        if ( flag6x6) work_key[j] = key_array[ routes6[middle_order[mid_route]][j] ];  
+        else work_key[j] = key_array[ routes[middle_order[mid_route]][j] ];  
     n = 0;
     for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
         m_sqr[i][j] = work_key[n++];
@@ -334,7 +365,7 @@ function do_key_search(str){
 			change_flag = 0;
 			//printf("Searching left key list...\n");
 			for (right_index = 0;right_index<word_count;right_index++) 
-				for (right_route = 0;right_route<numb_routes;right_route++){
+				for (right_route = 0;right_route<top_order.length;right_route++){
 					le = word_list[right_index].length;
 					/* switch to a=0,b=1,c=2, etc*/
 					for (i=0;i<le;i++) {
@@ -344,8 +375,8 @@ function do_key_search(str){
 					}
 					get_next_key(le);//expand key to keysquare_width*keysquare_width chars in key_array
 					for (j=0;j<keysquare_width*keysquare_width;j++)
-                        if ( flag6x6) work_key[j] = key_array[ routes6[order[right_route]][j] ];  
-                        else work_key[j] = key_array[ routes[order[right_route]][j] ];  
+                        if ( flag6x6) work_key[j] = key_array[ routes6[top_order[right_route]][j] ];  
+                        else work_key[j] = key_array[ routes[top_order[right_route]][j] ];  
 					n=0;
 					for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
 						r_sqr[i][j] = work_key[n++];						
@@ -374,9 +405,9 @@ function do_key_search(str){
 						out_str += '\nTop key: '+ word_list[right_index];
 						out_str += ', Left key: '+word_list[best_left_index];
                         out_str += ', Middle key: '+word_list[best_mid_index];
-						out_str += ', Top route: '+ route_name[order[right_route]];
-						out_str += ', Left route: '+ route_name[order[best_left_route]];
-                        out_str += ', Middle route: '+ route_name[order[best_mid_route]];
+						out_str += ', Top route: '+ route_name[top_order[right_route]];
+						out_str += ', Left route: '+ route_name[left_order[best_left_route]];
+                        out_str += ', Middle route: '+ route_name[middle_order[best_mid_route]];
 						out_str += ', seed: '+seed_number;
 						/*
 						for (i=0;i<5;i++) for(j=0;j<5;j++)
@@ -396,7 +427,7 @@ function do_key_search(str){
 			//printf("Searching right key list...\n");    
 			//change_flag = 0;
 			for (left_index = 0;left_index<word_count;left_index++)
-				for (left_route = 0;left_route<numb_routes;left_route++){
+				for (left_route = 0;left_route<left_order.length;left_route++){
 					le = word_list[left_index].length;
 					for (i=0;i<le;i++) {
 						c = word_list[left_index].charAt(i);
@@ -405,8 +436,8 @@ function do_key_search(str){
 					}
 					get_next_key(le);
 					for (j=0;j<keysquare_width*keysquare_width;j++)
-                        if ( flag6x6) work_key[j] = key_array[ routes6[order[left_route]][j] ];  
-                        else work_key[j] = key_array[ routes[order[left_route]][j] ];  
+                        if ( flag6x6) work_key[j] = key_array[ routes6[left_order[left_route]][j] ];  
+                        else work_key[j] = key_array[ routes[left_order[left_route]][j] ];  
 					
 					n=0;
 					for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
@@ -443,9 +474,9 @@ function do_key_search(str){
 						out_str += '\nTop key: '+ word_list[best_right_index];
 						out_str += ' Left key: '+word_list[left_index];
                         out_str += ', Middle key: '+word_list[best_mid_index];                        
-						out_str += ', Top route: '+ route_name[order[best_right_route]];
-						out_str += ', Left route: '+ route_name[order[left_route]];
-                        out_str += ', Middle route: '+ route_name[order[best_mid_route]];
+						out_str += ', Top route: '+ route_name[top_order[best_right_route]];
+						out_str += ', Left route: '+ route_name[left_order[left_route]];
+                        out_str += ', Middle route: '+ route_name[middle_order[best_mid_route]];
 						out_str += ', seed: '+seed_number;
 						/*
 						for (i=0;i<5;i++) for(j=0;j<5;j++)
@@ -465,7 +496,7 @@ function do_key_search(str){
                     
 			//change_flag = 0;
 			for (mid_index = 0;mid_index<word_count;mid_index++)
-				for (mid_route = 0;mid_route<numb_routes;mid_route++){
+				for (mid_route = 0;mid_route<middle_order.length;mid_route++){
 					le = word_list[mid_index].length;
 					for (i=0;i<le;i++) {
 						c = word_list[mid_index].charAt(i);
@@ -474,8 +505,8 @@ function do_key_search(str){
 					}
 					get_next_key(le);
 					for (j=0;j<keysquare_width*keysquare_width;j++)
-                        if ( flag6x6) work_key[j] = key_array[ routes6[order[mid_route]][j] ];  
-                        else work_key[j] = key_array[ routes[order[mid_route]][j] ];  
+                        if ( flag6x6) work_key[j] = key_array[ routes6[middle_order[mid_route]][j] ];  
+                        else work_key[j] = key_array[ routes[middle_order[mid_route]][j] ];  
 					
 					n=0;
 					for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
@@ -512,9 +543,9 @@ function do_key_search(str){
 						out_str += '\nTop key: '+ word_list[best_right_index];
 						out_str += ' Left key: '+word_list[best_left_index];
                         out_str += ', Middle key: '+word_list[mid_index];                        
-						out_str += ', Top route: '+ route_name[order[best_right_route]];
-						out_str += ', Left route: '+ route_name[order[best_left_route]];
-                        out_str += ', Middle route: '+ route_name[order[mid_route]];
+						out_str += ', Top route: '+ route_name[top_order[best_right_route]];
+						out_str += ', Left route: '+ route_name[left_order[best_left_route]];
+                        out_str += ', Middle route: '+ route_name[middle_order[mid_route]];
 						out_str += ', seed: '+seed_number;
 						/*
 						for (i=0;i<5;i++) for(j=0;j<5;j++)
@@ -540,7 +571,7 @@ function do_key_search(str){
 	s = out_str + "\nNew seed number "+seed_number;
 	postMessage(s);	
 	mid_index = Math.floor(Math.random() * word_count);
-	mid_route = Math.floor(Math.random()* numb_routes);
+	mid_route = Math.floor(Math.random()* middle_order.length);
 	le = word_list[mid_index].length;
 	for (i=0;i<le;i++) {
 		c = word_list[mid_index].charAt(i);
@@ -549,8 +580,8 @@ function do_key_search(str){
 	}
 	get_next_key(le);
     for (j=0;j<keysquare_width*keysquare_width;j++)
-        if ( flag6x6) work_key[j] = key_array[ routes6[order[mid_route]][j] ];  
-        else work_key[j] = key_array[ routes[order[mid_route]][j] ];  
+        if ( flag6x6) work_key[j] = key_array[ routes6[middle_order[mid_route]][j] ];  
+        else work_key[j] = key_array[ routes[middle_order[mid_route]][j] ];  
 	n = 0;
 	for (i=0;i<keysquare_width;i++) for (j=0;j<keysquare_width;j++)    
 		m_sqr[i][j] = work_key[n++];
