@@ -1208,8 +1208,8 @@ function do_id_test(){
 	nc = convert_string(db_element)
 	db_element = digits_only(db_element);
 	if (nc.length < 2) {
-		//alert("Cipher too short!")
-        console.log("Cipher too short");
+		alert("Cipher has less than 2 digits!")
+        //console.log("Cipher too short");
 		return
 	}
 /*
@@ -1497,7 +1497,7 @@ relu <input type="radio" name="r_buttons" id = "relu" checked>
 -->
 </FORM>
 <br>
-<BR> <B>Directions:</B> Type or paste unknown cipher into cipher box. Click ID test button. 
+<BR> <B>Directions:</B> Type or paste unknown numerical cipher into cipher box. Click ID test button. 
 Results appear in Stats box.(may take quite awhile for results to appear) <BR>
  
 </BODY></HTML>
