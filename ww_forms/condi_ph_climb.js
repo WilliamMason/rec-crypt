@@ -28,6 +28,8 @@ var starting_shift;
 var key_len = 12;
 var key_word = [];
 var used_let = [];
+var shifted_key_flag;
+//var OP_LIMIT = 75;
 
 function alltrim(str) { // remove leading and trailing blanks
     return str.replace(/^\s+|\s+$/g, '');
@@ -158,14 +160,23 @@ function get_next_key(){
             l_array[n++] = i;
 }    
     
-function get_trial_decrypt(){
+function get_trial_decrypt(key_shift){
         var i,j,k, index,x;
         var c1,c2,c3,c4;
         var shift,st,score;
+		var work_key;
         /* get plain text */
         get_next_key(); // entend key_word to l_array
+		if (!shifted_key_flag)
+			work_key = l_array;
+		else {
+			work_key = l_array.slice(key_shift);
+			for (j=0;j<key_shift;j++)
+				work_key.push(l_array[j]);
+		}
         for (j=0;j<26;j++)
-            inv[l_array[j]] = j;
+            //inv[l_array[j]] = j;
+			inv[work_key[j]] = j;
 
         shift = starting_shift;
         st = 0;
@@ -178,7 +189,7 @@ function get_trial_decrypt(){
                 if ( buffer[j] == 26)
                         plain_text[j] = 26;
                 else {
-                    plain_text[j] = l_array[ (26+n-shift)%26 ];
+                    plain_text[j] = work_key[ (26+n-shift)%26 ];
                     shift = inv[plain_text[j]]+1;
                     n = inv[buffer[j]]; 
                     if ( st == first_crib_pos) // reset st to first NON-BLANK char to left of first crib entry
@@ -198,11 +209,11 @@ function get_trial_decrypt(){
                     n = inv[buffer[j]];
                     if ( crib_buffer[j] != -1){
                         plain_text[j] = crib_buffer[j];
-                        if (plain_text[j] == l_array[ (26+n-shift)%26 ])
+                        if (plain_text[j] == work_key[ (26+n-shift)%26 ])
                             score ++;
                     }    
                     else
-                        plain_text[j] = l_array[ (26+n-shift)%26 ];
+                        plain_text[j] = work_key[ (26+n-shift)%26 ];
                     shift = inv[plain_text[j]]+1;
                 }
         }
@@ -211,11 +222,11 @@ function get_trial_decrypt(){
 
 	
 
-function get_score(buf_len){
+function get_score(buf_len,key_shift){
 	var score,i,n;
 
     score = 0.0
-    score += get_trial_decrypt(); // bonus score for matching crib.
+    score += get_trial_decrypt(key_shift); // bonus score for matching crib.
     score = 100.0*score;
 		// get tetgraph score		
 
@@ -235,6 +246,7 @@ function do_hill_climbing(str){
 	var numb_accepted;
 	//var max_trials; // now global
 	var s;
+	var key_shift, old_key_shift,op_choice;
   
 	str = str.toUpperCase();
 	buf_len = 0;
@@ -275,32 +287,54 @@ function do_hill_climbing(str){
         key_word[x] = i
 	}
     starting_shift = Math.floor( Math.random()*26);
+	key_shift = 0;	
 	cycle_limit = 20;
 	//fudge_factor = 0.23; // now sent via post message
 	begin_level = 1.3;
 	noise_step = 1.3;
 	noise_level = begin_level;
 	cycle_numb = 0;
-	max_score = current_hc_score = score = get_score(buf_len);	
+	max_score = current_hc_score = score = get_score(buf_len,key_shift);	
 	out_str = '0';
 	x = score.toFixed(2);
 	out_str += x+'~';
 	for (i=0;i<buf_len;i++)
 		out_str += alpha3.charAt(plain_text[i]).toLowerCase();
 	out_str += "\n score of plaintext is "+score;
+            out_str += '\nKey: ';
+			for (i=0;i<26;i++)
+				out_str += alpha3.charAt(l_array[i]);
+			if (shifted_key_flag)
+				out_str += ', key shifted by: '+key_shift;
+	
 	//document.getElementById('output_area').value = out_str;	
 	postMessage(out_str);
 	mut_count = 0;
 	numb_accepted = 1;
+	var op_limit = 100*key_len/(key_len+1);
 	for (trial = 0;trial < max_trials;trial++){
+		if (shifted_key_flag){
+			op_choice = Math.random()*100;
+		}
+		else
+			op_choice = 0;
+
+		//if ( op_choice<OP_LIMIT){
+		if ( op_choice<op_limit){
 		n1 = Math.floor(Math.random()*key_len);
 		n2 = Math.floor(Math.random()*26);
         c1 = key_word[n1];
         c2 = key_word[n2];
         key_word[n1] = c2;
         key_word[n2] = c1;
-		score = get_score(buf_len);
+		}
+		else {
+			old_key_shift = key_shift;
+			key_shift = Math.floor( Math.random()*26);
+		}
+		score = get_score(buf_len,key_shift);
 		if ( score>max_score){
+			debugger;
 			max_score = score;
 			out_str = '0'; // 0 at beginning is signal to post message in output box
 			x = score.toFixed(2);
@@ -315,8 +349,19 @@ function do_hill_climbing(str){
             out_str += '\nKey: ';
 			for (i=0;i<26;i++)
 				out_str += alpha3.charAt(l_array[i]);
+			if (shifted_key_flag){
+            out_str += '\nWorkKey: ';
+			work_key = l_array.slice(key_shift);
+			for (i=0;i<key_shift;i++)
+				work_key.push(l_array[i]);
+			for (i=0;i<26;i++)
+				out_str += alpha3.charAt(work_key[i]);			
+			
+			out_str += ', key shifted by: '+key_shift;
+			
 			//document.getElementById('output_area').value = out_str;	
 			postMessage(out_str);
+			}
 		}
        	if (score > current_hc_score-fudge_factor*buf_len/(noise_level)) {				
            	if (score != current_hc_score)
@@ -324,12 +369,14 @@ function do_hill_climbing(str){
 			current_hc_score = score;
             // score_sum += score;
             // accepted_count++;				
-			}
-		
-		else {
+		}
+		else if(op_choice<op_limit){
+		//else if(op_choice<OP_LIMIT){			
             key_word[n1] = c1;
             key_word[n2] = c2;
 		}
+		else
+			key_shift = old_key_shift;
 		noise_level += noise_step;	
 		if ( ++cycle_numb >= cycle_limit) {
 			noise_level = begin_level;
@@ -361,6 +408,10 @@ onmessage = function(event) { //receiving a message with the string to decode, s
   	Math.random(n); // seed for hill-climbing
   	n = parseInt(s[3]);    
     key_len = n;
+	if (s[4] == '1')
+		shifted_key_flag = true;
+	else
+		shifted_key_flag = false;
   }
   else if(str.charAt(0)  == '#') {// construct custom tet table
     make_table(str);

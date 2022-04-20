@@ -77,6 +77,14 @@
   padding: 10px;
 }
 
+.shifted_flag{
+ grid-column: 3;
+  grid-row: 4;
+  background-color: Chartreuse;
+  padding: 10px;
+}
+
+
 .key_search{
   grid-column: 1 / 5;
   grid-row: 6;
@@ -117,6 +125,10 @@ Number of trial decrypts:
 <div class = "do_clear">
 <input type="button" value="Clear" id="do_clear1" >
 </div>
+<div class="shifted_flag">
+<input type = "checkbox" id="hill_climb_with_shifted_keys" > Allow shifted keys.
+</div>
+
 <div class="numb_climbers">
 <b>Number of hill-climbers to use:</b>
 <input type="radio" id="ww1" name="nww" value=1 > 1
