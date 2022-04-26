@@ -11,6 +11,37 @@ var table_loaded = 0;
 var crib=''; // new global variable
 var plain_len;
 var crib_status_flag = 0; // 0= no crib, 1 = fixed crib, 2 = floating crib (to do)
+// get next crib stuff 
+var FIRST_PASS = 1; // the
+var SECOND_PASS = 2; // and
+var THIRD_PASS = 3; // ...ing
+var FOURTH_PASS = 4; // ...ion
+var this_pass = FIRST_PASS;
+var last_crib_suggestion = -1;
+
+/*
+top twenty suffixes:
+the, count: 163880
+and, count: 102025
+ing, count: 64731
+ion, count: 59384
+hat, count: 34054
+ent, count: 31870
+est, count: 31226
+his, count: 28456
+ted, count: 24199
+her, count: 23329
+was, count: 22955
+for, count: 21800
+ere, count: 20864
+ith, count: 19727
+nce, count: 17771
+one, count: 15518
+all, count: 15190
+ter, count: 15150
+ate, count: 14864
+ers, count: 14669
+*/
 
 function alltrim(str) { // remove leading and trailing blanks
     return str.replace(/^\s+|\s+$/g, '');
@@ -444,7 +475,81 @@ function do_crib(){
     else
         s = crib;
     display_message(s);
-}    
+	document.getElementById("insert_next_crib").disabled = false;
+	
+}   
+
+function get_next_crib(){
+	var i,j,k,c,n,s;
+	var found;
+
+	var prevent_endless_loop = 0;
+	while(true){
+		found = search_for_next_crib();
+		if ( found )
+			break;
+		last_crib_suggestion = -1; // reset
+		if (this_pass == FIRST_PASS)
+			this_pass = SECOND_PASS;
+		else if (this_pass == SECOND_PASS)
+			this_pass = THIRD_PASS;
+		else if (this_pass == THIRD_PASS)
+			this_pass = FOURTH_PASS;
+		else {
+			prevent_endless_loop++;
+			if ( prevent_endless_loop == 3)
+				break;
+			this_pass = FIRST_PASS; // replay
+		}
+	}
+}
+
+
+function search_for_next_crib(){
+	var i,j,k,c,n,s;
+	var crib_list;
+
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No ciphertext text entered");
+		return;
+	}
+	//s = s.toLowerCase();
+    s = reformat(s);
+    plain_len = s.length;
+    crib = s.replace(/[a-z]/g,'-'); // initialize to all dashes
+	crib_list = crib.split(' ');
+	for (i=last_crib_suggestion+1;i<crib_list.length;i++){
+		c = crib_list[i];
+		if ( c.length<3)
+			continue;
+		if ( c.length == 3 && this_pass < THIRD_PASS){
+			if (this_pass == FIRST_PASS)
+				crib_list[i] = 'the';
+			else if ( this_pass == SECOND_PASS)
+				crib_list[i] = 'and';
+			last_crib_suggestion = i;
+			s = crib_list.join(' ')
+			display_message(s);
+			crib_status_flag = 1;
+			document.getElementById("crib_status").checked = true;	
+			return(true);
+		}
+		else if (c.length>3 && this_pass >= THIRD_PASS) {
+			if ( this_pass == THIRD_PASS )
+				crib_list[i] = c.substring(0,c.length-3)+'ing';
+			else if (this_pass == FOURTH_PASS)
+				crib_list[i] = c.substring(0,c.length-3)+'ion';
+			last_crib_suggestion = i;
+			s = crib_list.join(' ')
+			display_message(s);
+			crib_status_flag = 1;
+			document.getElementById("crib_status").checked = true;				
+			return(true);			
+		}
+	}
+	return(false); // nothing found 
+}
 
 function display_message(message){
 	var s;
@@ -496,5 +601,7 @@ onload = function() {
 	document.getElementById('search_for_key').addEventListener("click",do_key_search);  
     document.getElementById('custom_table').addEventListener("change", set_reload); 
     document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});         
-	document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});             
+	document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)}); 
+
+    document.getElementById('insert_next_crib').addEventListener("click",get_next_crib);  	
 }    
