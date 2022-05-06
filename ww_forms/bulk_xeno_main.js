@@ -546,6 +546,10 @@ function initialize(b_value){
 				ciphers[numb_ciphers++]=con;				
 				con = '';
 			}
+			// don't save anything in the header after the first period (& don't save period itself)
+			n = s.indexOf('.');
+			if ( n != -1)
+				s = s.slice(0,n);												
 			cipher_id[numb_ciphers] = s;
 			keys[numb_ciphers]=empty_key;
 			stored_col_orders[numb_ciphers]=upperC;
@@ -571,6 +575,10 @@ function initialize(b_value){
 				ciphers[numb_ciphers++]=con;				
 				con = '';
 			}
+			// don't save anything in the header after the first period
+			n = s.indexOf('.');
+			if ( n != -1)
+				s = s.slice(0,n);												
 			cipher_id[numb_ciphers] = s;
 			keys[numb_ciphers]=empty_key;
 			stored_col_orders[numb_ciphers]=upperC;			
