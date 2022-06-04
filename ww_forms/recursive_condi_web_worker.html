@@ -1,0 +1,130 @@
+<html>
+<!--
+recursive keyphrase solver
+-->
+<head>
+
+<script src="recursive_condi_main.js"   ></script>
+
+
+</head>
+<body bgcolor="Silver">
+<h3> Recursive CONDI solver</h3>
+Choose word list. Paste the cipher into the input area. Click the initialize button, which will index the words.
+
+Fill in the indices of the words to skip. Put in any initial key letters in the key table. Then click solve button.
+<br><br>
+Input:<br>
+<textarea id="input_area" cols=80 rows= 10 >
+</textarea><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=7>
+</textarea>
+<br><br>
+<input type="button" value="Initialize" onclick=initialize();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+words tried since last solution:
+<input type="text" size = 5 id="numb_tries" value = 0>
+
+<br><br>
+<!---
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Indices of the words to skip: <input type=text id="skip_numbs" size=60 > (Separate index numbers by blanks.)
+-->
+Indices of the words to skip:
+<br>
+<textarea id="skip_numbs" cols=80 rows= 3 >
+</textarea><br>
+
+<input type="button" value="Insert all indices" onclick=do_insert(); disabled id='insert'>
+<br><br>
+
+Key Table (26x26 , or 27x27-1 with header row and column):
+<br>
+<div  style="float:left;">
+<textarea name = "key" id="start_key" rows="26" cols="52" >
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - 
+</textarea>
+</div>
+<!---
+<div style="float:left; font-family:monospace;">
+&nbsp;&nbsp;&nbsp;&nbsp;Enter any letters within thw 26 rows, for example:<br>
+&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp;&nbsp;AZIMUTHS <br>
+&nbsp;&nbsp;&nbsp;&nbsp;CALFSKIN <br>
+&nbsp;&nbsp;&nbsp;&nbsp;QUACKISH <br>
+&nbsp;&nbsp;&nbsp;&nbsp;UNJOVIAL <br>
+&nbsp;&nbsp;&nbsp;&nbsp;EVULSION <br>
+&nbsp;&nbsp;&nbsp;&nbsp;ROWDYISM <br>
+&nbsp;&nbsp;&nbsp;&nbsp;SEXTUPLY <br>
+</div>
+-->
+
+
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Solve" onclick=do_processing(); disabled id='process'>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<INPUT onclick=do_stop(); type=button value="Stop solving" disabled id='stop'>
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<input type="checkbox" id="current_solutions" > Show current array of solutions (up to solution limit)
+<br><br><br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Word list file:
+<input type="file" id="input" >
+&nbsp;&nbsp;
+<input type="checkbox" id="has_frequency" > word list includes frequency information.
+<br><br>
+<span id="cutoff_location" >
+<!---
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Frequency cutoff (if word list includes frequency information): <input type = "text" id="cutoff_amount" size = 3 value = 14>
+--> 
+</span>
+<br><br><br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" value="Reset key table" style = "background-color: red" onclick=do_reset(); id='reset_table'>
+<br><br>
+</body>
+</html>
