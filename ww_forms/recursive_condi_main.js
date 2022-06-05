@@ -243,6 +243,63 @@ function do_processing(){
 	
 }	
 
+function numb_common_digraphs(wrd1,wrd2){
+	var i,j,k,c,n;
+	var c1,c2,n1,n2;
+	var cnt;
+	
+	if (wrd1.length ==1 || wrd2.length == 1)
+		return(0);
+	cnt = 0;
+	for (i=1;i<wrd1.length;i++){
+		n1 = i-1;
+		c1 = wrd1.charAt(n1)+wrd1.charAt(i);
+		for (j= 1;j<wrd2.length;j++) {
+			c2 = wrd2.charAt(j-1)+wrd2.charAt(j);
+			if ( c1 == c2)
+				cnt++;
+		}
+		n1++;
+	}
+	return(cnt);
+
+}
+
+
+function display_lengths_and_digraphs(){
+    var out_str,s,str;
+	var i,j,k,c,n;
+	var result, wrd1,wrd2,length_array;
+	
+	length_array = [];
+	out_str = "Word lengths (format: position, word, word length)\n\n"
+	for (i=0;i<cipher_words.length;i++)
+		length_array.push( [i,cipher_words[i],cipher_words[i].length] )
+	length_array.sort( (a,b) => b[2]-a[2] )
+	for (i=0;i<length_array.length;i++)
+		out_str += length_array[i]+'\n';
+		
+	result = [];
+	for (i=0;i<cipher_words.length-1;i++){
+		wrd1 = cipher_words[i];
+		for (j=i+1;j<cipher_words.length;j++){
+			wrd2 = cipher_words[j];
+			n = numb_common_digraphs(wrd1,wrd2);
+			if ( n>0)
+				result.push( [i,wrd1,j,wrd2,n] );
+		}
+	}
+	result.sort( (a,b) => b[4]-a[4] )
+    out_str += '\n\nwords with shared digraphs\n format: (position 1,word 1,position 2, word 2, number of shared digraphs)\n\n'
+	for (i=0;i<result.length;i++)
+		out_str += result[i]+'\n';
+	
+	document.getElementById('output_area').value = out_str;
+	
+	
+}	
+
+
 function initialize(){
     var out_str,s,str;
     var pat, result;
@@ -252,6 +309,7 @@ function initialize(){
 	str = document.getElementById('input_area').value;
   str = reformat(str);
   cipher_words = str.split(' ');
+  display_lengths_and_digraphs();
   out_str += "";
   for (i=0;i<cipher_words.length;i++)
       out_str += '('+i+') '+cipher_words[i].toUpperCase()+', ';
