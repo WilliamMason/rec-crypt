@@ -183,6 +183,23 @@ function do_processing(){
 	
 }	
 
+function display_lengths(){
+    var out_str,s,str;
+	var i,j,k,c,n;
+	var result, wrd1,wrd2,length_array;
+	
+	length_array = [];
+	out_str = "Word lengths (format: position, word, word length)\n\n"
+	for (i=0;i<cipher_words.length;i++)
+		length_array.push( [i,cipher_words[i],cipher_words[i].length] )
+	length_array.sort( (a,b) => b[2]-a[2] )
+	for (i=0;i<length_array.length;i++)
+		out_str += length_array[i]+'\n';
+		
+	
+	document.getElementById('output_area').value = out_str;
+}
+
 function initialize(){
     var out_str,s,str;
     var pat, result;
@@ -199,6 +216,7 @@ function initialize(){
 	str = document.getElementById('input_area').value;
   str = reformat(str);
   cipher_words = str.split(' ');
+  display_lengths();
   out_str += "";
   for (i=0;i<cipher_words.length;i++)
       out_str += '('+i+') '+cipher_words[i].toUpperCase()+', ';
