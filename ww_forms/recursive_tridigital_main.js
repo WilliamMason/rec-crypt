@@ -15,6 +15,12 @@ var start_key;
 var word_separator;
 // make word list
 
+var word_list_with_freq_flag = false;
+var class_array;
+// make word list
+var class_array_cutoff = 0;
+
+
 function handleFiles(obj){
 	var str, fname;
 	fname = obj[0];
@@ -87,6 +93,34 @@ function initialize_word_list(str){
 
 }
 
+function do_class_conversion(str){
+//alert("convert");
+  var i,j,k,c,n,s,s1;
+  var str_array;
+  
+  //var str = book_string;
+  if ( str ==''){
+	alert("no word list loaded");
+	return;
+  }
+  str_array = str.split('\n'); // break into separate lines, each line has word and its log frequency
+  class_array = []; // global variable
+  
+  for (i=0;i<str_array.length;i++){
+    s = str_array[i];
+    s = condense_white_space(s); // change separator strings to single blanks
+    s = s.split(' ');
+    s1 = new dict_element(s[0],parseInt(s[1]));
+    class_array.push(s1);
+    
+  }
+
+  //s = "number of elements in class array is: "+class_array.length;
+  //document.getElementById('output_area').value = s;  
+  
+}
+
+
 
 function alltrim(str) { // remove leading and trailing blanks
     return str.replace(/^\s+|\s+$/g, '');
@@ -104,6 +138,13 @@ function digits_and_dash_only(str){
 function digits_only(str){ // remove everthing except digits
 	str = str.toLowerCase();
 	return str.replace(/[^0-9]/g,'');
+}
+
+class dict_element {
+  constructor(word,freq){
+    this.word = word;
+    this.freq = freq;
+  }
 }
 
 
@@ -133,13 +174,30 @@ function do_processing(){
 	var i,j,k,c,n,s,s2;
 	
 	initialize_worker();
-	//word_len = [];
+	if (document.getElementById('has_frequency').checked){
+		word_list_with_freq_flag = true;
+		class_array_cutoff = parseInt(document.getElementById('cutoff_amount').value );
+	}
+	else
+		word_list_with_freq_flag = false;	
+	word_len = []; // have to reset in case cutoff frequency has changed and you need a new word list
 	if(word_len.length == 0 ) {
 		if (word_list_string == ''){
 			alert("Must select word list file.")
 				return;
 		}
-		initialize_word_list(word_list_string);
+		if (word_list_with_freq_flag){
+			do_class_conversion(word_list_string);
+			word_list = [];
+			for (i=0;i<class_array.length;i++){
+				if (class_array[i].freq > class_array_cutoff)
+					word_list.push(class_array[i].word)
+			}
+		}
+		else
+			initialize_word_list(word_list_string);
+		
+		//initialize_word_list(word_list_string);
 		length_not_found = [];
 		for (i=0;i<50;i++)
 			length_not_found[i] = true;
@@ -258,7 +316,20 @@ function do_insert(){
 	document.getElementById('skip_numbs').value = s;
 }
 
+function display_hide_cutoff(){
+	var str;
+	
+	if (document.getElementById('has_frequency').checked){
+		str = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+		str += 'Frequency cutoff : <input type = "text" id="cutoff_amount" size = 3 value = 14>';
+	}
+	else
+		str = '';
+	document.getElementById('cutoff_location').innerHTML = str;
+}
+
 onload = function() {
     document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});
+	document.getElementById('has_frequency').addEventListener("change",display_hide_cutoff );	
 }
 
