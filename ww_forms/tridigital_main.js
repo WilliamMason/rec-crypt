@@ -280,9 +280,59 @@ function input_ok() {
 	
 }
 
+// check_key is an array holding the key letters, indexed by strings of the form: labelXX+digit_char 
+function is_check_key_inconsistent(){
+	var i,j,k,c,n,s;
+	var used_let;
+	
+	used_let = [];
+		
+	for (i=0;i<10;i++){
+		c = check_key[label0+digits.charAt(i)];
+		if (c!= '-'){
+			n = used_let.indexOf(c);
+			if ( n != -1){
+				s = 'more than one copy of '+c+' in key table';
+				alert(s);
+				return(true);
+				
+			}
+			used_let.push(c);
+		}
+		
+		c = check_key[label1+digits.charAt(i)];
+		if (c!= '-'){
+			n = used_let.indexOf(c);
+			if ( n != -1){
+				s = 'more than one copy of '+c+' in key table';
+				alert(s);
+				return(true);
+				
+			}
+			used_let.push(c);
+		}
+
+		c = check_key[label2+digits.charAt(i)];
+		if (c!= '-'){
+			n = used_let.indexOf(c);
+			if ( n != -1){
+				s = 'more than one copy of '+c+' in key table';
+				alert(s);
+				return(true);
+				
+			}
+			used_let.push(c);
+		}
+		
+	} // next i
+	return(false); // it is consistent	
+} // end of is_key_inconsistent
+
 function update_check_key(p_let,c_digit){ // place p_let in key table under c_digit
     var i,row,col,c
     
+	if (is_check_key_inconsistent() )
+		return; // check_key array has more than one copy of some letter
     // find column with c_digit
     for (i=0;i<10;i++)
         if (top_key[i] == c_digit){
@@ -1215,6 +1265,9 @@ function do_key_search(){
         alert("No word list selected!");
         return;
     }
+	if (is_check_key_inconsistent() )
+		return; // check_key array has more than one copy of some letter
+	
     // set up letter columns in digital form from current key (=check_key).
     key_cols = []; // global
     for (col = 0;col<10;col++){
