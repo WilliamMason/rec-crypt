@@ -211,9 +211,54 @@ function input_ok() {
 	
 }
 
+// remove letters from check_key if they aren't in the current plaintext
+function clean_check_key(){
+	var i,j,k,c,n,s;
+
+	for (i=0;i<10;i++){
+		c = check_key[label0+digits.charAt(i)];
+		if (c!= '-'){
+			n = plain.indexOf(c);
+			if ( n == -1){ // no c in plaintext
+				check_key[label0+digits.charAt(i)] = '-'; //remove c from check_key
+				s = 'removed '+c+' from key table';
+				//alert(s);
+				
+			}
+		}
+		
+		c = check_key[label1+digits.charAt(i)];
+		if (c!= '-'){
+			n = plain.indexOf(c);
+			if ( n == -1){ // no c in plaintext
+				check_key[label1+digits.charAt(i)] = '-'; //remove c from check_key
+				s = 'removed '+c+' from key table';
+				//alert(s);
+				
+			}
+		}
+
+		c = check_key[label2+digits.charAt(i)];
+		if (c!= '-'){
+			n = plain.indexOf(c);
+			if ( n == -1){ // no c in plaintext
+				check_key[label2+digits.charAt(i)] = '-'; //remove c from check_key
+				s = 'removed '+c+' from key table';
+				//alert(s);
+			}
+		}
+		
+	} // next i
+	//restore_keyblock(0);	
+}
+
+
 function update_check_key(p_let,c_digit){ // place p_let in key table under c_digit
     var i,row,col,c
     
+	if ( p_let == '-')
+		clean_check_key()
+	
     // find column with c_digit
     for (i=0;i<10;i++)
         if (top_key[i] == c_digit){
