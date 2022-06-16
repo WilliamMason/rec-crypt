@@ -805,6 +805,18 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 
 }
 	
+	
+function show_sol(){
+	var i,j,k,c,n,s;
+	
+	s = "current palintext\n";
+	s += plain.join('') + '\n';
+	s += 'key\nabcdefghijklmnopqrstuvwxyz\n'
+	c = plain_key.slice(0,26); // may have 30 entries from do/undo
+	s += c.join('');
+	document.getElementById('computer_output').value = s;
+	
+}	
 
 
 function set_original_buttons() {
@@ -813,6 +825,9 @@ function set_original_buttons() {
     str += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
     str += '<input type=button value = "undo" id="do_undo2">'
     str += '<input type=button value = "redo" id="redo_button" disabled>';
+	str += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	str += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+	str += '<INPUT id="show_sol" type=button value="Get current plaintext" >';
     str += '<br><br><br>';
     str = str + '<INPUT id="setup_swap2" type=button value="swap rows or columns in key" >';
 	document.getElementById('button_actions').innerHTML= str;
@@ -820,7 +835,8 @@ function set_original_buttons() {
     document.getElementById('reset2').addEventListener("click",reset);
     document.getElementById('do_undo2').addEventListener("click",do_undo);
     document.getElementById('redo_button').addEventListener("click",do_redo);
-     document.getElementById('setup_swap2').addEventListener("click",setup_swap);
+    document.getElementById('setup_swap2').addEventListener("click",setup_swap);
+	document.getElementById('show_sol').addEventListener("click",show_sol);
 }
 
 function restore_original() {
