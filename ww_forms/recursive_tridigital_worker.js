@@ -120,11 +120,13 @@ function do_solve( current_decrypt,current_key, word_index){
 		for (x=0;x<new_key.length;x++){
 			c1 = new_key[x];
 			y = digits.indexOf(c1);
-			new_key_count[y]++;
-			if ( new_key_count[y] > 3){ // more than 3 copies of the digit c1 in new key
-				//console.log("too many repeats");
-				flag = true;
-				break;
+			if ( y != -1){
+				new_key_count[y]++;
+				if ( new_key_count[y] > 3){ // more than 3 copies of the digit c1 in new key
+					//console.log("too many repeats");
+					flag = true;
+					break;
+				}
 			}
 		}
 		if ( flag) continue;
