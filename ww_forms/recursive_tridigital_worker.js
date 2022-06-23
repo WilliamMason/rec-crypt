@@ -23,15 +23,25 @@ function compare(a,b){
 function start_recursion(){
 	var i,j,k,c,n,s;
 	var current_decrypt = [];
+	var key_count = [];
 	
 	all_sols = [];
-	/*
-	var current_key = [];
-	for (i=0;i<26;i++)
-		current_key[i] = '-';
-	*/
 	var current_key = start_key.split('');
-	
+	// initialize key count and check for too many repeated key digits
+	for (i=0;i<10;i++)
+		key_count[i] = 0;
+	for (i=0;i<current_key.length;i++){
+		c = current_key[i];
+		n = digits.indexOf(c)
+		if (n != -1){
+			key_count[n]++;
+			if ( key_count[n] > 3){
+				out_str = 'Digit '+c+' occurs more than 3 times in the initial key!\n';
+				postMessage(out_str);
+				return;
+			}
+		}
+	}
 	out_str = '';
 	last_index = cipher_words.length-1;
 	decrypt_order = [];
@@ -42,7 +52,8 @@ function start_recursion(){
 	
 	postMessage("working");
 	sol_count = 0;
-	do_solve(current_decrypt,current_key, 0);
+	do_solve(current_decrypt,current_key, 0,key_count);
+	out_str = '';
 	out_str += '\ndone';
 	out_str += '\nAll solutions ('+SAVE_SOL_LIMIT+' limit):\n';
 	s = all_sols.join('');
@@ -55,6 +66,8 @@ function start_recursion(){
 function do_solve( current_decrypt,current_key, word_index){
 	var i,j,k,c,n,s,flag,c1,p1,n1
 	var new_decrypt, new_key;
+	var x,y, new_key_count;
+	var zero_key_count = [0,0,0,0,0,0,0,0,0,0];
 	
 	var le = cipher_words[decrypt_order[word_index][0] ].length;
   if (skip_word_index[decrypt_order[word_index][0]] || length_not_found[le] ){
@@ -91,6 +104,7 @@ function do_solve( current_decrypt,current_key, word_index){
 		new_decrypt = current_decrypt.slice(0);
         new_decrypt[decrypt_order[word_index][0]] = word_len[le][i];
 		new_key = current_key.slice(0);
+		new_key_count = zero_key_count.slice(0);
 		flag = false;
 		for (j=0;j<new_decrypt[decrypt_order[word_index][0]].length;j++){
 			p1 = new_decrypt[decrypt_order[word_index][0]].charAt(j);
@@ -101,6 +115,17 @@ function do_solve( current_decrypt,current_key, word_index){
 				break;
 			}
 			new_key[n1] = c1;
+		}
+		// check for more than 3 repeated digits in new key
+		for (x=0;x<new_key.length;x++){
+			c1 = new_key[x];
+			y = digits.indexOf(c1);
+			new_key_count[y]++;
+			if ( new_key_count[y] > 3){ // more than 3 copies of the digit c1 in new key
+				//console.log("too many repeats");
+				flag = true;
+				break;
+			}
 		}
 		if ( flag) continue;
         if (word_index == last_index){ // all decrypt positions filled
@@ -119,7 +144,7 @@ function do_solve( current_decrypt,current_key, word_index){
         }
         else {
            n = word_index+1;
-            do_solve(new_decrypt,new_key, n )
+            do_solve(new_decrypt,new_key, n)
         }
     }
   }
