@@ -809,7 +809,7 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 function show_sol(){
 	var i,j,k,c,n,s;
 	
-	s = "current palintext\n";
+	s = "current plaintext\n";
 	s += plain.join('') + '\n';
 	s += 'key\nabcdefghijklmnopqrstuvwxyz\n'
 	c = plain_key.slice(0,26); // may have 30 entries from do/undo
