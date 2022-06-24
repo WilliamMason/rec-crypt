@@ -116,6 +116,7 @@ function do_solve( current_decrypt,current_key, word_index){
 			}
 			new_key[n1] = c1;
 		}
+		if ( flag) continue;
 		// check for more than 3 repeated digits in new key
 		for (x=0;x<new_key.length;x++){
 			c1 = new_key[x];
