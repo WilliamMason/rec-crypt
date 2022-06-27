@@ -94,7 +94,7 @@ function get_key_square(key,basic_key){
     var key_symbs;
     
     key = key.toUpperCase();
-    key = alltrim(key);	
+    key = alltrim(key);
     key = condense_white_space(key);
     key_array = key.split(' ');
     used_sym = {};
@@ -116,7 +116,7 @@ function get_key_square(key,basic_key){
         keysq[indx++]=c;
         x = digit_letters.indexOf(c);
         //if c in digit_letters:
-        if (x != -1 && c.length == 1) { // need c.length == 1 to avoid flagging DE 
+        if (x != -1 && c.length == 1) { // need c.length == 1 to avoid flagging DE
             //n = digit_letters.index(c)
             x = (x+1)%10
             //keysq.append(str(n))
@@ -138,9 +138,9 @@ function get_key_square(key,basic_key){
 function show_worksheet(keysq){
     var str,i,c,s,j;
     var row,col,n;
-    var left_key,top_key,lk,tk,cnt;    
+    var left_key,top_key,lk,tk,cnt;
 
-    lk = document.getElementById('left_key').value;  
+    lk = document.getElementById('left_key').value;
     cnt = 0;
     left_key = [];
     for (i=0;i<lk.length;i++){
@@ -149,7 +149,7 @@ function show_worksheet(keysq){
             left_key[cnt++] = n;
          }
     }
-    tk = document.getElementById('top_key').value;  
+    tk = document.getElementById('top_key').value;
     cnt = 0;
     top_key = [];
     for (i=0;i<tk.length;i++){
@@ -188,7 +188,7 @@ function break_pt(c) {
 
 function do_format(keysq,code){
     var out_str, pos, limit;
-    var inverse_left,inverse_top,lk,tk,cnt;   
+    var inverse_left,inverse_top,lk,tk,cnt;
     var plain,c,n,i,j,c1;
     var state,row,col;
     
@@ -318,7 +318,7 @@ function do_calc(){ // encode
         return;
     }
     
-    tk = document.getElementById('top_key').value; 
+    tk = document.getElementById('top_key').value;
     // check for missing digits in top key
     inverse_top = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
     cnt = 0;
@@ -373,8 +373,6 @@ function do_calc(){ // encode
         else
             trigraph[s]=ns
     }
-    var SING_FREQ = 50        
-    var DI_FREQ = 80
     var symbols = 'abcdefghijklmnopqrstuivwxyz0123456789'
 
     plaintext = document.getElementById('input_area').value;
@@ -384,10 +382,66 @@ function do_calc(){ // encode
     for (i=0;i<plaintext.length;i++) {
         c = plaintext.charAt(i);
         n = symbols.indexOf(c);
-        if ( n != -1) 
+        if ( n != -1)
             plain_array[cnt++] = c;
     }
     //encode
+if (document.getElementById('always_triplet').checked ){
+	// try encoding trigraphs, then digraphs, then singletons
+	var s1, temp_array
+	temp_array = plain_array.slice(0);
+for (s in trigraph){
+	n1 = trigraph[s];
+	for (i=0;i<temp_array.length-2;i++){
+		s1 = temp_array[i]+temp_array[i+1]+temp_array[i+2];
+		if (s == s1){
+			temp_array.splice(i,3,n1);
+		}
+	}
+}
+for (s in digraph){
+	n1 = digraph[s];
+	for (i=0;i<temp_array.length-1;i++){
+		s1 = temp_array[i]+temp_array[i+1];
+		if (s == s1){
+			temp_array.splice(i,2,n1);
+		}
+	}
+}
+for (s in singleton){
+	n1 = singleton[s];
+	for (i=0;i<temp_array.length;i++){
+		s1 = temp_array[i];
+		if (s == s1){
+			temp_array[i] = n1;
+		}
+	}
+}
+//code = temp_array.join(' ');
+code = '';
+cnt = 0;
+for (i=0;i<temp_array.length;i++){
+  code += temp_array[i]+' ';
+  cnt++;
+  if ( cnt == 22){
+    code +='\n';
+    cnt = 0;
+  }
+}
+
+
+} // end if triplet_always checked
+else {
+  
+if (document.getElementById('singleton').checked )  {
+    var SING_FREQ = 50
+    var DI_FREQ = 80
+}
+else {
+    var SING_FREQ = 20
+    var DI_FREQ = 50
+  
+}
     indx = 0
     code = ''
     cnt = 0
@@ -455,10 +509,11 @@ function do_calc(){ // encode
             code += '\n';
         }
     }
-    //print "ciphertext:"        
+    //print "ciphertext:"
     //print code
+} //end else
     ftext = code;
-    if ( document.getElementById('show_work').checked){    
+    if ( document.getElementById('show_work').checked){
         s = "\n\nKey: "+key;
         // show worksheet
         s += show_worksheet(keysq);
@@ -536,7 +591,7 @@ function do_decrypt(){ // decode
 	str = document.getElementById('input_area').value;
 	str = str.toUpperCase();
 	// global replace of line feeds and carriage returns with blank
-	str = str.replace(/[\n\r]/g,' ');		
+	str = str.replace(/[\n\r]/g,' ');
     
     if (str == ''){
         document.getElementById('output_area').value ="No codetext entered!";
@@ -567,7 +622,7 @@ function do_decrypt(){ // decode
 	plaintext = plaintext.toLowerCase();
     //ftext = 'Plaintext:\n'+do_format(plaintext,'');
     ftext = plaintext;
-    if ( document.getElementById('show_work').checked){  
+    if ( document.getElementById('show_work').checked){
         s = "\n\nKey: "+key;
         // show worksheet
         s += show_worksheet(keysq);
@@ -604,14 +659,13 @@ function switch_basic_block(){
 
 </script>
 </head>
-<body >
-<div style="background:silver; border:3px ridge black;padding:5px;">
-<h3>Syllabary cipher encode-decode</h3>
+<body style="background:silver;">
+<h3>Syllabary cipher encode-decode </h3>
 <br>
 <br>Codetext/Plaintext:<br>
 <textarea id="input_area" cols=80 rows = 6>
 </textarea><br>
-<br>Key: 
+<br>Key:
 <input type=text id="key_area" size = 30>
 Symbols separated by blanks. "T E S T" is a different key from "TE ST" (Can leave out digits.)
 <br>
@@ -622,6 +676,15 @@ Symbols separated by blanks. "T E S T" is a different key from "TE ST" (Can leav
 Column Key
 <input type=text name=top_key" id="top_key" size = 10 >
  (10 digits)
+ 
+ <div   style=" float:right; width:500px; height:50px; background-color:yellow; border:3px ridge black;padding:10px;" >
+   Encryption probabilities among single letter, two letters, triplet:
+   <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" id="singleton"  name="freq" checked > Single letter 50%
+<input type="radio" id="triplet"  name="freq"  > Triplet 50%
+<input type="radio" id="always_triplet"  name="freq"  > Triplet 100%
+</div>
 <br>
 <br>
 Output:<br>
