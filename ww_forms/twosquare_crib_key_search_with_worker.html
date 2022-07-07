@@ -1,0 +1,682 @@
+<html>
+<head>
+<title>Tri-square key search with crib</title>
+<script type="text/javascript">
+
+/* example
+E-18. Two-Square. Yet more retail horror? TSIOLKOVSKY
+PY DW FP PK CX DL BD GC SY KM BD BB PS TO KC US FW SW CY FA XI EY
+PK BB KX HT XO NW CY BK CO NA FK QY LZ SN SH GV QP PY DW FP PK CX
+HL TV GP VL. (-fyprofileafewyea-)
+*/
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var lowerC="abcdefghijklmnopqrstuvwxyz";
+var digits="0123456789";
+var buffer = [];
+var buf_len, crib_len;
+var crib = [];
+var l_alpha = "abcdefghijklmnopqrstuvwxyz";
+
+
+var symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var code = [];
+var crib = [];
+var EMPTY = -1;
+
+var flag_6x6;
+var numb_symbols;
+var keysquare_width;
+
+flag_6x6= false;
+
+var ROW = 0;
+var COL = 1;
+var SQ1  = 0;
+var SQ2  = 1;
+
+var crib_len;
+var numb_cribs;
+var out_str;
+
+
+var labels = [];
+var rev_labels = [];
+
+//crib key arrays
+var left_crib_columns, left_crib_rows, right_crib_columns, right_crib_rows;
+var left_right_same_row;
+
+
+function setup_code() {
+	var i,j,state,cnt,c, data,n1,n;
+
+ 
+  data = document.getElementById('input_area').value;
+  data = data.toUpperCase();
+  data = data.replace(/Ø/g,'0');
+  
+  if ( data == ''){
+	alert("No cipher entered!");
+	return(false);
+  }
+	state=0;
+  cnt = 0;
+  code = [];
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( !flag_6x6 && c =='J'){
+		    alert('Cipher has a J');
+			return(false);
+		}
+		n = symbols.indexOf(c);
+		if ( n >-1) {
+		  code[cnt++]=n
+		}
+	}
+	if ( (cnt%2) != 0 ) {
+		alert("Cipher has odd number of symbols!");
+		return(false);
+	}
+	return(true);
+}
+
+
+function do_drag(){
+var result,s,n,c,i,cnt,crib_pos;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+    flag_6x6 = false;
+    alpha = 'abcdefghijklmnopqrstuvwxyz';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 26; // global
+    keysquare_width = 5; //global
+  //}
+	result = setup_code(); // get code and convert to numbers
+	if ( result == false)
+		return;
+	s = document.getElementById('crib_area').value;
+	s = s.toLowerCase();
+	if ( s==''){
+		alert("No crib entered!");
+		return;
+	}
+	crib_len = 0;
+  crib = [];
+  numb_cribs = 0;
+  crib[numb_cribs] = [];
+	for (var i=0;i<s.length;i++){
+		c = s.charAt(i);
+        if ( c == '\n'){
+            numb_cribs++;
+            crib[numb_cribs] = [];
+            crib_len = 0;
+            continue;
+        }
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			crib[numb_cribs][crib_len++] = n;
+	}
+  if ( numb_cribs==0 && crib_len == 0){
+      alert("No crib entered!");
+      return;
+  }
+  while (numb_cribs>0 && crib[numb_cribs].length == 0) // last crib string ended in a new line, remove empty crib
+      numb_cribs--;
+  
+	out_str = 'Crib positions (positions start at 0):\n';
+	var current_labels = [];
+	var current_crib_buffer = [];
+	construct_crib(0,current_labels,current_crib_buffer)
+	document.getElementById('output_area').value = out_str;
+	
+}
+
+
+function construct_crib( stage,current_labels,current_crib_buffer){
+	var i,j,k,n,index;
+	var start_pos,flag;
+	var c,c1,c2;
+  var cnt;
+	var n1,n2,n3,n4,k1,k2,k3;
+	var c3,c4;
+	var row1,col1,row2,col2;
+	var flag,nxt_label,sq_index;
+	var numb_reversals;
+    var align;
+  
+  var new_labels = [];
+  var new_crib_buffer = [];
+    flag_6x6 = false;
+    alpha = 'abcdefghijklmnopqrstuvwxyz';
+    symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // global
+    numb_symbols = 26; // global
+    keysquare_width = 5; //global
+
+
+	for (start_pos=0;start_pos<code.length - crib[stage].length+1;start_pos++) {
+	  nxt_label = 0;
+		if ( stage ==0 ) {
+		  for (i=0;i<code.length;i++)
+        new_crib_buffer[i] = EMPTY;
+      for (i=0;i<numb_symbols;i++){
+        new_labels[i] = [];
+        for (j=0;j<2;j++){
+          new_labels[i][j] = [];
+          for (k=0;k<2;k++)
+            new_labels[i][j][k] = EMPTY;
+        }
+      }
+		}
+		else {
+		  for (i=0;i<code.length;i++)
+        new_crib_buffer[i] = current_crib_buffer[i];
+      for (i=0;i<numb_symbols;i++){
+        new_labels[i] = [];
+        for (j=0;j<2;j++) {
+          new_labels[i][j] = [];
+          for (k=0;k<2;k++){
+            new_labels[i][j][k] = current_labels[i][j][k];
+            if (new_labels[i][j][k]>=nxt_label)
+              nxt_label = new_labels[i][j][k] +1;
+          }
+        }
+      }
+	  }
+	  flag = 0;
+	  // is this position consistent with crib already in place?
+	  for (i=0;i<crib[stage].length;i++){
+	    //if(new_crib_buffer[start_pos+i] != EMPTY && new_crib_buffer[start_pos+i] != crib[stage][i]){
+	    if(new_crib_buffer[start_pos+i] != EMPTY ){ // assume no overlap
+	      flag = 1; // inconsistent
+	      break;
+	    }
+	    new_crib_buffer[start_pos+i] = crib[stage][i];
+	  }
+	  if (flag) continue; // inconsistent with previous crib, try next position
+	    
+	//nxt_label = 0;
+	/* start at even or odd pos?*/
+	if ( start_pos&1) {
+		index = 1;
+		c4 = crib[stage][0];
+		c1 = code[start_pos-1];
+		c2 = code[start_pos];
+		n1 = new_labels[c1][SQ2][COL];
+		n4 = new_labels[c4][SQ2][COL];
+		if ( n1 == -1 && n4 == -1)
+			new_labels[c1][SQ2][COL] = new_labels[c4][SQ2][COL] = nxt_label++;
+		else if (n1 == -1)
+			new_labels[c1][SQ2][COL] = n4;
+		else if (n4 == -1 )
+			new_labels[c4][SQ2][COL] = n1;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n4)
+						new_labels[k1][k2][k3] = n1;
+		}
+		n2 = new_labels[c2][SQ1][ROW];
+		n4 = new_labels[c4][SQ2][ROW];
+		if ( n2 == -1 && n4 == -1)
+			new_labels[c2][SQ1][ROW] = new_labels[c4][SQ2][ROW] = nxt_label++;
+		else if (n2 == -1)
+			new_labels[c2][SQ1][ROW] = n4;
+		else if (n4 == -1 )
+			new_labels[c4][SQ2][ROW] = n2;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n2)
+						new_labels[k1][k2][k3] = n4;
+		}
+	}
+	else
+		index = 0;
+	/* find cipher text letters that correspond to the crib
+		at start_pos */
+	for (j=index;j<crib[stage].length;j=j+2) {
+		c1 = code[start_pos+j];
+		c2 = code[start_pos+j+1];
+		c3 = crib[stage][j];
+		n1 = new_labels[c1][SQ2][ROW];
+		n3 = new_labels[c3][SQ1][ROW];
+		if ( n1 == -1 && n3 == -1)
+			new_labels[c1][SQ2][ROW] = new_labels[c3][SQ1][ROW] = nxt_label++;
+		else if (n1 == -1)
+			new_labels[c1][SQ2][ROW] = n3;
+		else if (n3 == -1 )
+			new_labels[c3][SQ1][ROW] = n1;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n3)
+						new_labels[k1][k2][k3] = n1;
+		}
+		n2 = new_labels[c2][SQ1][COL];
+		n3 = new_labels[c3][SQ1][COL];
+		if ( n2 == -1 && n3 == -1)
+			new_labels[c2][SQ1][COL] = new_labels[c3][SQ1][COL] = nxt_label++;
+		else if (n2 == -1)
+			new_labels[c2][SQ1][COL] = n3;
+		else if (n3 == -1 )
+			new_labels[c3][SQ1][COL] = n2;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n2)
+						new_labels[k1][k2][k3] = n3;
+		}
+		if ( j==crib[stage].length-1)  /* can't test last pair */
+			break;
+		c4 = crib[stage][j+1];
+		n1 = new_labels[c1][SQ2][COL];
+		n4 = new_labels[c4][SQ2][COL];
+		if ( n1 == -1 && n4 == -1)
+			new_labels[c1][SQ2][COL] = new_labels[c4][SQ2][COL] = nxt_label++;
+		else if (n1 == -1)
+			new_labels[c1][SQ2][COL] = n4;
+		else if (n4 == -1 )
+			new_labels[c4][SQ2][COL] = n1;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n4)
+						new_labels[k1][k2][k3] = n1;
+		}
+		n2 = new_labels[c2][SQ1][ROW];
+		n4 = new_labels[c4][SQ2][ROW];
+		if ( n2 == -1 && n4 == -1)
+			new_labels[c2][SQ1][ROW] = new_labels[c4][SQ2][ROW] = nxt_label++;
+		else if (n2 == -1)
+			new_labels[c2][SQ1][ROW] = n4;
+		else if (n4 == -1 )
+			new_labels[c4][SQ2][ROW] = n2;
+		else { /* both already labeled, join */
+			for (k1 = 0;k1<numb_symbols;k1++) for (k2 = 0; k2<2;k2++)
+				 for (k3 = 0;k3<2;k3++)
+					if ( new_labels[k1][k2][k3] == n2)
+						new_labels[k1][k2][k3] = n4;
+		}
+	}/* next j */
+	/* check squares for inconsistencies */
+	flag = false;
+	for (j=0;j<nxt_label;j++) for (k1=0;k1<2;k1++) for (k2=0;k2<2;k2++) {
+	  if (flag)break;
+		n1 = 0;
+		for (k3=0;k3<numb_symbols;k3++)
+			if ( new_labels[k3][k1][k2] == j ) {
+				n1++;
+				if ( n1>keysquare_width) {
+// 				printf("Too many labels in same row/col, pos %li\n",
+// 					start_pos);
+					//return(-1);
+					flag = true;
+					break;
+				}
+		} /* next k3 */
+		if (flag) break;
+	} /* next k2,k1,j*/
+	if ( flag) continue; // next start_pos
+	for (k1=0;k1<2;k1++) for (j=0;j<numb_symbols-1;j++) {
+	  if (flag) break;
+		if ( new_labels[j][k1][ROW] == -1 ||
+			new_labels[j][k1][COL] == -1 )
+			continue;
+		for (k3 = j+1;k3<numb_symbols;k3++)
+		 if ( new_labels[j][k1][ROW] == new_labels[k3][k1][ROW] &&
+			new_labels[j][k1][COL] == new_labels[k3][k1][COL] ) {
+			//return(-1);
+			flag = true;
+			break;
+		}/* next k3 */
+		if (flag) break;
+	} /* next j,k1*/
+	if ( flag) continue;
+	if ( stage < numb_cribs) construct_crib(stage+1,new_labels,new_crib_buffer);
+	else {
+  // current crib buffer is OK!
+    if (numb_cribs < 1) {// only 1 crib string so can give a position for it and show coresponding code string
+      out_str += 'OK at position: '+start_pos;
+      crib_len = crib[0].length;
+      out_str += "\ncorresponding ciphertext\n";      
+      if ( (start_pos % 2) != 0){
+        align = 1;
+      }
+      else{
+        align = 0;
+      }
+      k=0;
+      for (i=0;i<crib_len+align;i++){
+        out_str += symbols.charAt( code[start_pos-align+i] );
+        if (++k == 2){
+            out_str += ' ';
+            k=0;
+        }
+      }
+      if ( k==1) // need one more code letter to fill out pair
+        out_str += symbols.charAt( code[start_pos-align+i] );
+      out_str += '\n';
+      // put plaintext under abover cipher text
+      k=0;
+      if (align == 1){
+        out_str += '-';
+        k=1;
+      }
+      for (i=0;i<crib_len;i++){
+        out_str += alpha.charAt( crib[0][i] );
+        if (++k == 2){
+            out_str += ' ';
+            k=0;
+        }
+      }
+      if ( k==1)
+        out_str += '-';
+      out_str += '\n';  
+      
+    }
+    out_str += '\n';
+    cnt = 0;
+    for (i=0;i<code.length;i++){
+      if (new_crib_buffer[i] == EMPTY)
+        out_str += '-';
+      else
+        out_str += alpha.charAt(new_crib_buffer[i]);
+      if ( ++cnt == 50){
+        cnt = 0;
+        out_str += '\n';
+      }
+    }
+    out_str +='\n';
+    	//count number of reversed pairs, the more there are the more likely this is correct position
+	  numb_reversals = 0;
+	  for (j=0;j<code.length;j=j+2) {
+		if (new_crib_buffer[j] == code[j+1] && new_crib_buffer[j+1] == code[j])
+			numb_reversals++;
+	  }
+	 if ( numb_reversals>0)
+        out_str += '('+numb_reversals+' reversed pairs)\n'
+     if (document.getElementById('rows_cols').checked){     
+        out_str += get_rev_labels(new_labels,nxt_label);
+        out_str += '=========================\n';
+      }
+	}
+
+	}// next start_pos
+} // end construct crib
+
+function get_rev_labels(labels,nxt_label){
+    var i,j,k,n,c;
+    var s,s1,str,s2;
+    
+    rev_labels = [];
+    for (i=0;i<nxt_label;i++)
+        rev_labels[i] = [];
+        
+    for (i=0;i<numb_symbols;i++){
+        if (labels[i][SQ1][COL] != EMPTY)
+            rev_labels[ labels[i][SQ1][COL] ].push( ['left_col',symbols.charAt(i)] );
+        if (labels[i][SQ1][ROW] != EMPTY)
+            rev_labels[ labels[i][SQ1][ROW] ].push( ['left_row',symbols.charAt(i)] );
+        if (labels[i][SQ2][COL] != EMPTY)
+            rev_labels[ labels[i][SQ2][COL] ].push( ['right_col',symbols.charAt(i)] );
+        if (labels[i][SQ2][ROW] != EMPTY)
+            rev_labels[ labels[i][SQ2][ROW] ].push( ['right_row',symbols.charAt(i)] );
+        
+    }
+    //console.log(rev_labels);
+  left_crib_columns = [];
+  left_crib_rows = [];
+  right_crib_columns = [];
+  right_crib_rows = [];
+  left_right_same_row = [];
+	
+  str = "\nleft keysquare letters in same column (but written horizontally because I'm lazy):\n";
+  // get left square letters (have same column index)
+  for (i=0;i<nxt_label;i++)
+    if (rev_labels[i].length>1){
+        s = '';
+        for (v in rev_labels[i])
+            if (rev_labels[i][v][0] == 'left_col')
+                s += rev_labels[i][v][1];
+		if (s.length>1)
+			left_crib_columns.push(s);
+				
+        s += '\n';
+        if (s.length>2)
+        str += s;
+    }
+  str += '\nleft and right keysquare letters in same row:\n'
+  for (i=0;i<nxt_label;i++)
+    if (rev_labels[i].length>1){
+        s = '';
+        s1 = '';
+        for (v in rev_labels[i])
+            if (rev_labels[i][v][0] == 'left_row')
+                s += rev_labels[i][v][1];
+            else if (rev_labels[i][v][0] == 'right_row')
+                s1 += rev_labels[i][v][1];
+		if (s.length>1)
+			left_crib_rows.push(s);
+		if ( s1.length>1)
+			right_crib_rows.push(s1);
+				
+        s1 += '\n';
+        if (s.length+s1.length>2){
+			s2 = s.charAt(0) + s1.charAt(0);
+			left_right_same_row.push(s2);
+		
+			str += 'left: '+s+' right: '+s1;
+		}
+    }
+  str += "\nright keysquare letters in same column (but written horizontally because I'm lazy):\n";
+  // get left square letters (have same column index)
+  for (i=0;i<nxt_label;i++)
+    if (rev_labels[i].length>1){
+        s = '';
+        for (v in rev_labels[i])
+            if (rev_labels[i][v][0] == 'right_col')
+                s += rev_labels[i][v][1];
+		if (s.length>1)
+			right_crib_columns.push(s);
+				
+        s += '\n';
+        if (s.length>2){
+			str += s;
+		}
+    }
+  document.getElementById('do_solve1').disabled = false;
+  return(str);
+    
+}
+
+var hworker;
+
+
+var word_list_string = '';
+var word_list = [];
+
+
+function handleFiles(obj){
+	var str, fname;
+	fname = obj[0];
+	str = "handle file: "+fname.fileName;
+	//alert(str);
+	getAsText(fname);
+}
+
+function getAsText(readFile) {
+        
+  var reader = new FileReader();
+  // Handle progress, success, and errors
+  //reader.onprogress = updateProgress;
+  reader.onload = loaded;
+  reader.onerror = errorHandler;
+  
+  reader.readAsText(readFile);
+  
+}
+
+function loaded(evt) {
+  // Obtain the read file data
+  var fileString = evt.target.result;
+  var s;
+  //alert("got to loaded");
+  // Handle UTF-16 file dump
+    //document.getElementById('output_area').value = fileString;
+  s = "The length of the file is "+fileString.length;
+  document.getElementById('output_area2').value = s;
+  word_list_string = fileString;
+  //word_len = [];
+  //alert("file loaded");
+  
+}
+
+function errorHandler(evt) {
+  if(evt.target.error.code == evt.target.error.NOT_READABLE_ERR) {
+    // The file could not be read
+    alert("got error handler");
+  }
+}
+
+function initialize_word_list(str){
+	var s,n;
+    var state,i,c,index;
+    
+    // construct word list
+    str = str.toLowerCase();
+    state = 0; //no current word
+    s = '';
+    index = 0;
+    for (i=0;i<str.length;i++) {
+        c = str.charAt(i);
+		if ( c=='j')
+			c = 'i';
+        n = l_alpha.indexOf(c);
+        if ( state == 0 && n >=0){
+            s = c;
+            state = 1;
+        }
+        else if (state == 1){
+            if (n >=0) s += c;
+            else {
+                word_list[index++] = s;
+                state = 0;
+            }
+        }
+    }
+    if (state == 1)
+        word_list[index++] = s;
+	
+
+}
+
+
+/////////////// crib matcher code
+var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var buf_len2;
+var buffer2 = [];
+var crib2 = [];
+var crib2_len;
+
+var alpha_extended="ABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+function initialize_worker(){
+    var out_str;
+    
+   hworker = new Worker('twosquare_with_crib_worker.js');
+   hworker.onmessage = function (event) {
+    out_str = event.data
+	document.getElementById('output_area2').value = out_str;	
+    }
+}
+
+function do_solve(){
+	var str,max_trials,s,n;
+	var  out_str,c,v,score,i,j;
+	var n1,n2,v1,v2,max_score;
+	var x,y,n3,n4;
+    var indx,state,k;
+	var i,j,k,c,n,s;
+	var key,out_str,ka,work_key, work_key2;
+	var left_work_key, top_word_key, middle_work_key;
+	var xfer;
+	
+	if (word_list_string == ''){
+			alert("Must select word list file.")
+				return;
+	}
+	initialize_word_list(word_list_string);
+	initialize_worker();
+	xfer = {};
+	xfer["buffer"] = code; // numerical version
+	xfer["word_list"] = word_list;
+	xfer["left_crib_columns"] = left_crib_columns;
+	xfer["left_crib_rows"] = left_crib_rows;
+	xfer["right_crib_columns"] = right_crib_columns;
+	xfer["right_crib_rows"] = right_crib_rows;
+	
+	xfer["left_right_same_row"] = left_right_same_row;
+	hworker.postMessage(xfer);
+	
+	
+}
+
+
+function do_clear(){
+	document.getElementById('output_area2').value = '';
+	document.getElementById('input_area2').value = '';
+}
+
+onload = function() {
+    document.getElementById('do_solve1').addEventListener("click",do_solve);
+    document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});	
+
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<div id="derag" style="background:pink; border: 3px ridge black; margin-right:300px; padding:10px; ">
+<h3> Two-square crib possibilities</h3> <br>
+Directions: Type or paste in ciphertext and crib. Click Crib Drag button. <br><br>
+Ciphertext:<br>
+<textarea id="input_area" rows = 6 cols=90 spellcheck="false" >
+</textarea><br>
+crib:<br>
+<textarea id="crib_area" rows = 2 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Crib Drag" onclick=do_drag();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type = "checkbox" id = "rows_cols">
+Include row and column combinations to set up key search
+<br><br>
+Output (positions start at 0):<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+</div>
+<br><br>
+<div id="match" style="background:yellow; border: 3px ridge black; margin-right:300px; padding:10px; ">
+<h3>Two-square key search </h3> <br>
+
+Directions: Choose a word list file. Click Get Keys button.
+<br><br>
+
+
+Keys:<br>
+<textarea id="output_area2" cols=80 rows = 20>
+</textarea>
+<br>
+<br>
+<INPUT id="do_solve1" type=button value="Get Keys." disabled>
+
+<br><br>
+Word list file:
+<input type="file" id="input" >
+<br><br>
+
+
+</div>
+<br><br>
+</body>
+</html>
