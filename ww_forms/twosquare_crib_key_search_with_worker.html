@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Tri-square key search with crib</title>
+<title>Two_square key search with crib</title>
 <script type="text/javascript">
 
 /* example
@@ -111,7 +111,8 @@ var alpha = 'abcdefghijklmnopqrstuvwxyz';
             crib[numb_cribs] = [];
             crib_len = 0;
             continue;
-        }
+        }if ( c == 'j')
+			c = 'i';
 		n = alpha.indexOf(c);
 		if ( n>=0)
 			crib[numb_cribs][crib_len++] = n;
