@@ -20,6 +20,7 @@ function do_combo_search(){
     var str;
     var best_v,best_k, best_sub;
     var numb_top_keys,least_top_score,least_top_index;
+	var temp_simple_sub, simple_subs;
 
     // convert ciphertext to number array
     ciphertext = ciphertext.toLowerCase();
@@ -74,24 +75,29 @@ function do_combo_search(){
     least_top_score = -1;
     least_top_index = 0;
     best_score = 0;
+	simple_subs = {}; // record so can eliminate duplicates
     for (vk = 0;vk<numb_v_keys;vk++) for (hk = 0;hk<numb_h_keys;hk++) {
         xlate(vk,hk); // convert to simple substitution
+		temp_simple_sub = ''
+        for (i=0;i<buf_len/2;i++)
+                temp_simple_sub += symbols.charAt(final_buffer[i] );
+		if (temp_simple_sub in simple_subs) // already found this one
+			continue;
+		simple_subs[temp_simple_sub] = true; // record new one.
         score = get_score();
         if (score > best_score){
             best_score = score;
             best_v = vk;
             best_h = hk;
             best_sub = '';
-            for (i=0;i<buf_len/2;i++)
-                best_sub += symbols.charAt(final_buffer[i] );
+			best_sub = temp_simple_sub;
         }
         if ( score > least_top_score ){
             top_keys[least_top_index].score = score;
             top_keys[least_top_index].v_key = vk;
             top_keys[least_top_index].h_key = hk;
             top_keys[least_top_index].simple_sub = '';
-            for (i=0;i<buf_len/2;i++)
-                top_keys[least_top_index].simple_sub += symbols.charAt(final_buffer[i] );
+			top_keys[least_top_index].simple_sub = temp_simple_sub;
             least_top_score = score;
             for (i=0;i<numb_top_keys;i++)
                 if (top_keys[i].score < least_top_score){
