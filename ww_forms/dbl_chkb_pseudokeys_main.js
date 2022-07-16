@@ -141,14 +141,22 @@ function do_search(){
 		alert("Too many vertical key letters!");
 		return;
 	}
-	if ( cnt < max_letters){ // fill in arbitarily with unused letter
-        for (i=0;i<26;i++) 
-            if (v_letters_found[i] == 0)
-                break; // use letter i
-        while (cnt<max_letters) {
-            str += symbols.charAt(i);
-            cnt++;
-        }
+	var extra_letters = 'TALESCRONY'; // two words from wordle search list. probably dont need more than 10 even with 6x6
+	var extra_letters_index = [];
+	for (i=0;i<10;i++){
+		n = symbols.indexOf( extra_letters.charAt(i) );
+		extra_letters_index.push(n);
+	}
+	while ( cnt < max_letters){ // fill in with unused extra_letters
+        for (i=0;i<10;i++) {
+			n = extra_letters_index[i];
+            if (v_letters_found[n] == 0)
+                break; // use letter n
+		}
+
+		v_letters_found[n] = 1;
+        str += symbols.charAt(n);
+        cnt++;
 	}
     str2 = ''; // get unique key letters.
     cnt = 0;
@@ -161,14 +169,17 @@ function do_search(){
 		alert("Too many horizontal key letters!");
 		return;
 	}
-	if ( cnt < max_letters){ // fill in arbitarily with unused letter
-        for (i=0;i<26;i++) 
-            if (h_letters_found[i] == 0)
-                break; // use letter i
-        while (cnt<max_letters) {
-            str2 += symbols.charAt(i);
-            cnt++;
-        }    
+	while ( cnt < max_letters){ // fill in with unused extra_letters
+        for (i=0;i<10;i++) {
+			n = extra_letters_index[i];
+            if (h_letters_found[n] == 0)
+                break; // use letter n
+		}
+
+		h_letters_found[n] = 1;
+        str2 += symbols.charAt(n);
+        cnt++;
+
 	}
     v_keys = str;
     h_keys = str2;   
