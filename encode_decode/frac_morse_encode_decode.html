@@ -165,9 +165,12 @@ var alpha_27 = 'abcdefghijklmnopqrstuvwxyz0123456789 ';
     }
 	complete_key = extended_key.toUpperCase(); // global 
 	// convert all non digital or non numeric symbols to blanks
+	var special = "'’*" ;//characters that may occur in middle of words such as apostrophe, don't replace by blank
 	var plain = '';
 	for (i=0;i<plaintext.length;i++) {
 		c = plaintext.charAt(i);
+		if (special.indexOf(c) != -1)
+			continue; // skip don't replace with blank
 		n = alpha_27.indexOf(c);
 		if ( n >-1) 
 			plain += c;
