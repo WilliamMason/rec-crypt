@@ -35,6 +35,8 @@ var code_len, plain_len, max_p_len;
 var key_len;
 
 var wrk_code; // make global for speed
+var shifted_key_flag;
+var original_key;
  
 var shmoo_code = {E:'31',I:'322', P:'3212', B:'32112',
 T:'12', R:'323', F:'3213', G:'32113',
@@ -139,7 +141,7 @@ make_trie();
 max_trials = 1000000;
 
 
-function get_trial_decrypt(){
+function get_trial_decrypt(key_shift){
     var i,j,k,x,y,n,c;
     var ar,indx;
     var work_key, work_key2;
@@ -149,6 +151,7 @@ function get_trial_decrypt(){
     
     debugger;
     // warning: use key_len, not key.length -- key.length is 26!
+	
     if ( k2m_key){
         work_key2 = [];
         for (i=0;i<key_len;i++){
@@ -184,6 +187,13 @@ function get_trial_decrypt(){
                 work_key[j++] = i;
         }
     }
+	if (shifted_key_flag) {
+		original_key = work_key.slice(0); // originalKey is global variable;
+		work_key = original_key.slice(key_shift);
+		for (j=0;j<key_shift;j++)
+			work_key.push(original_key[j]);
+	}
+	
 	for (i=0;i<26;i++) {
 		inverse_key[ work_key[i] ] = i;
 	}    
@@ -208,9 +218,9 @@ function get_trial_decrypt(){
 } // end decrypt
     
 
-function get_score(buf_len){
+function get_score(buf_len,key_shift){
 	var score,i,n;
-	get_trial_decrypt();  
+	get_trial_decrypt(key_shift);  
     if (plain_text.length > max_p_len) return(0);
 	// get tetgraph score		
 	score = 0.0;
@@ -298,6 +308,7 @@ function do_hill_climbing(str){
 	var numb_accepted;
 	//var max_trials; // now global
 	var s;
+	var key_shift, old_key_shift,op_choice;	
   
     debugger;
 	str = str.toUpperCase();
@@ -352,6 +363,7 @@ function do_hill_climbing(str){
 		key[j]=key[i];
 		key[i] = c;
 	}
+	key_shift = 0;		
 	cycle_limit = 25;
 	//fudge_factor = 0.23; // now sent via post message
 	begin_level = 1.0;
@@ -361,14 +373,27 @@ function do_hill_climbing(str){
 	max_score = current_hc_score = score = -100.0 * buf_len;
 	mut_count = 0;
 	numb_accepted = 1;
+	var op_limit = 100*key_len/(key_len+1);	
 	for (trial = 0;trial < max_trials;trial++){
-		n1 = Math.floor(Math.random()*26);
-		n2 = Math.floor(Math.random()*26);
-		v1 = key[n1];
-		v2 = key[n2];
-		key[n1]=v2;
-		key[n2]=v1;        
-		score = get_score(buf_len);
+		if (shifted_key_flag){
+			op_choice = Math.random()*100;
+		}
+		else
+			op_choice = 0;
+		if ( op_choice<op_limit){		
+			n1 = Math.floor(Math.random()*26);
+			n2 = Math.floor(Math.random()*26);
+			v1 = key[n1];
+			v2 = key[n2];
+			key[n1]=v2;
+			key[n2]=v1; 
+		}
+		else {
+			old_key_shift = key_shift;
+			key_shift = Math.floor( Math.random()*26);
+		}
+		
+		score = get_score(buf_len,key_shift);
 		if ( score>max_score){
 			max_score = score;
 			out_str = '0'; // 0 at beginning is signal to post message in output box
@@ -390,6 +415,16 @@ function do_hill_climbing(str){
 			out_str += '\nKey: ';
 			for (i=0;i<key_len;i++) 
 				out_str += alpha.charAt(key[i]);
+			if (shifted_key_flag){
+				out_str += '\nWorkKey: ';
+				// original_key is global variable
+				work_key = original_key.slice(key_shift);
+				for (j=0;j<key_shift;j++)
+					work_key.push(original_key[j]);
+				for (i=0;i< 26;i++) 
+					out_str += alpha.charAt(work_key[i]);
+			}
+			
 			//document.getElementById('output_area').value = out_str;	
 			postMessage(out_str);
 		}
@@ -401,10 +436,13 @@ function do_hill_climbing(str){
             // accepted_count++;				
 			}
 		
-		else {
+		else if(op_choice<op_limit) {
 			key[n1]=v1;
 			key[n2]=v2;
 		}
+		else
+			key_shift = old_key_shift;
+		
 		noise_level += noise_step;	
 		if ( ++cycle_numb >= cycle_limit) {
 			noise_level = begin_level;
@@ -438,6 +476,11 @@ onmessage = function(event) { //receiving a message with the string to decode, s
         k2m_key = true;
     else
         k2m_key = false;
+	if (s[6] == '1')
+		shifted_key_flag = true;
+	else
+		shifted_key_flag = false;
+	
   }
   else if (str.charAt(0)  == ')')  { // crib indicator, then 0, no crib, 1 fixed crib,2 floating crib
     if (str.charAt(1)=='1') { // not currently used. 

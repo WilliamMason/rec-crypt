@@ -66,6 +66,7 @@ function errorHandler(evt) {
 function do_key_search(){
 	var str,c,i,n,j,k;
     var op_choice;
+	var c1;
     
 
     if (!do_check()) return;    
@@ -90,7 +91,12 @@ function do_key_search(){
    //worker.webkitPostMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
    worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
    //worker.webkitPostMessage( {op_choice:2, str:str});
-   worker.postMessage( {op_choice:2, str:str});
+   if ( document.getElementById('shift_keys').checked )
+	   c1 = '1';
+   else
+	   c1 = '0';
+   worker.postMessage( {op_choice:2, str:str, keyshift:c1});
+   
 
 //document.getElementById('debug_area').value="key search";
 }

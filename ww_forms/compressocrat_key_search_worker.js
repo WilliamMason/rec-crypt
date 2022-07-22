@@ -4,6 +4,7 @@ importScripts('tettable.js');
 var l_alpha = "abcdefghijklmnopqrstuvwxyz";
 var word_list_string = '';
 var word_list = [];
+var key_shift_limit;
 
 var tet_table = new Array();
 var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
@@ -264,31 +265,38 @@ function do_key_search(str){
 			//plain_text[buf_len++] = n;
 	}
     max_score = -10000;
+	var keyshift;	
     for (w_index=0;w_index<word_list.length;w_index++) {
         wrd = word_list[w_index];
         get_key_array(wrd);
-		score = get_score(buf_len);
-		if ( score>max_score){
-			max_score = score;
-			out_str = ''; 
-			j=0;
-			for (i=0;i<plain_text.length;i++){
-				out_str += lowerC.charAt(plain_text[i]);
-				j++;
-				if ( plain_text[i] == ' ' && j>80){
-					out_str += '\n';
-					j=0;
+		var original_key = key.slice(0);
+
+		for (keyshift = 0;keyshift<key_shift_limit;keyshift++){	
+			key = original_key.slice(keyshift)
+			for (i=0;i<keyshift;i++)
+				key.push(original_key[i]);
+			score = get_score(buf_len);
+			if ( score>max_score){
+				max_score = score;
+				out_str = ''; 
+				j=0;
+				for (i=0;i<plain_text.length;i++){
+					out_str += lowerC.charAt(plain_text[i]);
+					j++;
+					if ( plain_text[i] == ' ' && j>80){
+						out_str += '\n';
+						j=0;
+					}
 				}
+				out_str += "\nscore of plaintext: "+score.toFixed(2);
+				out_str += "\nKey: "+wrd;
+				out_str += '\nKey Array: ';
+				for (i=0;i<26;i++) 
+					out_str += alpha.charAt(key[i]);
+				postMessage(out_str);
+				//document.getElementById('output_area').value = out_str;
 			}
-			out_str += "\nscore of plaintext: "+score.toFixed(2);
-            out_str += "\nKey: "+wrd;
-			out_str += '\nKey Array: ';
-			for (i=0;i<26;i++) 
-				out_str += alpha.charAt(key[i]);
-			postMessage(out_str);
-            //document.getElementById('output_area').value = out_str;
 		}
-        
     }
     postMessage("~");
 //document.getElementById('debug_area').value="key search";
@@ -296,7 +304,7 @@ function do_key_search(str){
 
 onmessage = function(event) { //receiving a message
 	var str,s;
-
+	debugger;
   var state = event.data.op_choice;
   if ( state == 1){ // word list
     var word_list_array = new Uint8Array(event.data.buf); // need to set char view of arrayBuffer that was passed
@@ -304,7 +312,11 @@ onmessage = function(event) { //receiving a message
   }
   else if (state == 2){
     //word_pattern_string = event.data.str;
-    str = event.data.str;
-    do_key_search(str);
+	if (event.data.keyshift== '1')
+	  key_shift_limit = 26;
+	else
+	  key_shift_limit = 1 
+	str = event.data.str;
+	do_key_search(str);
   }
 }

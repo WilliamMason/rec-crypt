@@ -164,6 +164,11 @@ function do_solve(){
    else
         c = '0';
     str = str+':'+c;
+	if (document.getElementById('hill_climb_with_shifted_keys').checked)
+		str += ':1';
+	else
+		str += ':0';
+	
 	hclimber.postMessage(str);  
 	if(numb_workers>1) {
 		str = '@'+max_trials;
@@ -177,6 +182,11 @@ function do_solve(){
         str = str+':'+key_len;
         str = str+':'+p_len;    
         str = str+':'+c;
+		if (document.getElementById('hill_climb_with_shifted_keys').checked)
+			str += ':1';
+		else
+			str += ':0';
+		
 		hclimber2.postMessage(str);  
 	}
 	if(numb_workers>2) {
@@ -191,6 +201,11 @@ function do_solve(){
         str = str+':'+key_len;
         str = str+':'+p_len;
         str = str+':'+c;
+		if (document.getElementById('hill_climb_with_shifted_keys').checked)
+			str += ':1';
+		else
+			str += ':0';
+			
 		hclimber3.postMessage(str);  
 	}
     // post whether to use crib

@@ -24,7 +24,7 @@
   /*grid-gap: 10px;*/
   grid-auto-rows: minmax(50px, auto);
   padding: 10px;
-  max-width: 750px;
+  max-width: 850px;
 }
 
 .wrapper > div { /* Note: "> div"  must mean: for div's inside of wrapper div */
@@ -105,6 +105,8 @@ Status 2:
 <div class="numb_decrypts">
 Number of trial decrypts: 
 <input type="text" value="3000000" id="numb_trials" size = 8>
+&nbsp; 
+Max plaintext length: <input type = text id="max_p_len" value = "500" size = 3>
 
 </div>
 
@@ -115,8 +117,10 @@ Number of trial decrypts:
 
 <div class="key_len">
 Key length: <input type = text id="key_len" value = "10" size = 3>
-&nbsp; 
-Max plaintext length: <input type = text id="max_p_len" value = "500" size = 3>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type = "checkbox" id="hill_climb_with_shifted_keys" > Allow shifted keys.
+
+
 </div>
 
 <div class = "k2m_key">
@@ -142,8 +146,11 @@ Fudge 2: <input type = text id="fudgefactor2" value = "1.5" size = 3>
 <div class = "key_search">
 
 <input type="button" id="search_for_key" value = "Key Search">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Word/Phrase list for key search: <input type="file" id="input2" >
+&nbsp;
+<input type = "checkbox" id="shift_keys" > Allow shifted keys.
+
 </div>
 
 </div> <!-- end of wrapper div -->
