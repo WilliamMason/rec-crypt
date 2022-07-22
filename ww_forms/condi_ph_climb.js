@@ -358,10 +358,10 @@ function do_hill_climbing(str){
 				out_str += alpha3.charAt(work_key[i]);			
 			
 			out_str += ', key shifted by: '+key_shift;
-			
+			}
 			//document.getElementById('output_area').value = out_str;	
 			postMessage(out_str);
-			}
+			
 		}
        	if (score > current_hc_score-fudge_factor*buf_len/(noise_level)) {				
            	if (score != current_hc_score)
