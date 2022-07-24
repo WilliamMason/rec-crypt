@@ -510,6 +510,7 @@ function format_general_root(){ // makes heavy use of the ' marks dividing first
 	var dif = new Array();
 	var li = new Array();
 	var apostrophe_flag;
+	var j,s,cnt,j1;
 
 	data = document.getElementById('orig_puzzle').value.toUpperCase();	
     data = data.replace('GIVES ROOT','~');
@@ -558,6 +559,7 @@ function format_general_root(){ // makes heavy use of the ' marks dividing first
 			index++;
 		}
 	}
+	dis = '';	// the display string
 	if ( apostrophe_flag == 0)
 		alert("Warning: No separation by apostrophes");
 	// finished initializing
@@ -568,8 +570,31 @@ function format_general_root(){ // makes heavy use of the ' marks dividing first
 
 	le1 = num.length;
 	le2 = sroot.length;
-	if (numb_equals != le2)
+	if (numb_equals != le2) {
 		alert("Warning, incorrect number of = signs");
+		s = "after each '=' sign look for:\n";
+		j = num.length;
+		cnt = index-1;
+		while(j>2*root_size){
+			s += num.substring(j-root_size,j)+' joined with '+num.substring(j-root_size-root_size,j-root_size)+' ';
+			s += '(correct by splitting '+ num.substring(j-root_size,j)+' from '+ dif[cnt];
+			//s += ' and adding -'+sroot.charAt(cnt+1)+' = '+dif[cnt]+' )\n';
+			s += ' and adding -'
+			for (j1 = 0;j1<dif[cnt].length-root_size;j1++)
+				s += sroot.charAt(cnt+1);
+			s += ' = '+dif[cnt]+' )\n';
+			j -= root_size;
+			cnt--;
+		}
+		s += 'Otherwise add -';
+		for (j1 = 0;j1<dif[index].length;j1++)
+			s += sroot.charAt(sroot.length-1);
+		s += ' = '+ dif[index]+' to the end\n\n';
+		
+		
+		//alert(s);
+		dis += data+'\n\n'+s+'\n\n';
+	}
 	//get multiplied lines, just square, cube, etc each char in sroot, and except for first, use rightmost digit only
 	for (n=0;n<le2;n++) {
 		c = sroot.charAt(n);
@@ -639,7 +664,7 @@ function format_general_root(){ // makes heavy use of the ' marks dividing first
 		cs = '';
 		for (i=0;i<k;i++) cs += '-';
 	}
-	dis = '';
+
 	dis += l1+'\n';
 	dis += l2+'\n';
 	if ( root_size>2) {
