@@ -169,7 +169,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                     if (code_array[i] == code_array[j])
                         cnt++;
             
-            if ( cnt < min_rep)
+            if ( cnt < minimum_repeats)
                 return([cnt,0] );
             x = 0;
             for (i=0;i<10;i++) for (j=0;j<10;j++){
@@ -208,7 +208,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                 for (j=i+1;j<=current_cipher_pos;j++)
                     if (code_array[i] == code_array[j])
                         cnt++;
-            if ( cnt<min_rep)
+            if ( cnt<minimum_repeats)
                 return([cnt,0] );
             x = 0;
             for (i=0;i<10;i++) for (j=0;j<10;j++){
@@ -242,7 +242,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                         for (j=i+1;j<=current_cipher_pos;j++)
                             if (code_array[i] == code_array[j])
                                 cnt++;
-                    if ( cnt<min_rep)
+                    if ( cnt<minimum_repeats)
                         return([cnt,0] );
                     newsquare = [];
                     for (i=0;i<10;i++) for (j=0;j<10;j++){
@@ -283,7 +283,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                 for (j=i+1;j<=current_cipher_pos;j++)
                     if (code_array[i] == code_array[j])
                         cnt++;
-            if ( cnt<min_rep)
+            if ( cnt<minimum_repeats)
                 return([cnt,0] );
             x = 0;
             for (i=0;i<10;i++) for (j=0;j<10;j++){
@@ -314,7 +314,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                         for (j=i+1;j<=current_cipher_pos;j++)
                             if (code_array[i] == code_array[j])
                                 cnt++;
-                    if ( cnt<min_rep)
+                    if ( cnt<minimum_repeats)
                         return([cnt,0] );
                     newsquare = [];
                     for (i=0;i<10;i++) for (j=0;j<10;j++){
@@ -356,7 +356,7 @@ function do_check(cipher_start_pos,current_cipher_pos,current_crib_pos,current_k
                 for (j=i+1;j<=current_cipher_pos;j++)
                     if (code_array[i] == code_array[j])
                         cnt++;
-            if ( cnt<min_rep)
+            if ( cnt<minimum_repeats)
                 return([cnt,0] );
             x = 0;
             for (i=0;i<10;i++) for (j=0;j<10;j++){
