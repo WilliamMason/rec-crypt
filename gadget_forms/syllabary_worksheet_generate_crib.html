@@ -875,9 +875,10 @@ onload = function() {
 
 function get_crib() {
     var s,i,n,row,col,v;
-    var cnt;
+    var cnt,x;
     cnt = 0;
     s='';
+	x = 0;
     for (i=0;i<100;i++) {
         v = numb_key[i];
         if ( v != -1) {
@@ -887,12 +888,14 @@ function get_crib() {
             //s += n+' '+v+' '+basic_key[v]+'\n';
             s += n+' '+v+' '+basic_key[v]+','; // switch to comma separators so can paste into hill-climber prompt.
             cnt++;
+			x += freq[n];
         }
     };
+	x = Math.floor(100*x/code_array.length);
     //s = cnt+ ' crib length\n'+s;
     n = s.length;
     s = s.slice(0,n-1); // dump last comma.
-    s = cnt+ ' crib length,'+s;
+    s = cnt+ ' crib length with coverage of '+x+' percent,'+s;
     display_message(s);
     location.href = "#outputblock"; // scroll up
 }
