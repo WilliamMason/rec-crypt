@@ -11,55 +11,6 @@ var table_loaded = 0;
 var crib=''; //  global variable
 var crib_status_flag = 0; // 0= no crib, 1 = fixed crib, 2 = floating crib (to do)
 
-// custom tet table
-var book_string = '';
-function handleFiles(obj){
-	var str, fname;
-	fname = obj[0];
-	str = "handle file: "+fname.fileName;
-	//alert(str);
-	getAsText(fname);
-}
-
-function getAsText(readFile) {
-        
-  var reader = new FileReader();
-  // Handle progress, success, and errors
-  //reader.onprogress = updateProgress;
-  reader.onload = loaded;
-  reader.onerror = errorHandler;
-  
-  // Read file into memory as UTF-16      
-  //reader.readAsText(readFile, "UTF-16");
-  reader.readAsText(readFile);
-  
-}
-
-function loaded(evt) {  
-  // Obtain the read file data    
-  var fileString = evt.target.result;
-  var s;
-  //alert("got to loaded");
-  // Handle UTF-16 file dump
-    //document.getElementById('output_area').value = fileString;  
-  s = "The length of the file is "+fileString.length;
-  document.getElementById('output_area').value = s;
-  book_string = fileString;
-  //alert("file loaded");
-  stop_flag=1; // reinitialize web workers
-  
-}
-
-function errorHandler(evt) {
-  if(evt.target.error.code == evt.target.error.NOT_READABLE_ERR) {
-    // The file could not be read
-    alert("got error handler");
-  }
-}
-
-function set_reload(){
-    stop_flag = 1; // signal to reinitialize
-}    
 
 
 function initialize(){
@@ -67,7 +18,7 @@ function initialize(){
 	var s;
 	
 	
-   hclimber = new Worker('syllabary_ph_climb.js');
+   hclimber = new Worker('syllabary_ph_climb_pent.js');
    hclimber.onmessage = function (event) {
 	 str = event.data;
 	 if (str.charAt(0) == '0'){
@@ -92,19 +43,9 @@ function initialize(){
      	//alert(str.slice(1));
      	document.getElementById('debug_area').value = str.slice(1);
  	}
-	/*
-     else
-     	document.getElementById('output_area').value = str;
-	*/
    };
-   if (document.getElementById('custom_table').checked == true) {
-    s = '#'; // prefix to indicate string to make table from
-    s += book_string;
-    hclimber.postMessage(s);  	// command hclimber to make custom table
-    }
-   
    if (numb_workers>1){
-   		hclimber2 = new Worker('syllabary_ph_climb.js');
+   		hclimber2 = new Worker('syllabary_ph_climb_pent.js');
    		hclimber2.onmessage = function (event) {
 			var str,i,score,s;	   
 			 str = event.data; 	 
@@ -128,16 +69,10 @@ function initialize(){
    		  else
    		  	document.getElementById('output_area').value = str+" worker: 1";   
    		};
-        if (document.getElementById('custom_table').checked == true) {
-            s = '#'; // prefix to indicate string to make table from
-            s += book_string;
-            hclimber2.postMessage(s);  	// command hclimber to make custom table
-            //alert("custom tet tabel constructed");
-        }
         
    }
    if (numb_workers>2){
-   		hclimber3 = new Worker('syllabary_ph_climb.js');
+   		hclimber3 = new Worker('syllabary_ph_climb_pent.js');
    		hclimber3.onmessage = function (event) {
 			var str,i,score,s;	   
 			 str = event.data; 	 
@@ -161,12 +96,6 @@ function initialize(){
    		  else
    		  	document.getElementById('output_area').value = str+" worker: 2";   
    		};
-        if (document.getElementById('custom_table').checked == true) {
-            s = '#'; // prefix to indicate string to make table from
-            s += book_string;
-            hclimber3.postMessage(s);  	// command hclimber to make custom table
-            //alert("custom tet tabel constructed");
-        }        
    }
   
 }
@@ -194,11 +123,6 @@ function do_check(){
         alert("Ciphertext has odd number of digits! Not Syllabary cipher!");
         return(false);
     }
-    else if (document.getElementById('custom_table').checked == true && book_string=='') {
-        alert(" No book file chosen for custom tet table!");
-        return(false);
-    }
-
 	return(true);
 }
 
@@ -344,12 +268,10 @@ onload = function() {
     document.getElementById('do_solve1').addEventListener("click",do_solve);    
     document.getElementById('do_stop1').addEventListener("click",do_stop);    
     document.getElementById('do_clear1').addEventListener("click",do_clear);  
-    document.getElementById('custom_table').addEventListener("change", set_reload); 
-    document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});         
     document.getElementById('float_crib').addEventListener("click",floating_crib);       
     document.getElementById('fixed_crib').addEventListener("click",fixed_crib);           
     document.getElementById('known_key').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = true;});           
     document.getElementById('unknown_key').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = false;});
     document.getElementById('known_cord').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = true;});                       
-	//document.getElementById('unknown_cord').addEventListener("click",function(){document.getElementById("fixed_crib").disabled = false;});
+
 }
