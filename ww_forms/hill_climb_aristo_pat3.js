@@ -349,6 +349,7 @@ function do_hill_climbing(str){
 			for (i=0;i<buf_len;i++)
 				out_str += alpha27.charAt(plain_text[i]).toLowerCase();
 			out_str += "\n\nscore of plaintext is "+x+" on trial "+trial+" fudge factor is: "+fudge_factor;
+			out_str += ", % accept: "+ (100.0*numb_accepted/(trial+1)).toFixed(2);            
 			out_str += "\nK1 key                           K2 Key\n"+alpha.slice(0,26)+"       "+l_alpha+"\n";
 			for (i=0;i<26;i++) {
 				if( c_letters[i] == 1 )
