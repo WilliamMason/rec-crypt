@@ -444,7 +444,7 @@ function keyblock_setup() {
 			s=s+'-</span> </span>';
 	}		
 	//two columns of blank place holders
-	s = s +'<br>';
+	s = s +'&nbsp;<br>';
 	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
 	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
 	s=s+'</span> </span>';
@@ -458,7 +458,7 @@ function keyblock_setup() {
 			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top_inner" class="'+c+'keytopinner" style="color:blue">';						
 			s=s+'-</span> </span>';
 	}		
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	
 	for (i=0;i<5;i++) {
 		cr = digits.charAt(i);
@@ -478,9 +478,9 @@ function keyblock_setup() {
 			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
 			s=s+'-'+'</span> </span>';
 		}
-		s=s+'<br>';	
+		s=s+'&nbsp;<br>';	
 	}	
-	s=s+'<br>';	
+	s=s+'&nbsp;<br>';	
 	document.getElementById('keyblock').innerHTML=s;	
 
 }
@@ -544,7 +544,7 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 			s += v+'</span> </span>';
 	}		
 	//two columns of blank place holders
-	s = s +'<br>';
+	s = s +'&nbsp;<br>';
 	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
 	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
 	s=s+'</span> </span>';
@@ -559,7 +559,7 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top_inner" class="'+c+'keytopinner" style="color:blue">';						
 			s += v+'</span> </span>';
 	}		
-	s=s+'<br>';
+	s=s+'&nbsp;<br>';
 	
 	for (i=0;i<5;i++) {
 		cr = digits.charAt(i);
@@ -589,7 +589,7 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 			rows_selected[cr]=0;
 		}
 		
-		s=s+'<br>';	
+		s=s+'&nbsp;<br>';	
 	}	
 	if (flag) {//put in yellow column boxes
 	//two columns of blank place holders
@@ -609,7 +609,7 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 				columns_selected[c] = 0;
 		}		
 	} // end if flag
-	s=s+'<br>';	
+	s=s+'&nbsp;<br>';	
 	document.getElementById('keyblock').innerHTML=s;	
 
 }
