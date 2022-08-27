@@ -106,10 +106,12 @@ function initialize(){
 
 function type_selected(){
 	get_cipher_type();
+	/*
 	if (cipher_type == 1) // patristocrat
 		document.getElementById('fudgefactor').value="0.5"; // changed from 0.7
 	else // Aristoctat
 		document.getElementById('fudgefactor') = "0.5";
+	*/
 	
 }
 
@@ -337,16 +339,23 @@ function do_calc(){
 	max_score = -10000.0;
 	max_trials = parseInt(document.getElementById('numb_trials').value);	
 	str = '@'+max_trials;
-	//ff = parseFloat(document.settings.fudgefactor.value);	
-	s = document.getElementById('fudgefactor').value;
+
+	s = document.getElementById('fudgefactor0').value;
 	str += ':'+s; // use colons to separate values
 	// use different random number seeds for different web workers
 	n = Math.floor( Math.random()*1000);
 	s = str+':'+n;
 	hclimber.postMessage(s); 
+	str = '@'+max_trials;
+	s = document.getElementById('fudgefactor1').value;
+	str += ':'+s; // use colons to separate values	
 	n = Math.floor( Math.random()*2000);
 	s = str+':'+n;
 	hclimber2.postMessage(s); 
+	str = '@'+max_trials;
+	s = document.getElementById('fudgefactor2').value;
+	str += ':'+s; // use colons to separate values	
+	
 	n = Math.floor( Math.random()*3000);
 	s = str+':'+n;
 	hclimber3.postMessage(s); 
@@ -356,8 +365,10 @@ function do_calc(){
 	str = '~'+cipher_type+s+key_array;
 	hclimber.postMessage(str);  
 	hclimber.postMessage(code);  
-	hclimber2.postMessage(str);  		
+
+	hclimber2.postMessage(str);  
 	hclimber2.postMessage(code);  
+	
 	hclimber3.postMessage(str);  		
 	hclimber3.postMessage(code);  
 	
@@ -471,10 +482,18 @@ Ciphertext letter=>
 <BR><BR><INPUT onclick=start_over(); type=button value="start over" > 
 <INPUT onclick=do_clear(); type=button value="Clear" > <INPUT onclick=letter_count(); type=button value="Letter count" > 
 &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp <INPUT onclick=do_calc(); type=button value="Computer: take it from here." >
-<BR> <B>Directions:</B>
+<BR> <br><B>Directions:</B>
 Type or paste ciphertext into cipher box. Select word division Yes/No. Click on a cipher letter button and then click on its
 plaintext substitute. <br>Continue until cipher is solved. Or let computer try 
-it - computer will use any substitutions you may have made. <BR>
+it - computer will use any substitutions you may have made. <BR><br>
+
+
+Fudge 0: <input type = text id="fudgefactor0" value = "0.5" size = 3>
+Fudge 1: <input type = text id="fudgefactor1" value = "0.7" size = 3>
+Fudge 2: <input type = text id="fudgefactor2" value = "1.0" size = 3>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="checkbox"  checked id="word_scoring"> turn on word list scoring
+<br><br>
 
 Best computer decrypt: &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp Status/Score: 
 0<input type="text" value="idle" id="status" size=5>
@@ -488,8 +507,11 @@ Best computer decrypt: &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nbsp &nb
 
 Number of trial decrypts: 
 <input type="text" value="340000" id="numb_trials">
+<!--
 Fudge factor: <input type = text id="fudgefactor" value = "0.5" size = 3>
+
 <input type="checkbox"  checked id="word_scoring"> turn on word list scoring
+-->
 <script type="text/javascript">
 initialize();
 </script>
