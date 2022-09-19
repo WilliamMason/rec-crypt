@@ -82,7 +82,7 @@ function do_search(){
     
     var v_letters_found = [];
     var h_letters_found = [];
-    var max_trials, op_choice,bs, max_ss_trials;
+    var max_trials, op_choice,bs, max_ss_trials, max_simple_sub_trials;
 
 	max_trials = parseInt(document.getElementById('numb_trials').value);	    
     max_ss_trials = parseInt(document.getElementById('numb_ss_trials').value);	    
@@ -103,7 +103,17 @@ function do_search(){
    if ( document.getElementById('key_ic').checked )
     hill_climb_flag = false;
    else
-    hill_climb_flag = true;    
+    hill_climb_flag = true;  
+	if (document.getElementById('hc_simple_sub').checked){
+		ciphertext = document.getElementById('simp_sub_area').value
+		if (ciphertext == '') {
+			alert("No Simple substitution cipher entered!");
+			return;
+		}
+		max_simple_sub_trials = parseInt(document.getElementById("numb_simp_sub_trials").value);	    
+		
+	} // end hill-climb simple sub checked
+   else {	// hill-climb simple sub not checked
    ciphertext = document.getElementById('cipher_area').value
    if (ciphertext == '') {
     alert("No ciphertext entered!");
@@ -183,7 +193,7 @@ function do_search(){
 	}
     v_keys = str;
     h_keys = str2;   
-   
+	} // end 'else' simple sub not checked   
    worker = new Worker('dbl_chkb_pseudokeys_worker.js');
    worker.onmessage = function(event) {
    	 str = event.data;
@@ -203,7 +213,12 @@ function do_search(){
    }
    if ( crib_status_flag>0)
     crib = document.getElementById('crib_area').value;
-   worker.postMessage( { op_choice:0, vk:v_keys, hk:h_keys, kw:kw, ct:ciphertext,
+	if (document.getElementById('hc_simple_sub').checked){
+		//alert("simple sub");
+		worker.postMessage( { op_choice:2, ct:ciphertext, ms:max_simple_sub_trials, cs:crib_status_flag, cb:crib } );
+	}
+	else 
+	worker.postMessage( { op_choice:0, vk:v_keys, hk:h_keys, kw:kw, ct:ciphertext,
     mt:max_trials, ks:key_score_flag, hc:hill_climb_flag, ms:max_ss_trials, cs:crib_status_flag, cb:crib } );
 }
 
@@ -227,7 +242,29 @@ function initialize_crib() {
 	var s,s1,n,c;
 	//var alpha='abcdefghijklmnopqrstuvwxyz';
 	
-    var alpha;    
+    var alpha;   
+  if (document.getElementById('hc_simple_sub').checked){
+	alpha = alpha5;
+	s = document.getElementById('simp_sub_area').value;
+	if (s == ''){
+		alert("No simple substitution cipher entered");
+		return;
+	}
+	s = s.toLowerCase();
+	s1=''
+	for (n = 0;n<s.length;n++){
+		c = s.charAt(n);
+		if (alpha.indexOf(c) != -1)
+			s1 += c;
+	}
+    n = s1.length;
+    plain_len = s1.length;
+    crib = '';
+    for (i=0;i<plain_len;i++)
+        crib += '-';
+    document.getElementById('crib_area').value = crib;
+	return;
+  } // end if hc_simple_sub checked	
     if (document.getElementById('6x6').checked)
         alpha = alpha6;
     else
@@ -387,5 +424,5 @@ onload = function() {
     document.getElementById('do_crib1').addEventListener("click",do_crib); 
     document.getElementById('key_ic').addEventListener("click",function(){document.getElementById('do_crib1').disabled = true;} )
     document.getElementById('key_hc').addEventListener("click",function(){document.getElementById('do_crib1').disabled = false;} )
-    
+    document.getElementById('hc_simple_sub').addEventListener("click",function(){document.getElementById('do_crib1').disabled = false;} )    
 }    

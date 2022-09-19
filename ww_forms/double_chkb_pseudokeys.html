@@ -1,7 +1,5 @@
 <html>
 <head>
-<TITLE>Double checkerboard pseudokeys</TITLE>
-<link rel="shortcut icon" href="Bicon16_alt2.ico">
 <script src="dbl_chkb_pseudokeys_main.js" ></script>
 <style>
 
@@ -24,14 +22,14 @@
 <body bgcolor="Silver">
 
 <h3>Hill-climbing for double checkerboard keys</h3>
-Paste in ciphertext, click Search button. (scoring by log tets for keys and IC+DIC for simple subs.)
+Paste in ciphertext, click Solve button. (scoring by log tets for keys and IC+DIC for simple subs.)
 <br><br>
 Ciphertext:<br>
 <textarea id="cipher_area" cols=80 rows = 6>
 </textarea>
 <br>
 <br>
-<input type="button" id="search_for_pattern" value = "Search">
+<input type="button" id="search_for_pattern" value = "Solve">
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
 <input type = "checkbox" id = "6x6" > 6x6 checkerboard
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
@@ -41,7 +39,14 @@ Ciphertext:<br>
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
 <input type="radio" id="key_ic" name="ktp"  checked > IC+DIC scoring
 <input type="radio" id="key_hc" name="ktp"  > hill-climb scoring using  
-<input type="text" value="10000" id="numb_ss_trials" size = 6> trial decrypts per key.
+<input type="text" value="3000" id="numb_ss_trials" size = 6> trial decrypts per key.
+<br><br>
+<input type="radio" id="hc_simple_sub" name="ktp"  > hill-climb simple substitution cipher below. 
+<input type="text" value="100000" id="numb_simp_sub_trials" size = 6> trial decrypts for the simple sub
+<br><br>
+Simple substitution cipher (paste in from IC+DIC results or from another source):<br>
+<textarea id="simp_sub_area" cols=80 rows = 3>
+</textarea>
 
 <br><br>
 Output:<br>
@@ -50,7 +55,7 @@ Output:<br>
 <br><br>
 Number of trial keys: 
 <input type="text" value="500000" id="numb_trials" size = 8>
-<INPUT id="do_stop1" type=button value="Stop searching" >
+<INPUT id="do_stop1" type=button value="Stop solver" >
 <input type="button" value="Clear" id="do_clear1" >
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;
 <INPUT id="do_crib1" type=button value="crib" disabled>

@@ -639,6 +639,85 @@ function hill_climb_key(){
 //return(0);
 }
 
+function solve_simple_sub_cipher(){
+	var i,j,k,c,n,s;
+	//postMessage('got to simple sub cipher');
+    // convert ciphertext to number array
+    ciphertext = ciphertext.toLowerCase(); // now simple sub, not origianl checkerboard
+    final_buffer = [];
+    buf_len = 0;
+    for (i=0;i<ciphertext.length;i++) {
+        c = ciphertext.charAt(i);
+        n = l_alpha.indexOf(c);
+        if ( n != -1) 
+            final_buffer[buf_len++] = n;
+    }
+	key_width = 5;
+    if (crib_flag >= 1){
+        crib = crib.toLowerCase();
+        if (key_width == 6)
+            crib_alpha = alpha6;
+        else
+            crib_alpha = alpha5;
+        if ( crib_flag == 1 ){
+            crib_len = 0;
+            for (i=0;i<crib.length;i++){
+                c = crib.charAt(i);
+                if (c == '-')
+                    crib_buffer[crib_len++] = -1;
+                else {
+                    n = crib_alpha.indexOf(c);
+                    if ( n>=0)
+                        crib_buffer[crib_len++] = n;
+                }
+            }
+        }
+        else { // crib_flag ==2, floating crib
+            crib_len = 0;
+            float_crib = [];
+            numb_cribs = 0;
+            float_crib[numb_cribs] = [];
+            for (var i=0;i<crib.length;i++){
+                c = crib.charAt(i);
+                if ( c == '\n'){
+                    numb_cribs++;
+                    float_crib[numb_cribs] = [];
+                    crib_len = 0;
+                    continue;
+                }
+                n = crib_alpha.indexOf(c);
+                if ( n>=0)
+                    float_crib[numb_cribs][crib_len++] = n;
+            }
+            /* // this should already be checked 
+            if ( numb_cribs==0 && crib_len == 0){
+                alert("No crib entered!");
+                return;
+            }
+            */ 
+            while (numb_cribs>0 && float_crib[numb_cribs].length == 0) // last crib string ended in a new line, remove empty crib
+                numb_cribs--;
+            // but now final crib doesn't end in line feed, increment to get actual crib count.
+            numb_cribs++;
+            if ( numb_cribs > MAX_CRIBS) // allows 3, usually no more than 2
+                numb_cribs = MAX_CRIBS;
+        
+        }
+    }
+	
+	var score = hill_climb_key();
+    str = '';
+    best_plain = temp_plain.slice(0);
+    str += best_plain+'\n(Best plaintext) ';
+    if ( crib_flag>0)
+            str += '(using crib)';
+    str += '\n';
+	str += 'score: '+score;
+    str += '\n(processing complete)';
+    postMessage(str);    
+    	
+		
+}
 onmessage = function(event) { //receiving a message
 	var str,s;
 
@@ -647,6 +726,15 @@ debugger;
         make_table(event.data.bs);
         return;
     }
+	if ( event.data.op_choice == 2) { // hill-climb on simple sub cipher 
+		ciphertext = event.data.ct;
+		max_simpsub_trials = event.data.ms;
+		crib_flag = event.data.cs;
+		crib = event.data.cb;
+		solve_simple_sub_cipher();
+		return;
+	}
+		
     v_keys = event.data.vk;
     v_keys = v_keys.toLowerCase();
     h_keys = event.data.hk;
