@@ -11,9 +11,10 @@ var inverse_key = [];
 var buf_len;
 var key;
 
-function letters_only(str){ // remove everthing except letters
+
+function letters_and_dash_only(str){
 	str = str.toLowerCase();
-	return str.replace(/[^a-z]/g,'');
+	return( str.replace( /[^a-z-]/g,'') );
 }
 
 // make word list
@@ -71,7 +72,7 @@ function do_check(){
 		alert("No pseudokey entered");
 		return(false)
 	}
-	key = letters_only(s);
+	key = letters_and_dash_only(s);
 	if (key.length != 10){
 		alert("pseudokey does not have 10 letters.")
 		return(false);
@@ -147,6 +148,7 @@ function do_solve(){
 	var x,y,n3,n4;
     var indx,state,k;
 	var wrd,i,j,word_pos,c,n,idx;	
+	var missing_letter_flag , missing_letter_count, missing_letter_alt_position,flag;
 
     
     
@@ -159,14 +161,33 @@ function do_solve(){
     //alert("word list initialized");
     ///initialize_tet_table();
 out_str = '';
+n = key.indexOf('-'); // dash '-' for key letter missing from ciphertext
+if ( n == -1)
+  missing_letter_flag = false
+else{
+  missing_letter_flag = true;
+  if ( n<5)
+    missing_letter_alt_position = n+5;
+  else
+   missing_letter_alt_position = n-5;
+}
+
 for (i=0;i<word_list.length;i++){
 	wrd = word_list[i];
 	alt_word = ''; // construct the alternate key word
+	missing_letter_count = 0;
 	for ( word_pos = 0; word_pos < wrd.length;word_pos++){
 		c = wrd.charAt(word_pos);
 		idx = key.indexOf(c);
-		if (idx == -1) // word letter not in the key, if there are fewer than 10 letters in vert or hor key, may have to redo this step.
+		if (idx == -1){ 
+		  if (missing_letter_flag && missing_letter_count ==  0 ){ // allow one missing letter if there is a '-' in the key
+		    missing_letter_count++;
+		    alt_word += key.charAt( missing_letter_alt_position);
+		    continue;
+		  }
+		
 			break; 
+		}
 		if (idx < 5) {
 			alt_word += key.charAt(idx+5)
 		}
@@ -174,6 +195,17 @@ for (i=0;i<word_list.length;i++){
 			alt_word += key.charAt(idx-5);
 	}
 	if (idx == -1) continue; // go to next word in word list
+	// check that a letter does not occur in two different positions, ie not like 'parse' and 'lines'
+	flag = false;
+	for ( word_pos = 0; word_pos < wrd.length;word_pos++){
+		c = wrd.charAt(word_pos);
+		n = alt_word.indexOf(c);
+		if ( n != -1  && n != word_pos){ // same letter in two difference positions 
+			flag = true;
+			break;
+		}
+	}
+	if ( flag) continue;
 	n = word_list.indexOf(alt_word);
 	if ( n != -1){ // found two key words that unscramble the key
 		out_str += 'found: '+wrd+', '+alt_word+'\n';
