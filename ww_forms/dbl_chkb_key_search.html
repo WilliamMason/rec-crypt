@@ -3,44 +3,58 @@
 <link rel="shortcut icon" href="Bicon16_alt2.ico">
 <title>Double Checkerboard Key Search</title>
 <script src="dbl_chkb_key_search_main.js" ></script>
+<style>
+.container {
+display:grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 5px;
+grid-auto-rows: minmax(50px, auto);
+width: 700px;
+padding:10px;
+}
+.g-element1{
+grid-row:3;
+grid-column:1
+}
+.g-element2{
+grid-row:3;
+grid-column:2/4;
+}
 
+</style>
 </head>
 <body bgcolor="Silver">
 <p>
 <h3>Search word list file for double checkerboard keys</h3><br>
-Enter letters in vertical and horizontal keys -- or enter ciphertext and click "Get Key Lettters" button, -- choose word file, click Search button. <br>
-Then for best key combinations, paste in ciphertext and click Get Combos button.
+Enter ciphertext and click "Get Key Lettters" button, choose word file, click Search button. <br>
+Then for best key combinations click Get Combos button.
 </p>
-<br>
-Enter Vertical Key letters=>
+Ciphertext (for combo search/key letters):<br>
+<textarea id="cipher_area" cols=80 rows = 8>
+</textarea>
+<br><br>
+<div id = container" class="container" >
+<span  ><input type="button" id="search_for_key_letters" value = "Get Key Letters"></span>
+<span>Word list: <input type="file" id="input2" ></span>
+<span><input type="button" id="search_for_pattern" value = "Search"></span>
+<span><input type="button" id="search_for_combos" value = "Get Combos"></span>
+<span class="g-element1" ><input type = "checkbox" id = "6x6" > 6x6 checkerboard</span>
+<span class="g-element2" ><input type="checkbox" id="all_letters" >
+Every key letter must be in ciphertext </span>
+
+</div> <!--end container class-->
+
+Vertical Key letters=>
 <input type = "text" id = "word_pattern" >
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-Enter Horizontal Key Letters=>
+Horizontal Key Letters=>
 <input type = "text" id = "word_pattern2" >
 <br><br>
-Word list: <input type="file" id="input2" >
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-<input type = "checkbox" id = "6x6" > 6x6 checkerboard
-<br>
-<br>
-<input type="button" id="search_for_pattern" value = "Search">
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-<input type="checkbox" id="all_letters" >
-Every key letter must be in ciphertext 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-<input type="button" id="search_for_key_letters" value = "Get Key Letters">
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-<input type="button" id="search_for_combos" value = "Get Combos">
-<br><br>
+
 Output:<br>
 <textarea id="output_area" cols=80 rows = 10>
 </textarea>
 <br><br>
-Ciphertext (for combo search/key letters):<br>
-<textarea id="cipher_area" cols=80 rows = 10>
-</textarea>
 
 </body>
 </html>

@@ -212,7 +212,7 @@ function get_combos(){
 
 function get_key_letters(){
     var i,j,n,state;
-    var str, str2;
+    var str, str2,s;
 
     var max_letters = 10; // later allow for possibility of 12 for 6x6 checkerboard
    if ( document.getElementById('6x6').checked )
@@ -272,6 +272,8 @@ function get_key_letters(){
 	}
     document.getElementById('word_pattern').value = str.toUpperCase();
     document.getElementById('word_pattern2').value = str2.toUpperCase();
+	s = "There are "+str.length+" vertical key letters and "+str2.length+" horizontal key letters"
+	document.getElementById('output_area').value = s;
 
 }
 
