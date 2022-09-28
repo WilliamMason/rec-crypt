@@ -57,7 +57,8 @@ function do_calc(){
                 if (hi >=8 && hi <= 15)  out_str +="\nComplete columnar "+wi+"x"+hi;
             }
         }
-        if (code_len >= 150 && code_len <= 200) out_str += "\nCM Bifid"		
+        if (code_len >= 150 && code_len <= 200) out_str += "\nCM Bifid"	
+        if (code_len >= 100 && code_len <= 200) out_str += "\nCONDI"			
         if (((code_len&1)==0) && code_len >= 120 && code_len <= 220) out_str += "\nDigrafid"
         if (((code_len&1)==0) && np >=50 && np <= 70 ) out_str += "\nFour Square"
         //Fractionated Morse, 110 -150 plaintext letters, maybe codetext is between 3 and 4 times length of plaintext
@@ -104,14 +105,16 @@ function do_calc(){
     lo = Math.floor(np/12);
     if (digit_flag==1 && ((code_len&1)==0) )
         out_str += "\nNihilist Substitution for period: "+lo+" to "+hi;
+    if (digit_flag ==0)
+        if (mw*mw == code_len && mw <= 10) out_str += "\nNihilist Transposition "+mw+"x"+mw;
 	if ((digit_flag==1 && ((code_len&1)==0))){
 		hi = Math.floor(np/2.5);
 		lo =Math.floor(np/3);
 		if (hi<= 100  && lo >= 26)
 			out_str += "\nNumbered key with extended key length: "+lo+" to "+hi;
 	}
-    if (digit_flag ==0){
-        if (mw*mw == code_len && mw <= 10) out_str += "\nNihilist Transposition "+mw+"x"+mw;
+		
+	if (digit_flag ==0){
         if (code_len >= 75 && code_len <= 125) out_str += "\nPeriodic Gromark"				
         if (code_len >= 125 && code_len <= 160) out_str += "\nPhillips or Phillips-C"
         if (code_len >= 150 && code_len <= 180) out_str += "\nPhillips-RC"	
@@ -173,7 +176,7 @@ function do_calc(){
             }
         }
     }
-    
+    if ((digit_flag==1 && ((code_len&1)==0) && np >=120 && np <= 154)) out_str += "\nSyllabary"
     if (digit_flag==1 && code_len >=75 && code_len <= 100)  out_str += "\nTridigital"	
     if (digit_flag ==0){
         if (code_len >= 120 && code_len <= 150) out_str += "\nTrifid";
