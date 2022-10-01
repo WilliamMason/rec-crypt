@@ -361,8 +361,8 @@ function do_plain_calc(){
             }
         }
     }
-	// for syllabary might be able to compress plaintext by 25%
-    if (plain_len >= 110 && plain_len <= 154*1.25) out_str += "\nSyllabary"
+	// for syllabary assume compression is 18% for minimum length and 32% for maximum length
+    if (plain_len >= 135 && plain_len <= 234 ) out_str += "\nSyllabary"
 	if (!digit_flag){
 		if (plain_len >=75 && plain_len <= 100)  out_str += "\nTridigital"
         if (plain_len >= 120 && plain_len <= 150) out_str += "\nTrifid";
