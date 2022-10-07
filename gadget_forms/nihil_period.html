@@ -20,7 +20,18 @@ function do_calc(){
     state = 0;
 	str = document.getElementById('input_area').value;
 	str = str.toUpperCase();
-    str = str.replace(/Ø/g,'0');    
+    //str = str.replace(/Ø/g,'0'); 
+	var s = '';
+	for (i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	str = s;
+	
     
 	for (i=0;i<str.length;i++){
 		c = str.charAt(i);
