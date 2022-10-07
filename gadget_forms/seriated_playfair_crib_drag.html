@@ -28,7 +28,18 @@ function setup_code() {
 
   data = document.getElementById('input_area').value;
   data = data.toUpperCase();
-  data = data.replace(/Ø/g,'0');
+  //data = data.replace(/Ø/g,'0');
+  var s = '';
+  for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+  }
+  data = s;
+  
   if ( data == ''){
 	alert("No cipher entered!");
 	return(false);
