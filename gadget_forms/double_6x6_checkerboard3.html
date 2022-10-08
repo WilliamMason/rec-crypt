@@ -95,7 +95,18 @@ function setup_code_pairs() {
 	
 	data = document.ciphertext.cipher_place.value;
 	data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0'); // probably no numbers in ciphertext, but you never know    
+    //data = data.replace(/Ø/g,'0'); // probably no numbers in ciphertext, but you never know   
+	var s = '';
+	for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	data = s;
+	
 	state=0;
 	code = '';
 	for (i=0;i<data.length;i++) {

@@ -61,6 +61,7 @@ var label2 = '9';
 
 function get_row_labels(){ // check for errors
 	var i,state,s,c,cd;
+	var n;
 	
 	state = 0;
 	s = document.getElementById('row_labels').value;
@@ -80,7 +81,18 @@ function get_row_labels(){ // check for errors
 	}
 	s = document.ciphertext.cipher_place.value;
 	s = s.toUpperCase();
-    s = s.replace(/Ø/g,'0');    
+    //s = s.replace(/Ø/g,'0');  
+	var str = '';
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			str += '0';
+		else
+			str += c;
+	}
+	s = str;
+	
 	state=0;
 	cd = '';
 	for (i=0;i<s.length;i++) {
@@ -139,10 +151,22 @@ function input_ok() {
 
 function setup_code_pairs() {
 	var state;
+	var i,c,n;
 	
 	data = document.ciphertext.cipher_place.value;
 	data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0');    
+    //data = data.replace(/Ø/g,'0');  
+	var s = '';
+	for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	data = s;
+	
 	state=0;
 	code = '';
 	for (i=0;i<data.length;i++) {
