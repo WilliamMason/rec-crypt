@@ -292,11 +292,22 @@ function update_check_key(p_let,c_digit){ // place p_let in key table under c_di
 
 
 function setup_code() {
-	var i;
+	var i,c,n;
 
 	data = document.ciphertext.cipher_place.value;
 	data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0');    
+    //data = data.replace(/Ø/g,'0'); 
+	var s = '';
+	for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	data = s;
+	
 	data = data.replace(/[\n\r]/g,' ');    
 	code = '';
 	for (i=0;i<data.length;i++) {

@@ -204,10 +204,22 @@ function input_ok() {
 
 function setup_code_pairs() {
 	var i,j,state;
+	var c,n;
 	
 	data = document.ciphertext.cipher_place.value;
     data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0');        
+    //data = data.replace(/Ø/g,'0');        
+	var s = '';
+	for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	data = s;
+	
 	state=0;
 	code = '';
 	for (i=0;i<data.length;i++) {
