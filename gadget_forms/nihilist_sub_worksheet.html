@@ -381,10 +381,21 @@ function input_ok() {
 
 function setup_code() {
     //var data; // make global
-    var c,c1,state,n;
+    var c,c1,state,n,i;
 	data = document.ciphertext.cipher_place.value; // now global
 	data = data.toUpperCase();
-    data = data.replace(/Ø/g,'0');
+    //data = data.replace(/Ø/g,'0');
+	var s = '';
+	for (i=0;i<data.length;i++){
+		c = data.charAt(i);
+		n = c.charCodeAt(0);
+		if ( n == 216) // Ø
+			s += '0';
+		else
+			s += c;
+	}
+	data = s;
+	
 	code = '';
     buf_len = 0;
     code_array = [];
