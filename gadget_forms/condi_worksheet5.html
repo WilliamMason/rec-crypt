@@ -822,6 +822,7 @@ function get_decrypt(){
         var c1,c2,c3,c4;
         var shift,st;
         var c,n, first_crib_pos,n1,n2,str;
+		var i1,j1;
 
         var inv = [];
         var plain_text = [];
@@ -885,6 +886,13 @@ function get_decrypt(){
         str += "\nDecrypt is:\n";
         for (i=0;i<plain_text.length;i++)
             str += plain_text[i];
+		// show key array in case you want to use it to initialize CONDI recursive solver.
+		str += '\n\nkey table (in alphabetical order, not key order)\n';
+		for (i1=0;i1<26;i1++){
+			for (j1=0;j1<26;j1++)
+				str += key_array[i1][j1];
+			str += '\n';
+		}
         //alert(str);
         display_message(str);
 }
