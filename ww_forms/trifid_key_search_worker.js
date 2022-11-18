@@ -1,6 +1,6 @@
 importScripts('tettable.js'); 
 
-var word_list_string = '';
+//var word_list_string = '';
 var word_list = [];
 
 //postMessage("tet_values loaded");
@@ -114,47 +114,46 @@ function initialize_tet_table(){
 }	
 initialize_tet_table();
 
-function search_word_list(b_array){
+function make_word_list(str) {
 	var s,n;
     var state,i,c,index;
-    
-    // construct word list
+	
+    s = "making table from sring of length "+str.length;
+    postMessage(s);
+    //str = str.toUpperCase();
+	str = str.toLowerCase();
     state = 0; //no current word
     s = '';
     index = 0;
-    for (i=0;i<b_array.length;i++) {
-        //c = str.charAt(i);
-        n = b_array[i];
-        if (n>=65 && n<(65+26)) // upper case
-            n -=65;
-        else if (n>=97 && n<(97+26)) // lower case
-            n -= 97;
-        else n = -1;
-        //n = l_alpha.indexOf(c);
-        if ( state == 0 && n >=0){
-            //s = c;
-            s = l_alpha.charAt(n);
-            state = 1;
-        }
-        else if (state == 1){
-            if (n >=0) s += l_alpha.charAt(n);
+	word_list = [];
+	for (i=0;i<str.length;i++){
+		c = str.charAt(i);
+		//if (c =='J') c = 'I'; // leave out, have to allow for 6x6
+		//n = alpha.indexOf(c);
+		n = l_alpha.indexOf(c);
+		if ( state == 0 && n >=0) {
+			s = c;
+			state = 1;
+		}
+		else if (state==1){
+			if ( n >=0)
+				s += c;
             else {
                 word_list[index++] = s;
                 state = 0;
-            }
-        }
-    }
+            }				
+		}
+	}
     if (state == 1)
         word_list[index++] = s;
-
+	word_count = word_list.length; // global variable
 	n = word_list.length;
 	s = "loaded "+n+" words";
     s += ' first word is '+word_list[0]+', last word is '+word_list[word_list.length-1];
-	//document.getElementById('output_area').value = s;	
-	//postMessage(s);
+		
+    postMessage(s);    
 }
-
-
+    
 function get_trial_decrypt(){
         var i,j,k, index,x,y;
         var c1,c2,c3,c4;
@@ -337,8 +336,8 @@ onmessage = function(event) { //receiving a message
   debugger;  
   var state = event.data.op_choice;
   if ( state == 1){ // word list
-    var word_list_array = new Uint8Array(event.data.buf); // need to set char view of arrayBuffer that was passed
-    search_word_list(word_list_array);  // set up word list
+	str = event.data.book_string2;
+	make_word_list(str);
   }
   else if (state == 3){ // custom tet table
     str = event.data.str;
