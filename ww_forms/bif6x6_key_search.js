@@ -95,13 +95,13 @@ function do_key_search(){
 	var period = document.getElementById('b_period').value;		
    document.getElementById('status').value = "Start Keys";
     str = document.getElementById('input_area').value;	
-   // note: below, you need the .buffer at the end because word_list_array is a (char) view of the arrayBuffer, not
-   // the arrayBuffer itself. If word_list_array was just an arrayBuffer you wouldn't need to add .buffer to it.
-   //worker.webkitPostMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
-   worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
-   //worker.webkitPostMessage( {op_choice:2, str:str});
-   //period = document.getElementById('t_period').value;	
-   //worker.postMessage( {op_choice:2, str:str, period:period});
+// send copy of word_list_array, not word_list_array itself, so word_list_array won't be deleted
+   var buf = new ArrayBuffer(word_list_array.length);
+   var bufView = new Uint8Array(buf);
+   for (i=0;i< word_list_array.length;i++)
+        bufView[i] = word_list_array[i];
+   worker.postMessage( {op_choice:1, buf:buf},[buf]);
+	
    worker.postMessage( {op_choice:2, str:str,period:period});
 
 //document.getElementById('debug_area').value="key search";
