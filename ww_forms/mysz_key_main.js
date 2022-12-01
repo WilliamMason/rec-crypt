@@ -11,6 +11,13 @@ var inverse_key = [];
 var buf_len;
 var period;
 var col_flag = false;
+// amsco stuff
+var amsco_flag = false;
+var starting_cell=0;
+var work_buffer = [];
+var numb_rows;
+var pair = [];
+
 
 // make word list
 
@@ -136,6 +143,90 @@ function initialize_tet_table(){
 	//postMessage("00~tet table initialized");
 }	
 
+
+function make_pairs(){ // for amsco
+	var i,j,row,col;
+	var count,row_start,pr;
+
+	row_start = starting_cell; // 0 (single letter) or 1 (pair start)
+	count = row = 0;
+	while( count < buf_len) {
+        pair[row] = [];
+		pr = row_start;
+		row_start ^= 1;
+		for (col = 0; col<period;col++) {
+			if ( count >= buf_len)
+				pr = 2;
+			switch(pr) {
+			case 2:
+				pair[row][col]= -1;
+				break;
+			case 0:
+				pair[row][col]= 1;
+				count++;
+				break;
+			case 1:
+				pair[row][col]= 2;
+				count += 2;
+				break;
+			}
+			pr ^= 1;
+		}
+		row++;
+	}
+	numb_rows = row; // global
+	if ( count > buf_len) {
+		//printf("Last cell not full\n");
+		j = row-1;
+		for ( col= period-1; col> -1;col--)
+			if ( pair[j][col] ==2) {
+				pair[j][col]--;
+				break;
+		}
+	}
+} /* end make pairs */
+
+function get_amsco_trial_decrypt(){
+    var c;
+    var i,j,index, row,col;
+    var count,cc,ct,cn;
+	var offset;
+	
+    offset = [];
+    for (j=0;j<period;j++)
+         offset[ key[j] ] = j;
+
+    index = 0;
+    for (i=0;i<numb_rows;i++) work_buffer[i] = [];
+    for (i=0;i<period;i++) {
+		for (j=0;j<numb_rows;j++)
+			if ( pair[j][offset[i]]==1)
+                   	work_buffer[j][offset[i]] =
+                                      -buffer[index++]-1;
+           	else if ( pair[j][offset[i]]==2){ /* store digram */
+                   	work_buffer[j][offset[i]] =
+                                	26*buffer[index]+buffer[index+1];
+                   	index += 2;
+           	}
+    } /*  next i */
+    /* unpack work buffer into final buffer */
+    j = 0;
+    row = col = 0;
+    while( j< buf_len) {
+        if (work_buffer[row][col] < 0)
+                plain_text[j++] = - work_buffer[row][col++]-1;
+        else {
+                plain_text[j++] = Math.floor(work_buffer[row][col] / 26);
+                plain_text[j++] = work_buffer[row][col++] % 26;
+        }
+        if ( col == period) {
+			row++;
+			col = 0;
+		}
+    } /* end while */
+}
+
+
 function get_trial_decrypt(){
         var i,j,index;
         var offset,count,k;
@@ -181,10 +272,15 @@ function get_col_trial_decrypt(){
 }
     
 function get_score(buf_len){
-	var score,i,n;
+	var score,i,n,score1, plain1;
 
     if (col_flag)
         get_col_trial_decrypt();
+	else if (amsco_flag){
+		starting_cell = 0;
+		make_pairs()
+		get_amsco_trial_decrypt()			
+	}
     else
         get_trial_decrypt();
 	// get tetgraph score
@@ -193,6 +289,25 @@ function get_score(buf_len){
 		n = plain_text[i]+26*plain_text[i+1]+26*26*plain_text[i+2]+26*26*26*plain_text[i+3];
 		score += tet_table[n];
 	}
+	if (amsco_flag){
+		score1 = score;
+		plain1 = plain_text.slice(0);
+		score = 0;
+		starting_cell = 1;
+		make_pairs();
+		get_amsco_trial_decrypt()		
+		for (i=0;i<buf_len-3;i++){
+			n = plain_text[i]+26*plain_text[i+1]+26*26*plain_text[i+2]+26*26*26*plain_text[i+3];
+			score += tet_table[n];
+		}
+		if (score1 > score){
+			score = score1;
+			starting_cell = 0;
+			plain_text = plain1;
+			
+		}
+	}
+	
 	return(score);
 }	
 
@@ -213,6 +328,11 @@ function do_solve(){
         col_flag = true;
     else
         col_flag = false;
+    if ( document.getElementById('amsco').checked )
+        amsco_flag = true;
+    else
+        amsco_flag = false;
+	
     // buffer loaded by do_check
     //alert("solve");
     initialize_word_list(word_list_string);
@@ -222,7 +342,7 @@ function do_solve(){
     for (i=0;i<word_list.length;i++){
         // convert word into musz key with entries in range 0-word length
         period = word_list[i].length;
-        if (col_flag){
+        if (col_flag || amsco_flag){
             indx = 0
             for (j=0;j<26;j++){
                  c = l_alpha.charAt(j);
@@ -262,6 +382,13 @@ function do_solve(){
 			out_str += "\nscore: "+score.toFixed(2);
             if ( col_flag)
                 out_str += '\nColumnar key: '+word_list[i];
+			else if(amsco_flag){
+				out_str += '\nAmsco key: '+word_list[i];
+				if (starting_cell ==0)
+					out_str += ' (single letter start)';
+				else
+					out_str += '  (pair start)';
+			}
             else
                 out_str += '\nMyszkowski key: '+word_list[i];
 			document.getElementById('output_area').value = out_str;	
