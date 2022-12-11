@@ -383,7 +383,7 @@ function format_divide(){
 	var dif = new Array()
 	var error_message = '';
 	var alternative = [];
-	var alt, c1,s1;
+	var alt, c1,s1,n1;
 
 	data = document.getElementById('orig_puzzle').value.toUpperCase();	
 	// initialize
@@ -458,10 +458,11 @@ function format_divide(){
 		else {
 			s1 = '';
 			s1 += num +' / '+denom+' = '+quo+' ; ';		
-			for (j=0;j<index;j++){
+			for (j=0;j<index;j++){ // note index is length of filled slots in dif array
 				c = dif[j].slice(-2); // last two letters of Jth difference
-				c1 = num.indexOf(c); 
-				if (c1 != -1){ // both c chars are adjacent in the dividend.
+				n1 = num.length-index+j; // position where c might appear in dividend
+				c1 = num.slice(n1,n1+2)
+				if (c1 == c){ // both c chars are adjacent at the correct position in the dividend.
 					for ( k = 0;k<j;k++)
 						s1 += ' - '+pp[k]+' = '+dif[k]+';'
 					alt = alternative[j];
