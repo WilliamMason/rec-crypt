@@ -258,6 +258,9 @@ function do_solve() {
 function format_multiply(){
 	var c,i,n,state,index,k,cs,d,ltemp,numb_pluses;
 	var mult1,mult2,sum,l1,l2,ll,le1,le2,le3,tl,dis;
+	var c1,s1,alt;
+	var alternative = [];	
+	var error_message = '';
     
 	var pp = new Array()
 		
@@ -310,16 +313,47 @@ function format_multiply(){
 	le2 = mult2.length;
 	if (numb_pluses+1 != le2) {
         var s = "Warning, incorrect number of + signs\nMay need to insert one of:\n";
+
         for (i=0;i<le2-1;i++){
+			alt = '';
             if (i>0)
                 s += '+';
             c = mult2.charAt(le2-1-i);
-            for (n=0;n<le1;n++)
+            for (n=0;n<le1;n++){
                 s += c;
-            s += ';\n';
+				alt += c;
+			}
+			alternative.push(alt);
+            if (i>0)
+				s += ';\n';
+			else
+				s += '; +\n';
         }
 		//alert("Warning, incorrect number of + signs");
         alert(s);
+		c = sum.slice(-1); // last character in sum of partial products;
+		c1 = mult2.slice(-1); // last character in multiplier
+		if ( c == c1){
+			s1 = 'Try;\n'+mult1+' * '+mult2+' = '+alternative[0]+';';
+			for (j=0;j <= numb_pluses;j++)
+				s1 += ' + '+pp[j]+' ; ';
+			s1 += ' = '+sum;
+			s += s1;
+		}
+		else {
+			for (k=1;k<alternative.length;k++){
+				s1 = 'Try;\n'+mult1+' * '+mult2+' = ' +pp[0]+' ; ';
+				for (j=1;j<k;j++)
+					s1 += ' + '+pp[j]+' ; ';
+				s1 += '+'+alternative[k]+' ; ';
+				for (j=k;j<alternative.length;j++)
+					s1 += ' + '+pp[j]+' ; ';
+				s1 += ' = '+sum;
+				s += s1+'\n';
+			}
+			
+		}
+		error_message = data +'\n'+s;
     }
 	for (n=0;n<le2;n++){
 		c = mult2.charAt(le2-1-n);
@@ -372,6 +406,8 @@ function format_multiply(){
 	dis += tl;
 	for (i=0;i<le3;i++) dis += 'A'
 	dis += "\n"
+	if (error_message != '')
+		dis += '\n'+error_message;
 	document.getElementById('orig_puzzle').value = dis;
 }
 
