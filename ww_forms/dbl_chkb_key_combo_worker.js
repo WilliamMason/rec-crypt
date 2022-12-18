@@ -148,19 +148,19 @@ function xlate( vk, hk){
 				break;
 		}
 	}
-    for (j=0;j<36;j++)
-        for (k=0;k<36;k++)
-              pair_sub[j][k]=0;
-    // assign single symbols to pairs 
-    x = 1;
-    for (j=0;j<buf_len;j = j+2)
-        if ( pair_sub[work_buffer[j]][work_buffer[j+1]]==0)
-             pair_sub[work_buffer[j]][work_buffer[j+1]] = x++;
+	
+	// assign pairs to single symbols according to their positions in the keysquare, so 0 (=A) is on top left
+	// this should help find the keysquare key when you solve the resulting simple sub, look at the K1 key.
+	for (j=0;j<key_width;j++)
+		for (k=0;k<key_width;k++){
+			pair_sub[vkey[vk][j]][hkey[hk][k]] = key_width*j+k;
+		}
     // convert to simple substitution
     count=0;
     for (j=0;j<buf_len;j = j+2) {
-		final_buffer[count++] = pair_sub[work_buffer[j]][work_buffer[j+1]]-1;
+		final_buffer[count++] = pair_sub[work_buffer[j]][work_buffer[j+1]];
     }
+		
 } // end xlate
 
 function get_score(){
@@ -191,6 +191,7 @@ function get_score(){
 onmessage = function(event) { //receiving a message
 	var str,s;
 
+debugger;
     v_keys = event.data.vk;
     h_keys = event.data.hk;
     ciphertext = event.data.ct;
