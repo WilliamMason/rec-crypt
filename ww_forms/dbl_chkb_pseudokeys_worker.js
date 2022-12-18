@@ -713,6 +713,22 @@ function solve_simple_sub_cipher(){
             str += '(using crib)';
     str += '\n';
 	str += 'score: '+score;
+	// show keysquare;
+	// need to substitute dashes - where no letters in the plaintext 
+
+	str += '\nBest keysquare:\n'
+	j=0;
+	for (i=0;i<25;i++){	// only need first 25 letters, Z never appears in the simple sub ciphertxt string that is output by key finder program
+		c = l_alpha.charAt(simple_sub_array[i]);
+		n = best_plain.indexOf(c);
+		if (n == -1) // letterc  never appears in the plaintext
+			c = '-'
+		str += c;
+		if (++j == 5){
+			str += '\n'
+			j=0;
+		}
+	}
     str += '\n(processing complete)';
     postMessage(str);    
     	
