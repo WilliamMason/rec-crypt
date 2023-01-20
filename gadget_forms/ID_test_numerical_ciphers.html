@@ -388,7 +388,7 @@ function convert_string() {
 	var digits = '0123456789';
 	code = document.puzzle.ciphertext.value;
 	//code = code.toUpperCase();
-    code = code.replace(/Ø/g,'0');
+    code = code.replace(/Ã˜/g,'0');
 	code = digits_only(code);
 	clen=0;
 	for (i=0;i<code.length;i++) {
@@ -1289,7 +1289,7 @@ s += 'Top  cipher types were:\n';
 for (i=0;i<5;i++){
     s += result[1][i][0]+' '+result[1][i][1].toFixed(2)+'\n';
 }
-
+s += '\n(not tested: Baconian)\n'
 s += display_new_stats;
 document.puzzle.cipherstats.value = s
 
