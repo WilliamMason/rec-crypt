@@ -453,7 +453,7 @@ function convert_string(code) {
     //code = db_element.ciphertext;
     code = code.replace(/\n/g,' ');
 	code = code.toUpperCase();
-    code = code.replace(/Ø/g,'0');
+    code = code.replace(/Ã˜/g,'0');
 	clen=0;
 	for (i=0;i<code.length;i++) {
 		n = cipher_symbols.indexOf(code.charAt(i))
@@ -4108,7 +4108,7 @@ function do_id_test(code){
     for (i=0;i<5;i++){
         s += result[1][i][0]+' '+result[1][i][1].toFixed(2)+'\n';
     }
-    
+    s += '\n(not tested: Baconian, Null)\n'
 	//document.puzzle.cipherstats.value = s // made stat display optional
     //get_id();
     /*
