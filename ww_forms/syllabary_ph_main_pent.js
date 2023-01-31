@@ -129,6 +129,7 @@ function do_check(){
 function do_solve(){
 	var str,max_trials,s,n;
 	var period,key_type,key_info,key_len
+	var key_table_weight;
 	
 	if (!do_check()) return;
 
@@ -166,6 +167,7 @@ function do_solve(){
         key_info = '0';
 	key_len = document.getElementById("key_len").value;	
 	max_score  = -10000.0;
+	key_table_weight = parseFloat(document.getElementById('work_key_weight').value);
 	max_trials = parseInt(document.getElementById('numb_trials').value);	
 	str = '@'+max_trials;
 	//ff = parseFloat(document.settings.fudgefactor.value);	
@@ -177,6 +179,7 @@ function do_solve(){
 	str = str+':'+n;
     str += ':'+key_type;
     str += ':'+key_info;
+	str += ':'+key_table_weight;
 	str += ':'+key_len;
 	hclimber.postMessage(str);  
 	if(numb_workers>1) {
@@ -190,6 +193,7 @@ function do_solve(){
 		str = str+':'+n;
         str += ':'+key_type;   
         str += ':'+key_info;
+		str += ':'+key_table_weight;
 		str += ':'+key_len;		
 		hclimber2.postMessage(str);  
 	}
@@ -204,6 +208,7 @@ function do_solve(){
 		str = str+':'+n;
         str += ':'+key_type; 
         str += ':'+key_info;
+		str += ':'+key_table_weight;
 		str += ':'+key_len;		
 		hclimber3.postMessage(str);  
 	}

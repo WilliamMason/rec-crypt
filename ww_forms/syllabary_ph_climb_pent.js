@@ -33,6 +33,7 @@ var CUT_OFF = 2;
 
 var pent_table = [];
 
+
 var english_basic_key = ["a","1","al","an","and","ar","are","as","at","ate",
 "ati","b","2","be","c","3","ca","ce","co","com",
 "d","4","da","de","e","5","ea","ed","en","ent",
@@ -123,7 +124,8 @@ var crib;
 var crib_buffer = [];
 var crib_len;
 
-
+var used_sym = []; // make global for work_key scoring
+var key_weight = 1.5; // weight for work_key_scorint
 
 function new_trie_element(indx){
 	var i;
@@ -292,10 +294,76 @@ function get_trial_decrypt(){
 
 }
 
+function score_work_key(){
+var i,j,k,c,n,s;
+var modified_work_key = [];
+// delete digit pairs that are not in ciphertext from work_key;
+/*
+                for (i=0;i<100;i++) used_sym[i] = false;
+                for (i=0;i<buffer.length;i++)
+                    used_sym[ buffer[i] ] = true;
+*/				
+                for (i=0;i<100;i++){
+                    if ( used_sym[ i ] ){ // used sym now global;
+                        //out_str += basic_key[work_key[i]]+' ';
+						modified_work_key[i] = work_key[i];
+                    }
+                    else
+                        modified_work_key[i] = -1; // i doesn't appear in the ciphertext 
+                }
+				
+				//return( modified_work_key );
+var row, col,score,x,y;
+var processed = [];
+score= 0;
+for (row = 0; row<10;row++){
+	for (x=0;x<10;x++)
+		processed[x] = false;
+	for (col = 0;col<10;col++){
+		if ( processed[10*row+col] )
+			continue;
+		if ( modified_work_key[10*row+col] == -1){ // 10*row+col never appears in the ciphertext
+			processed[10*row+col] = true; // can forget this one
+			continue;
+		}
+		processed[10*row+col] = true;
+		// see if symbols to the right of col coordinate are in same row or adjacent rows
+		x = Math.floor(modified_work_key[10*row+col] / 10 ); // row number of  work_key[ 10*row+col]
+		for (j = col+1;j < 10;j++){
+			if ( processed[10*row+j] )
+				continue;
+			y = Math.floor(modified_work_key[10*row+j] / 10 ); // row number of  work_key[ 10*row+j]
+			if ( y == -1)
+				continue;	
+			if ( y == x){ // in same row of basic key table
+				processed[10*row+j] = true;
+				score += 2; // 2 points for each symbol in the same row of the basic_key_table
+				continue;
+			}
+			if ( y-1 == x || y+1 == x) // in basic key table row immediately above or immediately below row x
+				score += 1; // 1 point for a symbol in the row above of below row x
+		}
+	}	
+
+}
+
+return(  score )
+
+/*
+Future possibilities:
+(1) always throw out the score of the lowest scoring row, as it is likely to be the key row.
+(2) Add a score for columns analogous to the score for rows. This might not add too much to the effectiveness of the algorithm because
+	while the key word probably lies entirely one one row, it will certainly spread across several columns. But might be worth a 
+	try if we hit a particularly hard syllabary.
+*/
+}
+
+
 function get_score(){
 	var score,i,n;
 	var word_score,pos,bad_count;
 	var w_len;
+	var work_key_score;
     
 	get_trial_decrypt();
 	// get pentagraph score
@@ -344,7 +412,14 @@ function get_score(){
 	word_score -= bad_count*bad_count;
 	score += word_score;
    score = score/(plain_len*plain_len);   // plaintext may have variable length 
-   return(10000*score);
+   // get work_key_score if key_weight is not zero
+   if (key_weight > 0)
+	   work_key_score = key_weight*score_work_key();
+   else
+	   work_key_score = 0;
+	   
+   return(10000*score+work_key_score);
+   //return(10000*score);
     
 //	return(score);
 }	
@@ -358,7 +433,7 @@ function do_hill_climbing(str){
 	var numb_accepted;
 	//var max_trials; // now global
 	var s,mut_flag,inx1,inx2,s1,k;
-    var used_sym = [], extra;
+    var  extra;
 	var op_choice,max_key_len;
 
     debugger;
@@ -396,6 +471,10 @@ function do_hill_climbing(str){
         state = 0;
         buffer[buf_len++] = x;
     } 
+	// for work key score, only use symbols that actually appear in the ciphertext
+    for (i=0;i<100;i++) used_sym[i] = false;
+    for (i=0;i<buffer.length;i++)
+         used_sym[ buffer[i] ] = true;
     
     if ( cipher_type == 1){ // known keysquare
         for (i=0;i<100;i++) {
@@ -550,9 +629,11 @@ function do_hill_climbing(str){
             else { 
                 out_str += "\nKey:\n   0   1   2   3   4   5   6   7   8   9   \n0  ";
                 k = 1;
+				/*
                 for (i=0;i<100;i++) used_sym[i] = false;
                 for (i=0;i<buffer.length;i++)
                     used_sym[ buffer[i] ] = true;
+				*/
                 j = 0;
                 for (i=0;i<100;i++){
                     if ( used_sym[ i ] ){
@@ -662,9 +743,11 @@ function do_hill_climbing(str){
 			else if ( cipher_type == 2) {
                 out_str += "\nKey:\n   0   1   2   3   4   5   6   7   8   9   \n0  ";
                 k = 1;
+				/*
                 for (i=0;i<100;i++) used_sym[i] = false;
                 for (i=0;i<buffer.length;i++)
                     used_sym[ buffer[i] ] = true;
+				*/
                 j = 0;
                 for (i=0;i<100;i++){
                     if ( used_sym[ i ] ){
@@ -689,9 +772,11 @@ function do_hill_climbing(str){
             else { 
                 out_str += "\nKey:\n   0   1   2   3   4   5   6   7   8   9   \n0  ";
                 k = 1;
+				/*
                 for (i=0;i<100;i++) used_sym[i] = false;
                 for (i=0;i<buffer.length;i++)
                     used_sym[ buffer[i] ] = true;
+				*/
                 j = 0;
                 for (i=0;i<100;i++){
                     if ( used_sym[ i ] ){
@@ -712,7 +797,10 @@ function do_hill_climbing(str){
                     }
                 }
             }
+			// temporary show work_key _score
 			//document.getElementById('output_area').value = out_str;	
+			var work_key_score = score_work_key();
+			out_str += '\nwork key score: '+work_key_score;
 			postMessage(out_str);
 		}
        	if (score > current_hc_score-fudge_factor*buf_len/(noise_level)) {				
@@ -795,7 +883,8 @@ onmessage = function(event) { //receiving a message with the string to decode, s
 		cipher_type = 2;
     else
         cipher_type = 0;
-	key_len = parseInt(s[5]);
+	key_weight = parseFloat(s[5]);
+	key_len = parseInt(s[6]);
   }
   else if (str.charAt(0)  == ')')  { // crib indicator, then 0, no crib, 1 fixed crib,2 floating crib
     if (str.charAt(1)=='1') { 
