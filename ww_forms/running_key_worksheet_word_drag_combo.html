@@ -1,0 +1,780 @@
+<!-- Running key scratchpad, in javascript,  -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+
+<TITLE>Running Key Worksheet & word drag</TITLE>
+<!--
+<style>
+  div {width:300px;}
+</style>
+-->
+<script src="combo_word_drag_main.js"></script>  
+<script type="text/javascript">
+var fire_fox=!document.all;
+var curs_pos;
+var col_display=0;
+var porta_warning  = true;
+
+
+//make all three areas scroll together
+function scrolltheothers(){
+	var farea = document.runform.cipherarea;
+	var sarea = document.runform.keyarea;
+	var tarea = document.runform.plainarea;
+	sarea.scrollLeft = farea.scrollLeft;
+	tarea.scrollLeft = farea.scrollLeft;
+	setTimeout("scrolltheothers()",10);
+}
+window.onload = scrolltheothers;
+
+
+var code;
+var dobj, solving_flag =0;
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var ciph_type='vig';
+
+//next function is for positioning the cursor in a textarea
+function setSelectionRange(input, selectionStart, selectionEnd) {
+	if (input.createTextRange) {
+		var range = input.createTextRange();
+		range.collapse(true);
+		range.moveEnd('character', selectionEnd);
+		range.moveStart('character', selectionStart);
+		range.select();
+	}
+	else if (input.setSelectionRange) {
+		input.focus();
+		input.setSelectionRange(selectionStart, selectionEnd);
+	}
+}
+
+function show_column(where) {
+	
+	if (fire_fox) begin = where.selectionStart;
+	else {
+		sel = document.selection.createRange();
+		if(sel.text==""){
+			sel.text='���';
+			dummy = where.createTextRange();
+			dummy.findText('���');
+			dummy.select();
+			begin=where.value.indexOf('���');
+			document.selection.clear();
+		}
+	}
+	//c = begin+1;
+	//s = 'Clicked on column: '+c;
+	s = 'Clicked on column: '+begin;
+	document.getElementById('col_position').innerHTML=s;
+	col_display=1;
+	//document.debug.output_area.value= begin;
+	
+}
+
+function decrypt_symbol(ci,ki,origin){
+	var v,s
+	
+	if (solving_flag==1) {//which cipher type is checked?
+		for (var i = 0;i<document.buttonarea.ctype.length;i++)
+			if (document.buttonarea.ctype[i].checked){
+				ciph_type = document.buttonarea.ctype[i].value;
+				break;
+		}
+		//update button area with the fixed cipher type
+		s = 'Cipher type: '
+		if (ciph_type=='vig') {
+		s += 'Vigenere'
+		}
+		else if(ciph_type=='bea'){
+		s += 'Beaufort'
+		}
+		else if(ciph_type=='var'){
+		s += 'Variant'
+		}
+		else if(ciph_type=='por'){
+		s += 'Porta'
+		}        
+		s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+		s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+		document.getElementById('button_actions').innerHTML=s;
+		solving_flag=2;
+	}
+	if (ki<0 || ki>25)
+		return(26); // index of dash in symbols array
+	if (ciph_type=='vig') {
+		v = (26-ki+ci)%26;
+		return(v);
+	}
+	else if(ciph_type=='bea'){
+		if ( origin==1) ci = - ci;
+		v = (26+ki+ci)%26;
+		//document.debug.output_area.value= ki+' '+ci+' '+v;
+		return(v);
+	}
+	else if(ciph_type=='var'){
+		if ( origin==1) ci = - ci;
+		v = (26+ki-ci)%26;
+		//document.debug.output_area.value= ki;
+		return(v);
+	}
+	else if(ciph_type=='por'){
+		if ( origin==1) {
+            ky = Math.floor(ki/2);
+            v = ci;
+            if (v < 13){
+                v += ky;
+                if (v < 13) v += 13;
+            }
+            else {
+                v -= ky;
+                if (v > 12) v -= 13;
+            }
+        }
+        else { // if ki entered in plaintext area, can't narrow letter down to one choice.
+            //v = 26; // use this choice if you want to ignore top plaintext
+            if ( porta_warning){
+                s = "Porta Warning\n"
+                s += "The top plaintext letter could be one of two consecutive letters. ";
+                s += "Using the lower one\n(This warning won't be shown again.)"
+                alert(s);
+                porta_warning = false;
+            }
+            // exactly one of ki, ci is less than 13
+            v = ci-ki;
+            if ( v< 0 ) v = -v;
+            if ( v > 12 ) v -= 13;
+            v = 2*v; // could also be v = 2*v+1;
+            
+        }
+        return(v);
+	}
+}
+
+function drag_crib(row,dir) {
+	var t,s;
+	
+	if ( row=="top") {
+		t = document.getElementById('keytext').value;
+		if (dir=="right")
+			t = '-'+t.slice(0,-1)
+		else
+			t = t.slice(1)+'-';
+		s = ''
+		t = t.toLowerCase();
+		for (var i=0 ;i<code.length;i++) {
+			cic = code.charAt(i);
+			ci = letters.indexOf(cic)
+			ni = t.charAt(i);
+			n = symbols.indexOf(ni);
+			v = decrypt_symbol(ci,n,1);
+			s += symbols.charAt(v);
+		}
+	}
+	else {
+		s = document.getElementById('plaintext').value;
+		if (dir=="right")
+			s = '-'+s.slice(0,-1)
+		else
+			s = s.slice(1)+'-';
+		t = ''
+		s = s.toLowerCase();
+		for (var i=0 ;i<code.length;i++) {
+			cic = code.charAt(i);
+			ci = letters.indexOf(cic)
+			ni = s.charAt(i)
+			n = symbols.indexOf(ni);
+			v = decrypt_symbol(ci,n,0);
+			t += symbols.charAt(v);
+		}
+	}
+	document.getElementById('keytext').value=t;
+	document.getElementById('plaintext').value=s;
+}
+
+function setup_code() {
+	var s
+	
+	data = document.getElementById('cipher').value
+	data = data.toUpperCase();
+	
+	
+//	document.debug.output_area.value= data;
+	
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+				code = code+c;
+		}
+	}
+	solving_flag=1;
+	s = code;
+	document.getElementById('cipher').value=s;
+	s = "Select cipher type, then enter decrypted letters in top or bottom plaintext box";
+	s += '<br>To erase enter a dash "-". Can enter crib & use shift buttons to drag it<br>';
+	document.getElementById('directions').innerHTML=s;
+	s = '<INPUT onclick=drag_crib("top","left"); type=button value="<=shift Top Plaintext left" >';
+	s += '&nbsp &nbsp &nbsp &nbsp<INPUT onclick=drag_crib("top","right"); type=button value="shift Top Plaintext right=>" >';
+	s +='<br><br><INPUT onclick=drag_crib("bot","left"); type=button value="<=shift Bottom Plaintext left" >';
+	s += '&nbsp &nbsp <INPUT onclick=drag_crib("bot","right"); type=button value="shift Bottom Plaintext right=>" >';
+	document.getElementById('cribblock').innerHTML=s;
+//	document.debug.output_area.value= code;
+}
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		document.getElementById('cipher').value='';
+		document.getElementById('keytext').value='';
+		document.getElementById('plaintext').value='';
+		code = '';
+		solving_flag = 0;
+		s = '<INPUT onclick=make_template(); type=button value="Initialize" >'
+		document.getElementById('button_actions').innerHTML=s;
+		s='Directions: Type or paste cipher into the box labeled cipher. Then click the Initialize button.<BR><br>';
+		document.getElementById('directions').innerHTML=s;
+		s='&nbsp'
+		document.getElementById('cribblock').innerHTML=s;
+	}
+	
+}
+
+function start_over() {
+	solving_flag = 1; // change from 2 to 1 to allow change of cipher type
+	s= '';
+	for (i=0;i<code.length;i++)
+		s += '-';
+	document.getElementById('keytext').value=s;
+	document.getElementById('plaintext').value=s;
+	s='<form name="buttonarea"><input type="radio" checked name="ctype" value="vig"> Vigenere'
+	s +='<input type="radio" name="ctype" value="bea"> Beaufort'
+	s +='<input type="radio" name="ctype" value="var"> Variant'
+	s +='<input type="radio" name="ctype" value="por"> Porta'
+	s += '</form>'
+	s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+	s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+	document.getElementById('button_actions').innerHTML=s;
+}
+
+function make_template() {
+	var s;
+	
+	if (solving_flag==0) setup_code()
+	s= '';
+	for (i=0;i<code.length;i++)
+		s += '-';
+	document.getElementById('keytext').value=s;
+	document.getElementById('plaintext').value=s;
+	s='<form name="buttonarea"><input type="radio" checked name="ctype" value="vig"> Vigenere'
+	s +='<input type="radio" name="ctype" value="bea"> Beaufort'
+	s +='<input type="radio" name="ctype" value="var"> Variant'
+	s +='<input type="radio" name="ctype" value="por"> Porta'
+	s += '</form>'
+	s += '<br><br><INPUT onclick=start_over(); type=button value="Start Over" >'
+	s += '<INPUT onclick=reset(); type=button value="Erase Cipher" >	'
+
+	document.getElementById('button_actions').innerHTML=s;
+}
+
+
+
+function process_key(e,where){
+	var x = e.keyCode;
+	if ( col_display==1) {
+		s = '&nbsp'
+		document.getElementById('col_position').innerHTML=s;
+		col_display=0;
+	}
+  	//document.debug.output_area.value= x;
+	if(x!=37&&x!=38&&x!=40&&x!=45&&x!=39&&x!=9){
+		if (x==8 || x == 46) {//backspace key or delete key
+			if (fire_fox) begin = where.selectionStart;
+			else {
+				sel = document.selection.createRange();
+				if(sel.text==""){
+					sel.text='���';
+					dummy = where.createTextRange();
+					dummy.findText('���');
+					dummy.select();
+					begin=where.value.indexOf('���');
+					document.selection.clear();
+				}
+			}
+			if (x==8)
+				 begin -= 1;
+			if (where.name == 'keyarea') {
+				k = 'keytext';
+				s = 'plaintext';
+			}
+			else {
+				s = 'keytext';
+				k = 'plaintext';
+			}
+			k1 =document.getElementById(k).value;
+			t = k1.slice(0,begin)+'-'+k1.slice(begin+1);
+			if (x==8)
+				t += '-';
+			document.getElementById(k).value=t;
+			s1 =document.getElementById(s).value;
+			t = s1.slice(0,begin)+'-'+s1.slice(begin+1);
+			document.getElementById(s).value=t;
+			//show_column(where,mv);
+			//reset cursor position, delay 10 milliseconds for updated string to get into place
+			setTimeout("setSelectionRange(document.getElementById(k), begin, begin)",10);
+			return;
+		}
+		overwrite(where);
+		//ci = document.getElementById('cipher').value;
+		if (where.name == 'keyarea') {
+			//update corresponding letter in plaintext
+			s = document.getElementById('plaintext').value
+			//document.debug.output_area.value= s;
+			if ( fire_fox) begin = where.selectionStart;
+			else begin = curs_pos;
+			//document.debug.output_area.value= x+"at "+begin;
+			//cic = ci.charAt(begin);
+			cic = code.charAt(begin);
+			ci = letters.indexOf(cic)
+			n = x-65;
+			//document.debug.output_area.value= n;
+			v = decrypt_symbol(ci,n,1);
+			t = s.slice(0,begin)+symbols.charAt(v)+s.slice(begin+1)
+			//document.debug.output_area.value= v;
+			document.getElementById('plaintext').value=t;
+		}
+		if (where.name == 'plainarea') {
+			//update corresponding letter in keytext
+			s = document.getElementById('keytext').value
+			if ( fire_fox) begin = where.selectionStart;
+			else begin = curs_pos;
+			//cic = ci.charAt(begin);
+			cic = code.charAt(begin);
+			ci = letters.indexOf(cic)
+			n = x-65;
+			v = decrypt_symbol(ci,n,0);
+			t = s.slice(0,begin)+symbols.charAt(v)+s.slice(begin+1)
+			document.getElementById('keytext').value=t;
+		}
+
+	}
+}
+
+function overwrite(where) {
+
+ if (document.selection) { //Internet explorer
+	where.focus();
+	sel = document.selection.createRange();
+	if(sel.text==""){
+		sel.text='���';
+		dummy = where.createTextRange();
+		dummy.findText('���');
+		dummy.select();
+		pos=where.value.indexOf('���');
+		//document.debug.output_area.value= "here";
+		curs_pos = pos;//global variable
+		//document.debug.output_area.value= curs_pos;
+		begin=pos;
+		document.selection.clear();
+		dummy.moveEnd('character',1);
+		dummy.select();
+		where.focus();
+	}
+ }
+ else if (where.selectionStart || where.selectionStart == '0') {//Firefox
+	begin = where.selectionStart;
+	end = where.selectionEnd;
+	//document.debug.output_area.value= where.name;
+	if(end==begin){
+		where.selectionEnd=end+1;
+		where.focus();
+	}
+ }
+}
+
+
+
+
+function do_calc(){ // combine strings and pass them to php program
+var s,s1,s2;
+
+s = document.getElementById('cipher').value;
+if ( s==""){
+    alert("No cipher entered!")
+    return(false);
+}
+s = document.getElementById('plaintext_word_len').value;
+if ( s==""){
+    alert("No minimum plaintext word length entered!")
+    return(false);
+}
+
+s='';
+if (document.getElementById('vig').checked)
+s += 'vig';
+else if (document.getElementById('var').checked)
+s += 'var';
+else
+s += 'bea';
+document.getElementById('cipher_type').value=s;
+
+
+s1 = document.getElementById('s_pos_start').value;
+if ( s1!='')
+s += " -ps "+s1;
+s1 = document.getElementById('s_start_string').value;
+if ( s1!='')
+s += " -f "+s1;
+s1 = document.getElementById('s_pos_end').value;
+if ( s1!='')
+s += " -pe "+s1;
+s1 = document.getElementById('s_end_string').value;
+if ( s1!='')
+s += " -l "+s1;
+s1 = document.getElementById('s_min_len').value;
+if ( s1!='')
+s += " -mn "+s1;
+s1 = document.getElementById('s_max_len').value;
+if ( s1!='')
+s += " -mx "+s1;
+s1 = document.getElementById('s_logdi').value;
+if ( s1!='')
+s += " -d "+s1;
+/*
+s1 = document.getElementById('max_parse_size').value;
+if ( s1!='')
+s += " -w "+s1;
+*/
+if (document.getElementById('s_count_only').checked) {
+    s += " -c";
+    document.getElementById('output_on').value="0";
+}
+else
+    document.getElementById('output_on').value="1";
+/*	
+if (document.getElementById('browser_output').checked) {
+    document.getElementById('output_browser').value="1";
+}
+*/
+if (document.getElementById('no_partial_start').checked){
+    s += " -ns";
+    document.getElementById('no_suffix').value="1";
+}
+else
+	document.getElementById('no_suffix').value="0";
+if (document.getElementById('no_partial_end').checked){
+    s += " -ne"    ;
+    document.getElementById('no_prefix').value="1";
+}
+else
+	document.getElementById('no_prefix').value="0";
+return(true);
+}
+// test the results functions ================================================
+//===========================================================================
+var output_array_index = 0;
+var temp_keytext = ''
+var temp_plaintext = '';
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+	
+function test_the_results(){
+if (document.getElementById("compare_area").value == ''){
+	alert("no results to test!")
+	return;
+}
+document.getElementById("compare_area").style.display = "none";
+document.getElementById("test_result").style.display = "block";
+output_array_index = 0;
+show_output_array_element();
+}	
+	
+function reset_conditions(){
+document.getElementById("compare_area").style.display = "block";
+document.getElementById("test_result").style.display = "none";
+output_array_index = 0;
+document.getElementById("element_index").value = '';
+document.getElementById("element_position").value = '';
+document.getElementById("element_phrase").value = '';
+
+}
+
+function copy_top(){
+var i,j,k,c,n,s,phrase,pos,plain;
+var out_str,p;
+//alert("copy to top line");
+//phrase = document.getElementById("target_phrase").value;
+phrase = document.getElementById("element_phrase").value;
+phrase = letters_only(phrase);
+//pos = parseInt(document.getElementById("target_position").value);
+pos = parseInt(document.getElementById("element_position").value);
+temp_keytext = document.getElementById("keytext").value; // global
+temp_plaintext = document.getElementById("plaintext").value; // global
+s = document.getElementById("keytext").value;
+out_str = s.slice(0,pos);
+out_str += phrase+s.slice(phrase.length+pos);
+document.getElementById("keytext").value = out_str;
+// get corresponding plaintext
+var c_phrase; // cipher in same position as phrase
+c_phrase = document.getElementById("cipher").value.slice(pos,pos+phrase.length);
+c_phrase = c_phrase.toLowerCase();
+plain = '';
+for (i=0;i<phrase.length;i++){
+	c = phrase.charAt(i);
+	k = symbols.indexOf(c);
+	c = c_phrase.charAt(i);
+	n = symbols.indexOf(c);
+	// only vig decrypt for now
+	if (document.getElementById("vig").checked)
+		n = (26+n-k)%26;
+	else if (document.getElementById("bea").checked)
+		n = (26+k-n)%26;
+	else
+		n = (26+k+n)%26;
+		
+	plain += symbols.charAt(n)
+}
+s = document.getElementById("plaintext").value;
+out_str = s.slice(0,pos);
+out_str += plain+s.slice(plain.length+pos);
+document.getElementById("plaintext").value = out_str;
+
+}
+
+function copy_bottom(){
+var i,j,k,c,n,s,phrase,pos,plain;
+var out_str,key,p;
+//alert("copy to top line");
+//phrase = document.getElementById("target_phrase").value;
+temp_keytext = document.getElementById("keytext").value; // global
+temp_plaintext = document.getElementById("plaintext").value; // global
+
+phrase = document.getElementById("element_phrase").value;
+phrase = letters_only(phrase);
+//pos = parseInt(document.getElementById("target_position").value);
+pos = parseInt(document.getElementById("element_position").value);
+s = document.getElementById("plaintext").value;
+out_str = s.slice(0,pos);
+out_str += phrase+s.slice(phrase.length+pos);
+document.getElementById("plaintext").value = out_str;
+// get corresponding plaintext
+var c_phrase; // cipher in same position as phrase
+c_phrase = document.getElementById("cipher").value.slice(pos,pos+phrase.length);
+c_phrase = c_phrase.toLowerCase();
+key = '';
+for (i=0;i<phrase.length;i++){
+	c = phrase.charAt(i);
+	p = symbols.indexOf(c);
+	c = c_phrase.charAt(i);
+	n = symbols.indexOf(c);
+	// only vig decrypt for now
+	if (document.getElementById("vig").checked)
+		n = (26+n-p)%26;
+	else if (document.getElementById("bea").checked)
+		n = (26+p-n)%26;
+	else
+		n = (26+p+n)%26;
+	key += symbols.charAt(n)
+}
+s = document.getElementById("keytext").value;
+out_str = s.slice(0,pos);
+out_str += key+s.slice(key.length+pos);
+document.getElementById("keytext").value = out_str;
+
+}
+function show_output_array_element(){
+var xfer,i,j,k,c,n,s;
+
+xfer = output_array[output_array_index];
+s = ''
+document.getElementById("element_index").value = output_array_index;
+document.getElementById("element_position").value = xfer["position"]
+document.getElementById("element_phrase").value = xfer["phrase"]
+output_array_index++;
+if (output_array_index == output_array.length)
+	output_array_index = 0;
+
+}
+
+function undo_copy(){
+if (temp_keytext == '' || temp_plaintext == '') {
+alert("nothing copied yet!")
+return;
+}
+document.getElementById("keytext").value = temp_keytext;
+document.getElementById("plaintext").value = temp_plaintext;
+}
+
+function set_array_element(){
+var indx = parseInt(document.getElementById("index_number").value);
+if ( indx >= output_array.length){
+	indx = output_array.length-1;
+	document.getElementById("index_number").value = indx;	
+}	
+output_array_index = indx;
+show_output_array_element();
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver" >
+<center><span style="font-weight:bold;"><h3>Worksheet Area</h3></span></center><br>
+
+<form name="runform"
+<!-- mark space for insructions-->
+<div id="directions"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px; ">
+Directions: Type or paste cipher into the box labeled cipher. Then click the Initialize button.<BR><br>
+</div>
+<b>Cipher:</b> <br>
+<div id = "controlArea"
+<!-- mark space for cipher -->
+<textarea id="cipher"  name = "cipherarea" cols=90; wrap="off" onscroll="scrolltheothers()"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+</div>
+<br><br>
+Top Plaintext:<br>
+<!-- mark area for key-->
+<textarea  id="keytext" name = "keyarea" cols=91 wrap="off" onkeydown="process_key(event,this)"
+onclick="show_column(this)"
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+
+<br>
+Bottom Plaintext:<br>
+<!-- mark area for plaintext-->
+<textarea id="plaintext" name = "plainarea" cols=91 wrap="off" onkeydown="process_key(event,this)"
+onclick="show_column(this)"
+style="overflow:hidden; font-family:monospace; font-size: 15px; height:50px; padding: 5px;
+background:white;">
+</textarea>
+
+</form>
+<br>
+<div id="col_position">
+&nbsp
+</div>
+
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+
+<INPUT onclick=make_template(); type=button value="Initialize" >
+</div>
+
+<!-- container for crib dragging -->
+<div id="cribblock"
+style="float:left; margin-left:50px; margin-top:30px;">
+&nbsp
+</div>
+
+
+<div id="wordDragArea"
+style  = "clear:left">
+<br><h3>word drag area</h3>
+<!--
+<input type="radio" name="s_buttons" id="setup_conditions" checked> Set conditions
+&nbsp;
+<input type="radio" name="s_buttons" id="test_results"> test the results
+--> 
+<br>
+Output:
+<br>
+<textarea id="output_area" cols = 80 rows = 10>
+</textarea>
+<br>
+<div id = "compare_area">
+ Cipher Type:
+ <input type="radio" name="r_buttons" id="vig" checked> Vigenere
+&nbsp;&nbsp;
+ <input type="radio" name="r_buttons" id= "var"> Variant
+&nbsp;&nbsp;
+ <input type="radio" name="r_buttons" id="bea"> Beaufort
+ 
+ <input type=hidden name="cipher_type" id = "cipher_type" value="">
+
+ <br><br>
+ Plaintext must have word at least as long as:
+ <input type = "text" id = "plaintext_word_len" name="min_plaintext_word_len" value = 7 size=3>
+  letters. (required)
+
+ <br><br>
+  Search for phrase starting at position: <input type = "text" id = "s_pos_start" name="fixed_position" value=''>
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Phrase must begin with the letters: <input type = "text" id = "s_start_string" name="s_start_string" value=''>
+ <br><br>
+  Search for phrase ending at position: <input type = "text" id = "s_pos_end" name="fixed_end_position" value=''>
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Phrase must end with the letters: <input type = "text" id = "s_end_string" name="s_end_string" value=''>
+ <br><br>
+ Minimum length for phrase: <input type = "text" id = "s_min_len" name="s_min_len" value=''>
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Maximum length for phrase: <input type = "text" id = "s_max_len" name="s_max_len" value=''>
+ <br><br>
+ <input type="checkbox" id = "no_partial_start" >Key and plaintext both start at word boundary
+ <input type=hidden name="no_suffix" id = "no_suffix" value="0">
+
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ <input type="checkbox" id = "no_partial_end" >Key and plaintext both end at word boundary
+  <input type=hidden name="no_prefix" id = "no_prefix" value="0">
+
+ <br><br>
+ <input type=hidden name="output_browser" id = "output_browser" value="0">
+<input type="checkbox" id = "s_count_only" >Phrase count only
+ <input type=hidden name="output_on" id = "output_on" value="1">
+
+&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Minimum ave log di: <input type = "text" id = "s_logdi" name="min_logdi" value = 750>
+ <br><br>
+Phrase/word  list: 
+<input type="file" id="input" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Parse list:
+<input type="file" id="input2" >
+<br><br>
+<input type="button" id="do_drag" value= "Do Drag" onclick=do_drag()>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" id="Test_the_results" value= "Test the drag results" onclick=test_the_results() disabled>
+</div> <!-- end compare_area -->
+<div id= "test_result" style="display:none;" >
+<br><br>
+Output element:<br>
+index: <input type = "text" id = "element_index" name="element_index" value='' size = 4> <br>
+position: <input type = "text" id = "element_position" name="element_position" value='' size = 4> <br>
+phrase: <input type = "text" id = "element_phrase" name="element_phrase" value='' size = 10> <br>
+<input type="button" id="get_output_array_element" value= "Show next output element" onclick=show_output_array_element()>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" id="set_index" value= "Show element: " onclick=set_array_element()>
+<input type = "text" id = "index_number"  value='0' size = 4> 
+<br><br>
+<input type="button" id="copy_top" value= "copy element to top plaintext line" onclick=copy_top()>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" id="copy_bottom" value= "copy element to bottom plaintext line" onclick=copy_bottom()>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="button" id="undo_copy" value= "undo last copy" onclick=undo_copy()>
+
+
+<br><br>
+<input type="button" id="do_reset" value= "Reset conditions" style = "background-color: yellow" onclick=reset_conditions()>
+</div>
+
+
+<br><br>
+</div>
+<script>
+onload=function(){
+    document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});
+    document.getElementById('input2').addEventListener("change", function(){handleFiles2(this.files)});
+
+}
+</script>
+</BODY>
+</HTML>
+
