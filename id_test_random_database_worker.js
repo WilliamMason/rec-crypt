@@ -4108,7 +4108,7 @@ function do_id_test(code){
     for (i=0;i<5;i++){
         s += result[1][i][0]+' '+result[1][i][1].toFixed(2)+'\n';
     }
-    s += '\n(not tested: Baconian, Null)\n'
+    s += '\n(not tested: Baconian, Interrupted Key, Null)\n'
 	//document.puzzle.cipherstats.value = s // made stat display optional
     //get_id();
     /*
