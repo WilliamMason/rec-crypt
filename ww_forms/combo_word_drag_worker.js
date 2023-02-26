@@ -2,7 +2,7 @@ var word_string;
 var parse_string;
 
 
-function do_main(cipher,min_plain_len,min_logdi,fixed_position,fixed_end_position,phrase_file,parse_file,output_browser,output_on,output_name,c_type,no_suffix,no_prefix,phrase_min,phrase_max,start_phrase,end_phrase){ // removed callback parameter at end
+function do_main(cipher,min_plain_len,max_plain_len,min_logdi,fixed_position,fixed_end_position,phrase_file,parse_file,output_browser,output_on,output_name,c_type,no_suffix,no_prefix,phrase_min,phrase_max,start_phrase,plain_preceding_string,end_phrase,plain_trailing_string){ // removed callback parameter at end
 
 
 var i,j,k,n,s,c;
@@ -17,13 +17,17 @@ var phrase_list_filename = 'combine_phrases10.txt'
 var cipher_type = 'vig';// vig,var, or bea
 var cutoff_logdi_score = 750;
 var min_plaintext_word_len = 6;
+var max_plaintext_word_len = 100;
 var starting_ciphertext_position = 0 ;
 var ending_ciphertext_position ;
 var min_phrase_len = 1;
 var max_phrase_len = 100;
 var phrase_start = [];
+var preceding_plain_letters= '';
+var trailing_plain_letters = '';
 var phrase_end = [];
 min_plaintext_word_len = parseInt(min_plain_len); // sent in by setup program
+max_plaintext_word_len = parseInt(max_plain_len); // sent in by setup program
 cutoff_logdi_score = parseInt(min_logdi); // sent in by setup program
 if (fixed_position != '')
 	starting_ciphertext_position = parseInt(fixed_position);
@@ -63,6 +67,17 @@ if(start_phrase!=''){
 			phrase_start.push(n);
 	}
 }
+if(plain_preceding_string!=''){
+	s=plain_preceding_string.toLowerCase();
+	preceding_plain_letters = ''
+	for(i=0;i<s.length;i++){
+		c = s.charAt(i);
+		n = alpha.indexOf(c);
+		if (n != -1)
+			preceding_plain_letters += c;
+	}
+}
+
 if(end_phrase!=''){
 	s=end_phrase.toLowerCase();
 	for(i=0;i<s.length;i++){
@@ -72,6 +87,18 @@ if(end_phrase!=''){
 			phrase_end.push(n);
 	}
 }
+
+if(plain_trailing_string!=''){
+	s = plain_trailing_string.toLowerCase();
+	trailing_plain_letters = ''
+	for(i=0;i<s.length;i++){
+		c = s.charAt(i);
+		n = alpha.indexOf(c);
+		if (n != -1)
+			trailing_plain_letters += c;
+	}
+}
+
 
 var word_list = [];
 /*
@@ -606,13 +633,18 @@ for (line_count = 0;line_count< phrase_lines.length;line_count++){
 				//console.log(s);
 				if (score > cutoff_logdi_score){
 					s ='';
+					s += preceding_plain_letters; // letters to left of plaintext position sent
 					for (i=0;i<work_buffer.length;i++)
-						s += alpha.charAt(work_buffer[i]);
+							s += alpha.charAt(work_buffer[i]);
+						s += trailing_plain_letters;
 						result = do_complete_parse(s,no_suffix);
-						if (result[0] >= min_plaintext_word_len) {// got complete parse
+						if (result[0] >= min_plaintext_word_len && result[0]<max_plaintext_word_len+1) {// got complete parse
 							s = "position "+j+" , max plaintext word of length: "+result[0]+"\n";
 							s += 'Phrase: '+ li2;
-							s += '\nPlaintext: '+result[1];
+							if (preceding_plain_letters == '' && trailing_plain_letters  == '')
+								s += '\nPlaintext: '+result[1];
+							else
+								s += '\nExtended Plaintext: '+result[1];
 							if(output_on=='1') console.log(s);
 							if(output_name!='')
 								out_stream.write(s);
@@ -702,12 +734,16 @@ onmessage = function(event) { //receiving a message
   s += event.data.phrase_max+'\n' ;
   s += event.data.phrase_min+'\n' ;
   s += event.data.start_phrase+'\n' ;
+  s += event.data.plain_preceding_string+'\n' ;
   s += event.data.end_phrase+'\n' ;
+  s += event.data.plain_trailing_string+'\n' ;
+  s += event.data.max_plain_len+'\n' ;
   //postMessage(s);
-//do_main(cipher,min_plain_len,min_logdi,fixed_position,fixed_end_position,phrase_file,parse_file,output_browser,output_on,output_name,c_type,no_suffix,no_prefix,phrase_min,phrase_max,start_phrase,end_phrase)  
+//do_main(cipher,min_plain_len,max_plain_nen;min_logdi,fixed_position,fixed_end_position,phrase_file,parse_file,output_browser,output_on,output_name,c_type,no_suffix,no_prefix,phrase_min,phrase_max,start_phrase,end_phrase)  
 
 do_main(event.data.cipher,
 event.data.min_plain_len,
+event.data.max_plain_len,
 event.data.min_logdi,
 event.data.fixed_position,
 event.data.fixed_end_position,
@@ -722,6 +758,10 @@ event.data.no_prefix,
 event.data.phrase_min,
 event.data.phrase_max,
 event.data.start_phrase,
-event.data.end_phrase);
+event.data.plain_preceding_string,
+event.data.end_phrase,
+event.data.plain_trailing_string
+);
+
 }
 

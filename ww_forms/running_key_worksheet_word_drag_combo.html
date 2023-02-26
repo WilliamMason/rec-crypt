@@ -703,19 +703,27 @@ Output:
  Plaintext must have word at least as long as:
  <input type = "text" id = "plaintext_word_len" name="min_plaintext_word_len" value = 7 size=3>
   letters. (required)
+  &nbsp; but not longer than 
+  <input type = "text" id = "too_long_word_len"  value = 100 size=3>
 
  <br><br>
-  Search for phrase starting at position: <input type = "text" id = "s_pos_start" name="fixed_position" value=''>
+  Search for phrase starting at position: <input type = "text" id = "s_pos_start" name="fixed_position" value='' size=4>
  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
- Phrase must begin with the letters: <input type = "text" id = "s_start_string" name="s_start_string" value=''>
+ Phrase must begin with the letters: <input type = "text" id = "s_start_string" name="s_start_string" value='' size=4>
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Plaintext letters preceding the position: <input type = "text" id = "plain_preceding_string"  value='' size=4>
+ 
  <br><br>
-  Search for phrase ending at position: <input type = "text" id = "s_pos_end" name="fixed_end_position" value=''>
+  Search for phrase ending at position: <input type = "text" id = "s_pos_end" name="fixed_end_position" value='' size=4 >
  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
- Phrase must end with the letters: <input type = "text" id = "s_end_string" name="s_end_string" value=''>
+ Phrase must end with the letters: <input type = "text" id = "s_end_string" name="s_end_string" value='' size=4>
+ &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
+ Plaintext letters trailing the position: <input type = "text" id = "plain_trailing_string"  value='' size=4>
+
  <br><br>
- Minimum length for phrase: <input type = "text" id = "s_min_len" name="s_min_len" value=''>
+ Minimum length for phrase: <input type = "text" id = "s_min_len" name="s_min_len" value='' size=4>
  &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
- Maximum length for phrase: <input type = "text" id = "s_max_len" name="s_max_len" value=''>
+ Maximum length for phrase: <input type = "text" id = "s_max_len" name="s_max_len" value='' size=4 >
  <br><br>
  <input type="checkbox" id = "no_partial_start" >Key and plaintext both start at word boundary
  <input type=hidden name="no_suffix" id = "no_suffix" value="0">
@@ -730,7 +738,7 @@ Output:
  <input type=hidden name="output_on" id = "output_on" value="1">
 
 &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;
- Minimum ave log di: <input type = "text" id = "s_logdi" name="min_logdi" value = 750>
+ Minimum ave log di: <input type = "text" id = "s_logdi" name="min_logdi" value = 750 size=4>
  <br><br>
 Phrase/word  list: 
 <input type="file" id="input" >

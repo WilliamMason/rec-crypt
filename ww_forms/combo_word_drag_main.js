@@ -109,9 +109,11 @@ function do_drag(){
 	xfer["cipher"] = document.getElementById('cipher').value;
 	n = parseInt(document.getElementById('plaintext_word_len').value);
 	xfer["min_plain_len"] = n;
+	n = parseInt(document.getElementById('too_long_word_len').value);
+	xfer["max_plain_len"] = n;
 	xfer["min_logdi"] = document.getElementById('s_logdi').value;
 	xfer["fixed_position"] = document.getElementById('s_pos_start').value;
-	xfer["fixed_end_position"] = document.getElementById('s_pos_end').value;	
+	xfer["fixed_end_position"] = document.getElementById('s_pos_end').value;
 	xfer["phrase_file"] = word_string;
 	xfer["parse_file"] = parse_string;
 	xfer["output_browser"] = '1';
@@ -123,7 +125,9 @@ function do_drag(){
 	xfer["phrase_max"] = document.getElementById('s_max_len').value;
 	xfer["phrase_min"] = document.getElementById('s_min_len').value;
 	xfer["start_phrase"] = document.getElementById('s_start_string').value;
+	xfer["plain_preceding_string"]	= document.getElementById('plain_preceding_string').value;
 	xfer["end_phrase"] = document.getElementById('s_end_string').value;
+	xfer["plain_trailing_string"]	= document.getElementById('plain_trailing_string').value;
 	
 	hworker.postMessage(xfer);
 	document.getElementById('Test_the_results').disabled = false;
