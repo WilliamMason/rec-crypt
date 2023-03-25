@@ -3656,7 +3656,7 @@ function do_hill_climbing(str){
     else if (buf_len>= 400)
         primer_limit = 100;
     else
-        primer_limit = 200;
+        primer_limit = 500;
     order_primers();
 
    max_score = 0;
