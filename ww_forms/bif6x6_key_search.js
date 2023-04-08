@@ -67,6 +67,7 @@ function do_key_search(){
 	var str,c,i,n,j,k;
     var op_choice;
     var period;
+	var reversed_key_flag;
 
    if (!do_check()) return;    
    if ( word_list_array.length==0){
@@ -101,8 +102,12 @@ function do_key_search(){
    for (i=0;i< word_list_array.length;i++)
         bufView[i] = word_list_array[i];
    worker.postMessage( {op_choice:1, buf:buf},[buf]);
-	
-   worker.postMessage( {op_choice:2, str:str,period:period});
+   
+	if (document.getElementById('reversed_key').checked)
+		reversed_key_flag = true;
+	else
+		rerversed_key_flag = false;
+   worker.postMessage( {op_choice:2, str:str,period:period,reversed_key_flag:reversed_key_flag});
 
 //document.getElementById('debug_area').value="key search";
 }

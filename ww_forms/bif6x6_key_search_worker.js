@@ -30,7 +30,7 @@ var crib_len;
 var period;
 var inverse_key = [];
 var work_array=[];
-
+var reversed_key_flag = false;
 
 /*
 function make_table(str) {
@@ -263,6 +263,8 @@ function get_key_array(wrd){
                 
             }
         }
+		if (reversed_key_flag)
+			key.reverse();
 }
 
  
@@ -348,6 +350,7 @@ onmessage = function(event) { //receiving a message
     //word_pattern_string = event.data.str;
     str = event.data.str;
 	period = parseInt(event.data.period);
+	reversed_key_flag = event.data.reversed_key_flag;
     do_key_search(str);
   }
 }
