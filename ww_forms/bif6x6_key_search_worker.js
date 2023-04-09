@@ -323,7 +323,10 @@ function do_key_search(str){
                 out_str += '\nKey: ';
                 for (i=0;i<36;i++) 
                     out_str += alpha.charAt(work_key[i]);
-                out_str += "\nroute: "+k+" ("+route_name[k]+")";
+		if ( reversed_key_flag)
+			out_str += "\nroute: "+k+" ("+route_name[k]+" reversed)";
+		else 		    
+                	out_str += "\nroute: "+k+" ("+route_name[k]+")";
                 //document.getElementById('output_area').value = out_str;	
                 postMessage(out_str);
             }
