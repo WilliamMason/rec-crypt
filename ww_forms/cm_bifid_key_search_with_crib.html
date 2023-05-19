@@ -12,7 +12,7 @@ var buf_len, crib_len;
 var crib = [];
 var labels;
 var max_label;
-var max_labels;
+var final_labels;
 var crib_buffer = [];
 
 var EMPTY = -1;
@@ -109,10 +109,9 @@ function do_drag(){
                 out_str += " "+start_pos;
                 flag = true;
 				max_label = result[1]; // global
-				//max_labels = labels.slice(0);
-				max_labels = [];
+				final_labels = [];
 				for (i=0;i<numb_symbols;i++)
-					max_labels[i] = [];
+					final_labels[i] = [];
 					
 				// show labels
 				
@@ -123,7 +122,7 @@ function do_drag(){
 					for (j=0;j<4;j++){
 						//out_str += labels[i][j]+', ';
 						k = labels[i][j];
-						max_labels[i][j] = k;
+						final_labels[i][j] = k;
 						
 					}
 					//out_str += '\n';
@@ -402,7 +401,7 @@ function do_solve(){
 	*/
 	xfer["buffer"] = buffer; // numerical version
 	xfer["word_list"] = word_list;
-	xfer["labels"] = max_labels;
+	xfer["labels"] = final_labels;
 	xfer["max_label"] = max_label;
 	xfer["period"] = period;
 	hworker.postMessage(xfer);
