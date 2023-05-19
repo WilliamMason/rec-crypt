@@ -1,0 +1,478 @@
+<html>
+<head>
+<title>CM bifid key search with crib</title>
+<script type="text/javascript">
+
+var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var l_alpha = "abcdefghijklmnopqrstuvwxyz";
+
+var digits="0123456789";
+var buffer = [];
+var buf_len, crib_len;
+var crib = [];
+var labels;
+var max_label;
+var max_labels;
+var crib_buffer = [];
+
+var EMPTY = -1;
+var BUFFER_ROW = 0;
+var BUFFER_COL = 1;
+var CRIB_ROW = 2;
+var CRIB_COL = 3;
+
+
+var min_per,max_per, period;
+
+function setup_cipher() {
+	var i,j,state,cnt,c, data,n1,n;
+    var str;
+    
+    str = document.getElementById('input_area').value;
+    str = str.toUpperCase();
+    buf_len = 0;
+    for (i=0;i<str.length;i++) {
+        c = str.charAt(i);
+        n = upperC.indexOf(c);
+        if ( n != -1)
+            buffer[buf_len++] = n;
+    }
+
+}	
+
+
+function do_drag(){
+	var str, alpha,out_str,c,n,cnt,i,j,k;
+    var start_pos, numb_symbols,flag;
+	var result;
+	var initial_pos, final_pos;	
+	
+	str = document.getElementById('period').value
+    if ( str == ''){
+		alert("No period entered!");
+		return;
+     }
+	
+	str = document.getElementById('input_area').value;
+    if ( str == ''){
+		alert("No cipher entered!");
+		return;
+     }
+
+        setup_cipher();
+        alpha="abcdefghijklmnopqrstuvwxyz";
+        numb_symbols = 26;
+
+	out_str="positions start at 0\n";
+	
+	str = document.getElementById('crib_area').value;
+    if ( str == ''){
+		alert("No crib entered entered!");
+		return;
+     }
+	
+	str = str.toLowerCase();
+    crib_len = 0;
+    crib = [];
+	for (var i=0;i<str.length;i++){
+		c = str.charAt(i);
+		n = alpha.indexOf(c);
+		if ( n>=0)
+			crib[crib_len++] = n;
+	}
+  // set up labels array
+  labels = [];  
+  for (i=0;i<numb_symbols;i++){
+    labels[i] = [];
+  }
+	period = parseInt(document.getElementById('period').value);
+    
+        out_str += "period "+period+" OK at:";
+        flag = false;
+	if (document.getElementById('rows_cols').checked){
+		initial_pos = parseInt(document.getElementById('setup_position').value);
+		final_pos = initial_pos+1;
+	}
+	else{
+		initial_pos =0;
+		final_pos = buf_len - crib_len+1
+	}
+	
+
+		for (start_pos = initial_pos;start_pos<final_pos;start_pos++){
+        //for (start_pos = 0;start_pos<buf_len - crib_len+1;start_pos++){
+            result = check_text(start_pos,numb_symbols);
+			n = result[0];
+            if ( n == 0) {
+                if ( flag) out_str += ","; 
+                //out_str += " "+start_pos+","
+                out_str += " "+start_pos;
+                flag = true;
+				max_label = result[1]; // global
+				//max_labels = labels.slice(0);
+				max_labels = [];
+				for (i=0;i<numb_symbols;i++)
+					max_labels[i] = [];
+					
+				// show labels
+				
+				//out_str = "Labels (max_label "+max_label+")\n";
+				//out_str += 'char, cipher row, cipher col, plain row, plain col\n';
+				for (i=0;i<numb_symbols;i++){
+					//out_str += alpha.charAt(i)+' ';
+					for (j=0;j<4;j++){
+						//out_str += labels[i][j]+', ';
+						k = labels[i][j];
+						max_labels[i][j] = k;
+						
+					}
+					//out_str += '\n';
+				}
+				
+             out_str += "\n";  
+            if (document.getElementById('rows_cols').checked){			 
+				document.getElementById('do_solve1').disabled = false;			 
+            }
+			else { // setup not checked, save position
+				document.getElementById('setup_position').value = start_pos;
+			}
+		  }
+		
+        
+		}
+    document.getElementById('output_area').value = out_str;        
+    
+}
+
+function check_text(start_pos,numb_symbols) {
+    var j, count,nb,nc,n,k;
+    var numb_this_pass,b_start,c_start,nxt_label,bindex,cindex;
+    var bpos,cpos;
+    var x,y;
+    var side_len;
+        
+    /* crib positioned at start_pos */
+    /* initialize */
+    if (numb_symbols == 36)
+        side_len = 6;
+    else
+        side_len = 5
+	for (j=0;j<buf_len;j++)
+		crib_buffer[j] = -1; /* reset*/
+	for (j=0;j<crib_len;j++)
+		crib_buffer[start_pos+j] = crib[j];
+        
+
+        /* set up label array and check for inconsistencies */
+        /* this type of crib covers entire buffer */
+        numb_this_pass = period;
+        b_start = c_start = 0; /* these will always be the same with
+                                        this type of crib */
+        if ( b_start+period > buf_len)
+                numb_this_pass = buf_len - b_start;
+        nxt_label = 0;
+        /* unmark array of labels */
+        for (j=0;j<numb_symbols;j++)
+                for (k=0;k<4;k++)
+                        labels[j][k] = -1;
+        count = 0;
+        bindex = BUFFER_ROW;
+        cindex = CRIB_ROW;
+        bpos = cpos = b_start;
+        /* main loop */
+        do {
+                while(count < 2* numb_this_pass) {
+                        if ( crib_buffer[cpos] != -1 ) { /* have crib letter here*/
+                                /* fill in later */
+                                nb = labels[ buffer[bpos] ][ bindex];
+                                nc = labels[ crib_buffer[cpos] ][cindex];
+                                if ( nb == -1 && nc == -1) {
+                                        labels[buffer[bpos]][bindex] =
+                                        labels[ crib_buffer[cpos]][cindex] =
+                                        nxt_label++;
+                                }
+                                else if ( nb == -1)
+                                        labels[buffer[bpos]][bindex] = nc;
+                                else if ( nc == -1)
+                                        labels[ crib_buffer[cpos]][cindex] = nb;
+                                else { /* join labels */
+                                        for (j=0;j<numb_symbols;j++) for (k=0;k<4;k++)
+                                                if ( labels[j][k] == nc)
+                                                        labels[j][k] = nb;
+                                }
+                        } /* end if */
+                        /* advance indices */
+                        count++;
+                        cpos++;
+                        if ( (count % numb_this_pass)==0) {
+                                cindex++;
+                                cpos = c_start;
+                        }
+                        bindex = (bindex+1)%2;
+                        if ( bindex == BUFFER_ROW)
+                                bpos++;
+                } /* end while */
+                c_start += period;
+                b_start += period;
+                count = 0;
+        bindex = BUFFER_ROW;
+        cindex = CRIB_ROW;
+        bpos  = b_start;
+        cpos = c_start;
+                if ( b_start+period > buf_len)
+                        numb_this_pass = buf_len - b_start;
+                else
+                        numb_this_pass = period;
+        } while( cpos < buf_len);
+        /* print label array for debugging */
+/*
+        printf("Labels:\n");
+        for (j=0;j<numb_symbols;j++){
+                printf("%c  ",j+'A');
+                for (k=0;k<4;k++)
+                        printf("%li ",labels[j][k]);
+                printf("\n");
+        }
+*/
+        /* check for inconsistencies */
+        for (j=0;j<nxt_label;j++) for (k=0;k<4;k++) {
+                n = 0;
+                for (x=0;x<numb_symbols;x++)
+                        if ( labels[x][k] == j) {
+                                n++;
+                                if ( n>side_len) {
+                                        //printf("Too many labels in same row\n");
+                                        return([1,0]);
+                                }
+                }
+        }
+        for (j=0;j<numb_symbols-1;j++) {
+                if ( labels[j][BUFFER_ROW] == -1 ||
+                        labels[j][BUFFER_COL] == -1) continue;
+                for (k=j+1;k<numb_symbols;k++)
+                        if ( labels[j][BUFFER_ROW] == labels[k][BUFFER_ROW] &&
+                            labels[j][BUFFER_COL] == labels[k][BUFFER_COL] ) {
+                                //printf("Two different letters in same position\n");
+                                return([1,0]);
+                }
+        }
+        for (j=0;j<numb_symbols-1;j++) {
+                if ( labels[j][CRIB_ROW] == -1 ||
+                        labels[j][CRIB_COL] == -1) continue;
+                for (k=j+1;k<numb_symbols;k++)
+                        if ( labels[j][CRIB_ROW] == labels[k][CRIB_ROW] &&
+                            labels[j][CRIB_COL] == labels[k][CRIB_COL] ) {
+                                //printf("Two different letters in same position\n");
+                                return([1,0]);
+                }
+        }
+        return([0,nxt_label]); /* consistent */
+    
+
+} /* end check text */
+
+
+var hworker;
+
+
+var word_list_string = '';
+var word_list = [];
+
+
+function handleFiles(obj){
+	var str, fname;
+	fname = obj[0];
+	str = "handle file: "+fname.fileName;
+	//alert(str);
+	getAsText(fname);
+}
+
+function getAsText(readFile) {
+        
+  var reader = new FileReader();
+  // Handle progress, success, and errors
+  //reader.onprogress = updateProgress;
+  reader.onload = loaded;
+  reader.onerror = errorHandler;
+  
+  reader.readAsText(readFile);
+  
+}
+
+function loaded(evt) {
+  // Obtain the read file data
+  var fileString = evt.target.result;
+  var s;
+  //alert("got to loaded");
+  // Handle UTF-16 file dump
+    //document.getElementById('output_area').value = fileString;
+  s = "The length of the file is "+fileString.length;
+  document.getElementById('output_area2').value = s;
+  word_list_string = fileString;
+  //word_len = [];
+  //alert("file loaded");
+  
+}
+
+function errorHandler(evt) {
+  if(evt.target.error.code == evt.target.error.NOT_READABLE_ERR) {
+    // The file could not be read
+    alert("got error handler");
+  }
+}
+
+function initialize_word_list(str){
+	var s,n;
+    var state,i,c,index;
+    
+    // construct word list
+    str = str.toLowerCase();
+    state = 0; //no current word
+    s = '';
+    index = 0;
+    for (i=0;i<str.length;i++) {
+        c = str.charAt(i);
+		if ( c=='j')
+			c = 'i';
+        n = l_alpha.indexOf(c);
+        if ( state == 0 && n >=0){
+            s = c;
+            state = 1;
+        }
+        else if (state == 1){
+            if (n >=0) s += c;
+            else {
+                word_list[index++] = s;
+                state = 0;
+            }
+        }
+    }
+    if (state == 1)
+        word_list[index++] = s;
+	
+
+}
+
+
+/////////////// crib matcher code
+var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var buf_len2;
+var buffer2 = [];
+var crib2 = [];
+var crib2_len;
+
+var alpha_extended="ABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+function initialize_worker(){
+    var out_str;
+    
+   hworker = new Worker('cm_bifid_with_crib_worker.js');
+   hworker.onmessage = function (event) {
+    out_str = event.data
+	document.getElementById('output_area2').value = out_str;	
+    }
+}
+
+function do_solve(){
+	var str,max_trials,s,n;
+	var  out_str,c,v,score,i,j;
+	var n1,n2,v1,v2,max_score;
+	var x,y,n3,n4;
+    var indx,state,k;
+	var i,j,k,c,n,s;
+	var key,out_str,ka,work_key, work_key2;
+	var left_work_key, top_word_key, middle_work_key;
+	var xfer;
+	
+	if (word_list_string == ''){
+			alert("Must select word list file.")
+				return;
+	}
+	initialize_word_list(word_list_string);
+	initialize_worker();
+	xfer = {};
+	/*
+	xfer["buffer"] = code; // numerical version
+	xfer["word_list"] = word_list;
+	xfer["left_crib_columns"] = left_crib_columns;
+	xfer["left_crib_rows"] = left_crib_rows;
+	xfer["right_crib_columns"] = right_crib_columns;
+	xfer["right_crib_rows"] = right_crib_rows;
+	
+	xfer["left_right_same_row"] = left_right_same_row;
+	*/
+	xfer["buffer"] = buffer; // numerical version
+	xfer["word_list"] = word_list;
+	xfer["labels"] = max_labels;
+	xfer["max_label"] = max_label;
+	xfer["period"] = period;
+	hworker.postMessage(xfer);
+	
+	
+}
+
+
+function do_clear(){
+	document.getElementById('output_area2').value = '';
+	document.getElementById('input_area2').value = '';
+}
+
+onload = function() {
+    document.getElementById('do_solve1').addEventListener("click",do_solve);
+    document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});	
+
+}
+
+</script>
+</head>
+<body bgcolor="Silver">
+<div id="derag" style="background:pink; border: 3px ridge black; margin-right:300px; padding:10px; ">
+<h3> CM bifid crib possibilities</h3> <br>
+Directions: Enter ciphertext, period and crib. Click Crib Drag button. Then check setup position and Crib Drag again.<br><br>
+Ciphertext:<br>
+<textarea id="input_area" rows = 6 cols=90 spellcheck="false" >
+</textarea><br>
+crib:<br>
+<textarea id="crib_area" rows = 2 cols=90 >
+</textarea><br>
+<br>
+<input type="button" value="Crib Drag" onclick=do_drag();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Period <input type = "text" id = "period" size = 4 >
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type = "checkbox" id = "rows_cols">
+Set up key search at position: 
+<input type = "text" id = "setup_position" size = 4>
+
+<br><br>
+Output (positions start at 0):<br>
+<textarea id="output_area" rows=12 cols=90>
+</textarea>
+</div>
+<br><br>
+<div id="match" style="background:yellow; border: 3px ridge black; margin-right:300px; padding:10px; ">
+<h3>cm bifid key search </h3> <br>
+
+Directions: Choose a word list file. Click Get Keys button.
+<br><br>
+
+
+Keys:<br>
+<textarea id="output_area2" cols=80 rows = 20>
+</textarea>
+<br>
+<br>
+<INPUT id="do_solve1" type=button value="Get Keys." disabled>
+
+<br><br>
+Word list file:
+<input type="file" id="input" >
+<br><br>
+
+
+</div>
+<br><br>
+</body>
+</html>
