@@ -144,6 +144,7 @@ function construct_crib( stage,current_labels,current_crib_buffer){
 	var flag,nxt_label,sq_index;
 	var numb_reversals;
     var align;
+	var initial_pos, final_pos;	
   
   var new_labels = [];
   var new_crib_buffer = [];
@@ -153,8 +154,17 @@ function construct_crib( stage,current_labels,current_crib_buffer){
     numb_symbols = 26; // global
     keysquare_width = 5; //global
 
-
-	for (start_pos=0;start_pos<code.length - crib[stage].length+1;start_pos++) {
+	if (document.getElementById('rows_cols').checked){
+		initial_pos = parseInt(document.getElementById('setup_position').value);
+		final_pos = initial_pos+1;
+	}
+	else{
+		initial_pos =0;
+		//final_pos = buf_len - crib_len+1
+		final_pos = code.length - crib[stage].length+1
+	}
+	for (start_pos = initial_pos;start_pos<final_pos;start_pos++){
+	//for (start_pos=0;start_pos<code.length - crib[stage].length+1;start_pos++) {
 	  nxt_label = 0;
 		if ( stage ==0 ) {
 		  for (i=0;i<code.length;i++)
@@ -339,7 +349,7 @@ function construct_crib( stage,current_labels,current_crib_buffer){
     if (numb_cribs < 1) {// only 1 crib string so can give a position for it and show coresponding code string
       out_str += 'OK at position: '+start_pos;
       crib_len = crib[0].length;
-      out_str += "\ncorresponding ciphertext\n";      
+      //out_str += "\ncorresponding ciphertext\n";      
       if ( (start_pos % 2) != 0){
         align = 1;
       }
@@ -348,46 +358,48 @@ function construct_crib( stage,current_labels,current_crib_buffer){
       }
       k=0;
       for (i=0;i<crib_len+align;i++){
-        out_str += symbols.charAt( code[start_pos-align+i] );
+        //out_str += symbols.charAt( code[start_pos-align+i] );
         if (++k == 2){
-            out_str += ' ';
+            //out_str += ' ';
             k=0;
         }
       }
       if ( k==1) // need one more code letter to fill out pair
-        out_str += symbols.charAt( code[start_pos-align+i] );
-      out_str += '\n';
+        //out_str += symbols.charAt( code[start_pos-align+i] );
+      //out_str += '\n';
       // put plaintext under abover cipher text
       k=0;
       if (align == 1){
-        out_str += '-';
+        //out_str += '-';
         k=1;
       }
       for (i=0;i<crib_len;i++){
-        out_str += alpha.charAt( crib[0][i] );
+        //out_str += alpha.charAt( crib[0][i] );
         if (++k == 2){
-            out_str += ' ';
+            //out_str += ' ';
             k=0;
         }
       }
-      if ( k==1)
-        out_str += '-';
-      out_str += '\n';  
+      //if ( k==1)
+        //out_str += '-';
+      //out_str += '\n';  
       
     }
-    out_str += '\n';
+    //out_str += '\n';
     cnt = 0;
+	/*
     for (i=0;i<code.length;i++){
       if (new_crib_buffer[i] == EMPTY)
-        out_str += '-';
+        //out_str += '-';
       else
         out_str += alpha.charAt(new_crib_buffer[i]);
       if ( ++cnt == 50){
         cnt = 0;
-        out_str += '\n';
+        //out_str += '\n';
       }
     }
-    out_str +='\n';
+	*/
+   // out_str +='\n';
     	//count number of reversed pairs, the more there are the more likely this is correct position
 	  numb_reversals = 0;
 	  for (j=0;j<code.length;j=j+2) {
@@ -395,13 +407,25 @@ function construct_crib( stage,current_labels,current_crib_buffer){
 			numb_reversals++;
 	  }
 	 if ( numb_reversals>0)
-        out_str += '('+numb_reversals+' reversed pairs)\n'
+        out_str += '  ('+numb_reversals+' reversed pairs)\n'
+	out_str += '\n'
+	
+            if (document.getElementById('rows_cols').checked){			 
+				document.getElementById('do_solve1').disabled = false;
+				out_str += get_rev_labels(new_labels,nxt_label);
+				//out_str += '=========================\n';
+				
+            }
+			else { // setup not checked, save position
+				document.getElementById('setup_position').value = start_pos;
+			}
+/*	
      if (document.getElementById('rows_cols').checked){     
         out_str += get_rev_labels(new_labels,nxt_label);
         out_str += '=========================\n';
       }
+	  */
 	}
-
 	}// next start_pos
 } // end construct crib
 
@@ -638,7 +662,7 @@ onload = function() {
 <body bgcolor="Silver">
 <div id="derag" style="background:pink; border: 3px ridge black; margin-right:300px; padding:10px; ">
 <h3> Two-square crib possibilities</h3> <br>
-Directions: Type or paste in ciphertext and crib. Click Crib Drag button. <br><br>
+Directions: Enter ciphertext and crib. Click Crib Drag button. Then check setup position and Crib Drag again.<br><br> <br><br>
 Ciphertext:<br>
 <textarea id="input_area" rows = 6 cols=90 spellcheck="false" >
 </textarea><br>
@@ -650,7 +674,9 @@ crib:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <input type = "checkbox" id = "rows_cols">
-Include row and column combinations to set up key search
+Set up key search at position: 
+<input type = "text" id = "setup_position" size = 4>
+
 <br><br>
 Output (positions start at 0):<br>
 <textarea id="output_area" rows=12 cols=90>
