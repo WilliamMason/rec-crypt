@@ -537,14 +537,24 @@ function do_solve(){
 				numb_left_keys++;
 				//out_str += 'left consistent\n';
 				left_keys.push( new Key_Element(word_list[i], j, work_key) );
-				// also add flip unside down route in case need it for key alignment
-				/*
+
+
 				work_key2 = [];
 				x = j+10;
 				for (y = 0;y<25;y++)
 					work_key2[y] = ka[ routes[x][y] ];
 				left_keys.push( new Key_Element(word_list[i], x, work_key2) );
-				*/
+				work_key2 = [];
+				x = j+20;
+				for (y = 0;y<25;y++)
+					work_key2[y] = ka[ routes[x][y] ];
+				left_keys.push( new Key_Element(word_list[i], x, work_key2) );
+				work_key2 = [];
+				x = j+30;
+				for (y = 0;y<25;y++)
+					work_key2[y] = ka[ routes[x][y] ];
+				left_keys.push( new Key_Element(word_list[i], x, work_key2) );
+
 					
 			}
 			if ( right_consistent(work_key) ){ // to do skip left-right flips, they are redundant
