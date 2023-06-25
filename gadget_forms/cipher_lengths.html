@@ -160,6 +160,7 @@ function do_calc(){
             }
         }
         if (code_len >= 40 && code_len <= 50) out_str +=  "\nRunning key"
+		if (code_len >= 100 && code_len <= 150)out_str +=  "\nSequence transposition"
         if ((code_len&1)==0){
             hi = Math.floor((np/10)+1);
             lo = Math.floor(np/15);
@@ -342,6 +343,7 @@ function do_plain_calc(){
             }
         }
         if (plain_len >= 80 && plain_len <= 100) out_str +=  "\nRunning key"
+		if (plain_len >= 100 && plain_len <= 150)out_str +=  "\nSequence transposition"		
         if ((plain_len&1)==0){
             hi = Math.floor((np/10)+1);
             lo = Math.floor(np/15);
