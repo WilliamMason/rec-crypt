@@ -1,0 +1,657 @@
+<!--bazeries scratchpad, in javascript -->
+<HTML>
+<!-- written by BION -->
+<HEAD>
+<TITLE>Bazeries Worksheet</TITLE>
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+<script type="text/javascript">
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+var undo_key = [];
+var redo_key = [];
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		redo_array[redo_index][digits.charAt(i)+digits.charAt(j)] = square_key[ digits.charAt(i)+digits.charAt(j) ];
+
+	}
+	redo_key[redo_index] = document.getElementById('transpose_key').value;
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		square_key[ digits.charAt(i)+digits.charAt(j) ] = undo_array[undo_index][digits.charAt(i)+digits.charAt(j)];
+
+	}
+	document.getElementById('transpose_key').value = undo_key[undo_index];
+    document.getElementById('redo_button').disabled = false;
+    update_keyblock();
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		square_key[ digits.charAt(i)+digits.charAt(j) ] = redo_array[redo_index][digits.charAt(i)+digits.charAt(j)];
+
+	}
+	document.getElementById('transpose_key').value = redo_key[redo_index];
+    update_keyblock();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		undo_array[undo_index][digits.charAt(i)+digits.charAt(j)] = square_key[ digits.charAt(i)+digits.charAt(j) ];
+
+	}
+	undo_key[undo_index] = document.getElementById('transpose_key').value;
+    undo_index++;
+    redo_index = 0;
+}
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,code_array,crib_pos,cribtext;
+var transposed_code_array, numerical_key;
+
+
+var symbols="abcdefghiklmnopqrstuvwxyz-"; // no j
+var digits="0123456789";
+var letters="ABCDEFGHIKLMNOPQRSTUVWXYZ-"; // no J
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var line_limit=56;
+var last_cell;
+var old_xlation;
+
+//try associative array for key
+var square_key = new Array();
+var data;
+
+function reset_key() {
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		square_key[ digits.charAt(i)+digits.charAt(j) ] = '-';
+
+	}
+    undo_index = redo_index = 0;                    
+}
+
+function input_ok() {
+	var s='Ciphertext: (Type or paste cipher into this box)<BR>';
+	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
+	
+	document.getElementById('outputblock').innerHTML=s;		
+}
+
+
+function setup_code() {
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+	state=0;
+	code = '';
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+			code = code+c;
+		}
+	}
+	solving_flag=1;
+	code_array = code.split('');		
+	old_xlation = ['-'];
+	for (i = 0;i<code_array.length-1;i++)
+		old_xlation[i]= '-';
+    undo_index = redo_index = 0;  
+	letter_count();
+}	
+
+function key_lookup(c) { // see if letter c is represented in the keysquare
+	var c1,p1,c2,p2;
+	var row1, col1,row2,col2,flag,cr,cc;
+	var pc,pc;
+	
+//	s = "looking up "+c;
+//	document.debug.output_area.value= s; 	
+	
+	c1 = c.charAt(0);
+	c1 = c.toLowerCase();
+	flag = 0;
+	for (i=0;i<5;i++){
+		cr = digits.charAt(i);
+		for (j=0;j<5;j++){
+			cc = digits.charAt(j);
+			if ( square_key[cr+cc] == c1){
+				row1 = i;
+				col1 = j;
+				flag = 1;
+				break;
+			}
+		}
+		if ( flag == 1) break;
+	}
+	if ( flag == 0) return(['-',['55']]); // letter c1 not found in key square
+	pr = digits.indexOf(row1);
+	pc = digits.indexOf(col1);
+	return( [symbols.charAt(pr+5*pc),[row1,col1]] )
+	
+	
+}
+
+
+function positive_digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^1-9]/g,'');
+}
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,numb_code_letters;
+	var i,j,k,c,n,index,s1;
+	var flag, key_string, key_index,ds,cs;
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;//odd number of letters!
+	}
+	numerical_key = document.getElementById('transpose_key').value; // this is a string of digits
+	numerical_key =  positive_digits_only(numerical_key );
+	if (numerical_key == ''){
+		alert(" Numerical key needs at keast one non-zero digit");
+		return;
+	}
+	transposed_code_array = [];
+	index = 0;
+	i=0;
+	key_string = '';
+	while ( i<code_array.length){
+		n = parseInt(numerical_key.charAt(index++) );
+		key_string += n; // key_string already marked as string, not integer
+		s1 = code_array.slice(i,i+n);
+		
+		s1.reverse();
+		for (j=0;j<s1.length;j++){
+			if ( j>0)
+				key_string += 'x';
+			transposed_code_array[i] = s1[j];
+			i++;
+		}
+		if ( index == numerical_key.length)
+			index = 0;
+	}
+	if ( document.getElementById('key_display').checked )
+		flag = true;
+	else
+		flag = false;
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+	numb_code_letters=code_array.length
+	if (numb_code_letters<limit)
+		limit = numb_code_letters;
+	pos=0;
+	cnt=0;
+	pl='';
+	ds = '';
+	cs = '';
+	//key_string = '';
+	//key_index = 0;
+	while (pos<numb_code_letters ) {
+		cs = cs+transposed_code_array[pos]+' ';
+		ds += key_string.charAt(pos)+' ';
+		ce=transposed_code_array[pos];
+		c = key_lookup(ce);
+		c = c[0]
+		if ( old_xlation[pos] != c){
+			old_xlation[pos]=c;
+			c = '<font color="red">'+c+'</font>';
+		}
+		pl = pl+c+'&nbsp;';
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+			//str=str+'\n'+pl+'\n';
+			if ( flag)
+				str += '<font color="orange">'+ds+'</font><br>'+cs;
+			else
+				str += cs;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			cnt=0;
+			ds = ''
+			cs = '';
+			if (pos+line_limit>numb_code_letters)
+				limit = numb_code_letters-pos;;
+		}
+	}
+	document.getElementById('outputblock').innerHTML=str;
+}
+
+
+function selectmouse(e)
+{
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  var i,j,letter,c,n,s,c1,c2;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	//cpos = symbols.indexOf(dobj.className.charAt(0));  
+	cpos = letters.indexOf(dobj.className.charAt(0));  	
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+	  //letter=symbols.charAt(cpos);
+	  letter=letters.charAt(cpos);
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+letter+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+	  letter=symbols.charAt(cpos);	  
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,2);
+	  //update key array
+      update_undo();
+      document.getElementById('redo_button').disabled = true;          
+      
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '-' ) {
+		  for (i=0;i<5;i++){
+			  c1 = digits.charAt(i);
+			  for (j=0;j<5;j++) {
+				  c2 = digits.charAt(j);
+				  if (square_key[c1+c2]==letter && c1+c2 != cell){
+		  			//delete letter at old location
+		  			c = c1+c2;
+		  			square_key[c] = '-';
+					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+					s+='-</span>';
+					document.getElementById(c+'keymatrix').innerHTML= s;
+				}
+			}
+		}
+	}						  
+	  square_key[ cell] = letter;
+	  //reset letter block
+	  letterblock_setup();
+	  last_cell=cell;
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+  }
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	s=''
+
+	for (i=0;i<symbols.length;i++) {
+		//c = symbols.charAt(i);
+		c = letters.charAt(i);
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}	
+	s=s+'<br>';	
+	document.getElementById('letterblock').innerHTML=s;	
+	last_cell='';
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+	
+	s='';
+	//two columns of blank place holders
+
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+		cr = digits.charAt(i);		
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
+			s=s+symbols.charAt(i+5*j)+'</span> </span>';
+		}
+		s =s + '&nbsp &nbsp';
+		//second row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'-'+'</span> </span>';
+		}
+		
+		s=s+'&nbsp <br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+function update_keyblock() {
+	var s,i,c;
+	
+	s='';
+	//two columns of blank place holders
+
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
+	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
+	s=s+'</span> </span>';
+	s=s+'<br>';
+	
+	for (i=0;i<5;i++) {
+		cr = digits.charAt(i);		
+		//row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
+			s=s+symbols.charAt(i+5*j)+'</span> </span>';
+		}
+		s =s + '&nbsp &nbsp';
+		//second row of key block cells
+		for (j=0;j<5;j++) {
+			cc=digits.charAt(j);
+			c = cr+cc;
+			v = square_key[c].toUpperCase();
+			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+v+'</span> </span>';
+		}
+		
+		s=s+'&nbsp <br>';	
+	}	
+	s=s+'<br>';	
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+function s_compare(a,b) {
+		return b[1]-a[1]
+}		
+
+
+function letter_count(){
+	var i,n,str,s;
+	var l_count = [];
+	var s_count = [];
+
+		
+		
+		for (i=0;i<25;i++) // just 25 because j & i are the same
+			l_count[i] = 0;
+			
+		for (i=0;i<code.length;i++) {
+				//n = upperC.indexOf(code.charAt(i))
+				n = letters.indexOf(code.charAt(i))
+				if ( n != -1 ) 
+					l_count[n] = l_count[n]+1
+		}
+    	
+		for (i=0;i<25;i++)
+			//s_count[i] = [upperC.charAt(i),l_count[i] ]		
+			s_count[i] = [letters.charAt(i),l_count[i] ]		
+		s_count.sort(s_compare);
+		str = '';
+		for (i=0;i<25;i++)
+			str += s_count[i][0]+"&nbsp;&nbsp;";
+		//str += '\n';
+		str += "<br>";
+		for (i=0;i<25;i++){
+			str += s_count[i][1].toString()+'&nbsp;';
+			if (s_count[i][1]<10) str += '&nbsp;';
+		}
+		
+		document.getElementById('let_space').innerHTML=str;	
+
+}
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+	input_ok();
+	document.ciphertext.cipher_place.value=code;
+	solving_flag=0;
+}	
+
+function reset() {
+	do_erase = confirm("Erase the current cipher?")
+	if ( do_erase == true) {
+		reset_key();
+		letterblock_setup()
+		keyblock_setup()
+		input_ok();
+		document.ciphertext.cipher_place.value='';
+		solving_flag=0;
+		crib_entered=0;
+	}	
+}	
+
+
+
+
+function set_original_buttons() {
+	str = '<INPUT onclick=start_over(); type=button value="start over" >';
+	//str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br>';
+	str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+	str += ' <input type="checkbox" id = "key_display" onclick = "xlate()" > display numerical key string <br><br>'
+    str += '<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+    str += '<br><br>';
+    str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
+    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" ><br><br>';
+    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+    
+	document.getElementById('button_actions').innerHTML= str;	
+}
+
+function save_to_disk(){
+	var i,j, str;
+	
+	if (typeof(localStorage) == 'undefined' ) {
+		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
+	} 
+	else {
+		try {
+			localStorage.setItem("bazeries.cipher", data); //saves to the database, “key”, “value”
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
+			}
+		}
+	}
+	str = '';
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		str +=square_key[ digits.charAt(i)+digits.charAt(j) ];
+	}
+	localStorage.setItem("bazeries_word.key", str);
+	str = document.getElementById('transpose_key').value; // this is a string of digits	
+	localStorage.setItem("bazeries_transpose.key", str);
+	alert("Work saved on disk");
+
+}
+
+function get_from_disk(){
+	var s,i,j,k;
+    var temp;
+
+	temp = localStorage.getItem("bazeries.cipher");
+	if (temp == undefined){
+		alert("No cipher stored");
+		return
+	}
+    data = temp;
+	reset_key();
+	letterblock_setup();
+	keyblock_setup();
+	set_original_buttons();
+	//set_crib_buttons();
+	
+	document.ciphertext.cipher_place.value=data;
+	solving_flag=0;
+	crib_entered=0;
+	pair_setup=0;
+	start_over();
+	xlate();
+	s = localStorage.getItem("bazeries_word.key");
+	k=0;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		square_key[ digits.charAt(i)+digits.charAt(j) ]= s.charAt(k);
+		k++;
+	}
+	s = localStorage.getItem("bazeries_transpose.key");
+	document.getElementById('transpose_key').value = s; // this is a string of digits
+	update_keyblock();
+	xlate();
+}
+
+function clear_disk(){
+	localStorage.removeItem("bazeries.cipher");
+	localStorage.removeItem("bazeries_word.key");	
+	localStorage.removeItem("bazeries_transpose.key");		
+	alert("work cleared from disk");
+}
+
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Bazeries Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
+</div>
+</form>
+Click on one of the blue symbols below , then click on a cell inside the key table.<BR>
+<!-- mark off space for letter block -->
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px">
+</div>
+<BR>
+Key Table<br>
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+	  padding:10px">
+</div>
+
+
+<!-- mark off space for buttons -->
+<div id="button_actions"
+style="float:left; margin-left:50px; margin-top:30px;">
+</div>
+<div id="numerical key"
+style="clear:left; margin-left:50px; margin-top:30px; width: 300px; height: 40px; border: 3px ridge black;padding:10px;  background-color:yellow">
+Numerical key: <input type = text value = "1" id="transpose_key" size = 5>&nbsp;
+<INPUT  type=button value="submit" onclick=xlate();>
+
+</div>
+<div id="letter_count1"
+style="float:left; margin-left:50px; margin-top:30px; border: 3px ridge black; padding:10px; background-color:white">
+<!--
+<INPUT id="letter_count1" type=button value="Display/hide letter count" > 
+-->
+Letter Count:<br>
+<div id="let_space"  style=" float:left; font-family:monospace; height:40px; width:630px; margin-top:5px; padding:5px; margin-left:10px;margin-bottom:5px;">
+</div>
+
+</div>
+
+
+</div>
+
+
+<script type="text/javascript">
+//screen_check();
+reset_key();
+letterblock_setup();
+keyblock_setup();
+set_original_buttons();
+</script>
+
+
+
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+--->
+
+</BODY>
+</HTML>
