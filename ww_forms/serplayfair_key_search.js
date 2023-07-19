@@ -100,7 +100,13 @@ function do_key_search(){
    // note: below, you need the .buffer at the end because word_list_array is a (char) view of the arrayBuffer, not
    // the arrayBuffer itself. If word_list_array was just an arrayBuffer you wouldn't need to add .buffer to it.
    //worker.webkitPostMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
-   worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
+   var buf = new ArrayBuffer(word_list_array.length);
+   var bufView = new Uint8Array(buf);
+   for (i=0;i< word_list_array.length;i++)
+        bufView[i] = word_list_array[i];
+	worker.postMessage( {op_choice:1, buf:buf},[buf]);   
+	
+   //worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
    //worker.webkitPostMessage( {op_choice:2, str:str});
    period = document.getElementById('s_period').value;	
    worker.postMessage( {op_choice:2, str:str, period:period, flag6x6:flag6x6});
