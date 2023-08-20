@@ -115,7 +115,8 @@ function ragbaby_encrypt(plaintext,key){
     var special = "-'=’*" ;//characters that may occur in middle of words
 	for (i=0;i<plaintext.length;i++){
 		c = plaintext.charAt(i);
-        if (special.indexOf(c) != -1){ // don't update index just put in the aprostophe etc and continue
+        if ((special.indexOf(c) != -1)|| (c.charCodeAt(0) == 8217)){ // don't update index just put in the aprostophe etc and continue
+			// 8217 is decimal version of hex 2019, which is single right quote
 			temp_str += c ;
 			temp1_str += c;
 
@@ -258,7 +259,9 @@ function ragbaby_decrypt(codetext,key){
     var special = "-'=’*" ;//characters that may occur in middle of words
 	for (i=0;i<codetext.length;i++){
 		c = codetext.charAt(i);
-        if (special.indexOf(c) != -1){ // don't increae index, special symbols don't count
+        //if (special.indexOf(c) != -1){ // don't increae index, special symbols don't count
+		// 8217 is decimal version of hex 2019, which is single right quote
+		if ((special.indexOf(c) != -1)|| (c.charCodeAt(0) == 8217)){
 			temp_str += c ;
 			temp1_str += c;
 			plaintext += c;
