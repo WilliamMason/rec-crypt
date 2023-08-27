@@ -61,6 +61,7 @@ function do_calc(){
             }
         }
         if (code_len >= 150 && code_len <= 200) out_str += "\nCM Bifid"
+        if (code_len>=100 && code_len <= 150 ) out_str += "\nCompressocrat"; // rarely more then ten percent compression
         if (code_len >= 100 && code_len <= 200) out_str += "\nCONDI"
         if (((code_len&1)==0) && code_len >= 120 && code_len <= 220) out_str += "\nDigrafid"
         if (((code_len&1)==0) && np >=50 && np <= 70 ) out_str += "\nFour Square"
@@ -181,7 +182,7 @@ function do_calc(){
         }
     }
     if ((digit_flag==1 && ((code_len&1)==0) && np >=110 && np <= 154)) out_str += "\nSyllabary"
-    if (digit_flag==1 && code_len >= 80 && code_len <= 120)  out_str += "\nTridigital" // alow space for word sep digits
+    if (digit_flag==1 && code_len >=80 && code_len <= 120)  out_str += "\nTridigital" // add extra lengths for word separator digit 
     if (digit_flag ==0){
         if (code_len >= 120 && code_len <= 150) out_str += "\nTrifid";
         ng = Math.floor(code_len/3);
@@ -254,6 +255,7 @@ function do_plain_calc(){
             }
         }
         if (plain_len >= 150 && plain_len <= 200) out_str += "\nCM Bifid"
+        if (plain_len>=110 && plain_len <= 150 ) out_str += "\nCompressocrat";		
 	}
 	if (digit_flag && plain_len >= 150 && plain_len <= 200) out_str += "\n6x6 CM Bifid"
 	if (!digit_flag){
