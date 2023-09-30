@@ -183,6 +183,7 @@ for (i=0;i<word_list.length;i++){
 		  if (missing_letter_flag && missing_letter_count ==  0 ){ // allow one missing letter if there is a '-' in the key
 		    missing_letter_count++;
 		    alt_word += key.charAt( missing_letter_alt_position);
+		    idx = 1; // so won't have (idx == -1)  if this is final letter in word 			  
 		    continue;
 		  }
 		
