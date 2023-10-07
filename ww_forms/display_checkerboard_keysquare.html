@@ -1,0 +1,91 @@
+<html>
+<!-- Basic skeleton. A one button function call
+-->
+<head>
+<script type="text/javascript">
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+function do_processing(){
+    var out_str,s,str;
+	var ciphertext, plaintext,vert_key, hor_key;
+	var i,j,k,n;
+	var p,vc,hc,vk,hk;
+	var row, col;
+	
+	
+    
+	out_str="";
+	str = document.getElementById('ciphertext_area').value;
+	ciphertext = letters_only(str);
+	str = document.getElementById('plaintext_area').value;
+	plaintext = letters_only(str);
+	str = document.getElementById('vert_key').value;
+	vert_key = letters_only(str);
+	str = document.getElementById('hor_key').value;
+	hor_key = letters_only(str);
+	
+	
+	out_str += "ciphertext: "+ciphertext;
+	out_str += "\nplaintext: "+plaintext;
+	out_str += "\nvertical key: "+vert_key;
+	out_str += "\nhorizontal key: "+hor_key;
+	
+	var keysquare = [];
+	var width = vert_key.length/2;
+	for (i=0;i<width;i++){
+		keysquare[i] = [];
+		for (j=0;j<width;j++)
+			keysquare[i][j] = '-';
+	}
+	j = 0
+	for (i=0;i<plaintext.length;i++){
+		p = plaintext.charAt(i);
+		vc = ciphertext.charAt(j)
+		hc = ciphertext.charAt(j+1);
+		j = j+2;
+		row = vert_key.indexOf(vc);
+		if (row>4)
+			row -=5;
+		col = hor_key.indexOf(hc);
+		if (col>4)
+			col -= 5;
+		keysquare[row][col] = p;
+		
+	}
+	out_str += '\nkeysquare\n';
+	for (i=0;i<width;i++){
+		for (j=0;j<width;j++)
+			out_str += keysquare[i][j]+' ';
+		out_str+= '\n';
+	}
+	
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Display double checkerboard key square</h3>
+
+<br><br>
+ciphertext:<br>
+<textarea id="ciphertext_area" cols=80 rows=5>
+</textarea><br>
+Plaintext:<br>
+<textarea id="plaintext_area" cols=80 rows=3 >
+</textarea><br>
+&nbsp;Vertical keys => <input type="text" id="vert_key" size = 15 >
+&nbsp;Horizontal keys => <input type="text" id="hor_key" size = 15 >
+<br><br>
+
+Output:<br>
+<textarea id="output_area" cols=80 rows=5>
+</textarea>
+<br>
+<input type="button" value="Process" onclick=do_processing();>
+<br><br>
+</body>
+</html>
