@@ -234,7 +234,7 @@ function do_plain_calc(){
         //print "Amsco for period:",lo,"to",hi
         out_str += "Amsco for period: "+lo+" to "+hi;
         if (plain_len >= 40 && plain_len <= 55) out_str +=  "\nAutokey";
-        if (plain_len <= 25*5 && ((plain_len%5)==0)) out_str +="\nBaconian";
+	if (plain_len <= 25) out_str +="\nBaconian";
         if (plain_len >= 150 && plain_len <= 250) out_str += "\nBazeries";
         hi = Math.floor((plain_len/10)+1);
         lo = Math.floor(plain_len/15);
