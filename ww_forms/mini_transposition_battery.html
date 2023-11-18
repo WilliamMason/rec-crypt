@@ -27,8 +27,7 @@ padding: 10px;
  background-color: LightGreen ;
  
 }
-
-.wrapper2 {
+.wrapper2{
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-gap: 10px;
@@ -75,7 +74,7 @@ function do_check(){
 			buffer[buf_len++] = n;
 			//plain_text[buf_len++] = n;
 	}
-    
+    document.getElementById('cipher_length').value = buf_len;
 }
 
 function initialize(){
@@ -213,17 +212,30 @@ function do_solve(){
 	
 }
 
+  function swapRows() {
+    // Get the grid container element
+    //var gridContainer = document.getElementById('grid-container');
+	var gridContainer = document.getElementsByClassName('wrapper2');
+//alert("got here");
+    // Get the first and second rows
+    var firstRow = gridContainer[0].children[0];
+    var secondRow = gridContainer[0].children[2];
+
+    // Swap the rows
+    gridContainer[0].insertBefore(secondRow, firstRow);
+	
+    firstRow = gridContainer[0].children[1];
+    secondRow = gridContainer[0].children[3];
+
+    // Swap the rows
+    gridContainer[0].insertBefore(secondRow, firstRow);
+	
+  }
+  
+
 onload = function() {
     document.getElementById('do_solve1').addEventListener("click",do_solve); 
-/*	
-    document.getElementById('do_stop1').addEventListener("click",do_stop);    
-    document.getElementById('do_clear1').addEventListener("click",do_clear);    
-    document.getElementById('do_crib1').addEventListener("click",do_crib);        
-    document.getElementById('known_p').addEventListener("change",numb_trials_default);        
-    document.getElementById('unknown_p').addEventListener("change",numb_trials_default); 
-    document.getElementById('custom_table').addEventListener("change", set_reload); 
-    document.getElementById('input').addEventListener("change", function(){handleFiles(this.files)});  
-*/	
+    document.getElementById('do_swap').addEventListener("click",swapRows); 	
     
 }    
 
@@ -236,7 +248,14 @@ onload = function() {
  <br><br>
  <div class="wrapper">
    <span> Paste the ciphertext into the box then click solve:
-   <br><br> <INPUT id="do_solve1" type=button value="Solve." ></span>
+   <br><br> <INPUT id="do_solve1" type=button value="Solve." >
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+   cipher length:<input type = "text" size = 3 id = "cipher_length" disabled>
+   
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+   <INPUT id="do_swap" type=button style = "background-color:LightYellow" value="swap bottom rows." >
+   </span>
+   
    <span>Ciphertext to solve:<br><textarea id="input_area" cols=80 rows = 5>
 </textarea><br>
 </span>
