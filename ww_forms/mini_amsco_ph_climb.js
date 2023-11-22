@@ -8,6 +8,7 @@ var buf_len;
 var period;
 var max_period = 15;
 var fudge_factor, numb_decrypts;
+var min_eriod = 4;
 
 var amsco_calcs = function(){
 // T has compressed binary Single letter - Trigraph Discrepancy values
@@ -372,7 +373,7 @@ function get_trial_decrypt(period){
         var noise_level = begin_level;
         var cycle_numb = 0;        
         
-       for (period = 4; period <= max_period; period++){
+       for (period = min_period; period <= max_period; period++){
 	    for (starting_cell = 0; starting_cell<2;starting_cell++){
 		make_pairs(period);
 		for (i=0;i<period;i++) {
@@ -484,6 +485,7 @@ debugger;
   
   buffer = str.buffer;
   max_period = str.max_period;
+  min_period = str.min_period;  
   numb_decrypts = str.numb_decrypts;
   fudge_factor = str.fudge_factor;
   buf_len = buffer.length;

@@ -153,6 +153,7 @@ function do_solve(){
 	xfer["buffer"] = buffer;
 	xfer["numb_decrypts"] = parseInt(document.getElementById('mysz_numb_decrypts').value );
 	xfer["max_period"] = parseInt(document.getElementById('mysz_max_period').value );
+	xfer["min_period"] = parseInt(document.getElementById('mysz_min_period').value );
 	xfer["fudge_factor"] = parseFloat(document.getElementById('mysz_fudge').value );
 	mysz_hclimber.postMessage(xfer);
 	// amsco
@@ -160,6 +161,7 @@ function do_solve(){
 	xfer["buffer"] = buffer;
 	xfer["numb_decrypts"] = parseInt(document.getElementById('amsco_numb_decrypts').value );
 	xfer["max_period"] = parseInt(document.getElementById('amsco_max_period').value );
+	xfer["min_period"] = parseInt(document.getElementById('amsco_min_period').value );
 	xfer["fudge_factor"] = parseFloat(document.getElementById('amsco_fudge').value );
 	amsco_hclimber.postMessage(xfer);
 	// route tramp
@@ -167,12 +169,14 @@ function do_solve(){
 	xfer["buffer"] = buffer;
 	xfer["numb_decrypts"] = parseInt(document.getElementById('route_numb_decrypts').value );
 	xfer["max_period"] = parseInt(document.getElementById('route_max_period').value );
+	xfer["min_period"] = parseInt(document.getElementById('route_min_period').value );
 	route_hclimber.postMessage(xfer);
 	// swagman
 	xfer = {};
 	xfer["buffer"] = buffer;
 	xfer["numb_decrypts"] = parseInt(document.getElementById('swagman_numb_decrypts').value );
 	xfer["max_period"] = parseInt(document.getElementById('swagman_max_period').value );
+	xfer["min_period"] = parseInt(document.getElementById('swagman_min_period').value );
 	xfer["fudge_factor"] = parseFloat(document.getElementById('swagman_fudge').value );
 	swagman_hclimber.postMessage(xfer);
 
@@ -266,7 +270,9 @@ onload = function() {
 <div class= "wrapper1">
 	<span> 
 	<b>Myszkowski: </b>
-	Best decrypt:<br>
+	Best decrypt:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+	(Min Period: <input type="text" id="mysz_min_period"  size=1 value = "4" >)
+	<br>
 	<textarea id="mysz_output_area" cols=80 rows = 8></textarea>
 	<br>
 	Max Period: <input type="text" id="mysz_max_period"  size=3 value = "15" >
@@ -280,7 +286,8 @@ Fudge factor: <input type="text" id="mysz_fudge"  size=3 value = "0.08" >
 
 <span> 
 	<b>Amsco: </b>
-	Best decrypt:<br>
+	Best decrypt:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+	(Min Period: <input type="text" id="amsco_min_period"  size=1 value = "4" >)<br>
 	<textarea id="amsco_output_area" cols=80 rows = 8></textarea>
 	<br>
 	Max Period: <input type="text" id="amsco_max_period"  size=3 value = "15" >
@@ -293,7 +300,8 @@ Fudge factor: <input type="text" id="amsco_fudge"  size=3 value = "0.08" >
 </span>
 <span> 
 	<b>Route Tramp: </b>
-	Best decrypt:<br>
+	Best decrypt:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+	(Min Width: <input type="text" id="route_min_period"  size=1 value = "4" >)<br>
 	<textarea id="route_output_area" cols=80 rows = 8></textarea>
 	<br>
 	Max Width: <input type="text" id="route_max_period"  size=3 value = "15" >
@@ -304,7 +312,8 @@ Decrypts per width: <input type="text" id="route_numb_decrypts"  size=6 value = 
 
 <span> 
 	<b>Swagman: </b>
-	Best decrypt:<br>
+	Best decrypt:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+	(Min Period: <input type="text" id="swagman_min_period"  size=1 value = "3" >)<br>
 	<textarea id="swagman_output_area" cols=80 rows = 8></textarea>
 	<br>
 	Max period: <input type="text" id="swagman_max_period"  size=3 value = "9" >

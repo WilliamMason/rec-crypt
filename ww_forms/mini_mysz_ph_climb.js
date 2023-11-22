@@ -8,6 +8,7 @@ var buf_len;
 var period;
 var max_period = 15;
 var fudge_factor, numb_decrypts;
+var min_period = 4;
 
 var mysz_calcs = function(){
 // T has compressed binary Single letter - Trigraph Discrepancy values
@@ -324,7 +325,7 @@ function get_trial_decrypt(period){
         var noise_level = begin_level;
         var cycle_numb = 0;        
         
-       for (period = 4; period <= max_period; period++){
+       for (period = min_period; period <= max_period; period++){
         for (i=0;i<period;i++)
             key[i] = Math.floor(Math.random()*period);
         local_best_score = 0;    
@@ -494,6 +495,7 @@ debugger;
   
   buffer = str.buffer;
   max_period = str.max_period;
+  min_period = str.min_period;
   numb_decrypts = str.numb_decrypts;
   fudge_factor = str.fudge_factor;
   buf_len = buffer.length;

@@ -2,6 +2,8 @@ var buffer;
 var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";	
 var buf_len;
 var numb_decrypts;
+var min_rwidth = 4;
+var max_rwidth = 15;
 
 var route_calcs = function(){
 // T has compressed binary Single letter - Trigraph Discrepancy values
@@ -109,8 +111,8 @@ var inv_buffer;
 var plain_text = new Array();
 var rwidth;
 var matrix = [];
-var max_rwidth = 15;
-var rwidth,rheight, route_in,route_out,flip, rev_flag, input_rev_flag;
+
+var rheight, route_in,route_out,flip, rev_flag, input_rev_flag;
 
 
 function construct_table(){
@@ -542,7 +544,7 @@ function matrix_manip(x) {
 */		
         max_score = 0;
         out_str = "no width";
-       for (rwidth = 4; rwidth <= max_rwidth; rwidth++){
+       for (rwidth = min_rwidth; rwidth <= max_rwidth; rwidth++){
         if( (buf_len%rwidth) != 0) continue; // not rectangular array
         rheight = buf_len/rwidth;
         for (i=0;i<rheight;i++)
@@ -663,6 +665,7 @@ debugger;
   
   buffer = str.buffer;
   max_rwidth = str.max_period;
+  min_rwidth = str.min_period;  
   numb_decrypts = str.numb_decrypts;
   buf_len = buffer.length;
   do_solve(); 

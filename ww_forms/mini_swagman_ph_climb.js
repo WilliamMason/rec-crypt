@@ -8,7 +8,7 @@ var buf_len;
 var period;
 var max_period = 15;
 var fudge_factor, numb_decrypts;
-
+var min_period = 3;
 var swagman_calcs = function(){
 // T has compressed binary Single letter - Trigraph Discrepancy values
 // had to replace \ by \\
@@ -312,7 +312,7 @@ function get_trial_decrypt(period){
         var cycle_numb = 0;        
 		
 
-       for (period = 3; period <= max_period; period++){
+       for (period = min_period; period <= max_period; period++){
             numb_cols = Math.floor(buf_len/period);
 			if (numb_cols*period != buf_len) // this period doesn't work for swagman
 				continue;
@@ -424,6 +424,7 @@ debugger;
   
   buffer = str.buffer;
   max_period = str.max_period;
+  min_period = str.min_period;
   numb_decrypts = str.numb_decrypts;
   fudge_factor = str.fudge_factor;
   buf_len = buffer.length;
