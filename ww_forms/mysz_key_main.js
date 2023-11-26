@@ -18,6 +18,8 @@ var work_buffer = [];
 var numb_rows;
 var pair = [];
 
+var nihilist_flag = false;
+var by_rows = false;
 
 // make word list
 
@@ -226,7 +228,6 @@ function get_amsco_trial_decrypt(){
     } /* end while */
 }
 
-
 function get_trial_decrypt(){
         var i,j,index;
         var offset,count,k;
@@ -270,6 +271,35 @@ function get_col_trial_decrypt(){
 			plain_text[pos] = buffer[index++];
 
 }
+
+function get_nihilist_trial_decrypt(){
+    var i,j,index,col,row;
+    var offset,count,k,c1,c2;
+	
+	// key is actually offset for compatiblility with ACA&You
+	var coffset = [];
+	for (i=0;i<period;i++)
+		coffset[ key[i] ] = i;
+	
+    offset = [];
+    for (j=0;j<period;j++)
+		offset[ coffset[j] ] = j;
+    c1 = 1
+    c2 = period;
+    if (by_rows ){
+        c2=1
+        c1 = period;
+	}
+    plain_text = [];
+    index = 0;    
+
+	for (col = 0;col<period;col++)
+		for (row = 0;row<period;row++){
+			k = offset[col]*c1+offset[row]*c2;
+            plain_text[k] = buffer[index++];
+    }
+	
+}	
     
 function get_score(buf_len){
 	var score,i,n,score1, plain1;
@@ -280,6 +310,10 @@ function get_score(buf_len){
 		starting_cell = 0;
 		make_pairs()
 		get_amsco_trial_decrypt()			
+	}
+	else if (nihilist_flag){
+		by_rows = false
+		get_nihilist_trial_decrypt()
 	}
     else
         get_trial_decrypt();
@@ -307,6 +341,24 @@ function get_score(buf_len){
 			
 		}
 	}
+	if (nihilist_flag){
+		score1 = score;
+		plain1 = plain_text.slice(0);
+		by_rows = true;
+		score = 0;
+		
+		get_nihilist_trial_decrypt()		
+		for (i=0;i<buf_len-3;i++){
+			n = plain_text[i]+26*plain_text[i+1]+26*26*plain_text[i+2]+26*26*26*plain_text[i+3];
+			score += tet_table[n];
+		}
+		if (score1 > score){
+			score = score1;
+			by_rows = false;;
+			plain_text = plain1;
+			
+		}
+	}
 	
 	return(score);
 }	
@@ -321,7 +373,7 @@ function do_solve(){
 
     
     
-    if (do_check() == false){
+    if (do_check() == false){ // get digital codetext into buffer 
         return;
     }
     if ( document.getElementById('col').checked )
@@ -332,6 +384,17 @@ function do_solve(){
         amsco_flag = true;
     else
         amsco_flag = false;
+	if ( document.getElementById('nihilist').checked ){
+        nihilist_flag = true;
+		n = Math.floor(Math.sqrt(buf_len));
+		if ( n*n != buf_len){
+			alert("Not nihilist. code length not perfect square.")
+			return;
+		}
+	}
+    else
+        nihilist_flag = false;
+	
 	
     // buffer loaded by do_check
     //alert("solve");
@@ -342,7 +405,7 @@ function do_solve(){
     for (i=0;i<word_list.length;i++){
         // convert word into musz key with entries in range 0-word length
         period = word_list[i].length;
-        if (col_flag || amsco_flag){
+        if (col_flag || amsco_flag || nihilist_flag){
             indx = 0
             for (j=0;j<26;j++){
                  c = l_alpha.charAt(j);
@@ -353,6 +416,7 @@ function do_solve(){
              }
 
         }
+		
         else {
             indx = -1;
             for (j=0;j<26;j++){
@@ -389,6 +453,14 @@ function do_solve(){
 				else
 					out_str += '  (pair start)';
 			}
+			else if(nihilist_flag){
+				out_str += '\nNihilist key: '+word_list[i];
+				if (by_rows)
+					out_str += ' (by rows)';
+				else
+					out_str += '  (by columns)';
+			}
+			
             else
                 out_str += '\nMyszkowski key: '+word_list[i];
 			document.getElementById('output_area').value = out_str;	
