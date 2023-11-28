@@ -42,7 +42,7 @@ function make_table(str) {
     max_n = 0;
     max_v=0;
     state = 0;
-    for (i=1; i<str.length;i++) { // start at 1 because char 0 is just the '#' flag
+    for (i=1; i<str.length;i++) { // start at 1 because char 0 is just the '^' flag
         c = str.charAt(i);
         n = alpha.indexOf(c);
         if ( n == -1) continue; //not a letter
@@ -322,7 +322,7 @@ onmessage = function(event) { //receiving a message with the string to decode, s
 	// s = '2period passed is: '+period;
 	// postMessage(s);
   }
-  else if(str.charAt(0)  == '#') {// construct custom tet table
+  else if(str.charAt(0)  == '^') {// construct custom tet table
     make_table(str);
   }  
   else if (str.charAt(0)  == ')')  { // crib indicator, then 0, no crib, 1 fixed crib,2 floating crib
