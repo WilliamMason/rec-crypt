@@ -99,7 +99,7 @@ function initialize(){
 	*/
    };
    if (document.getElementById('custom_table').checked == true) {
-    s = '#'; // prefix to indicate string to make table from
+    s = '^'; // prefix to indicate string to make table from
     s += book_string;
     hclimber.postMessage(s);  	// command hclimber to make custom table
     //alert("custom tet tabel constructed");
@@ -130,7 +130,7 @@ function initialize(){
    		  	document.getElementById('output_area').value = str+" worker: 1";   
    		};
         if (document.getElementById('custom_table').checked == true) {
-            s = '#'; // prefix to indicate string to make table from
+            s = '^'; // prefix to indicate string to make table from
             s += book_string;
             hclimber2.postMessage(s);  	// command hclimber to make custom table
             //alert("custom tet tabel constructed");
@@ -162,7 +162,7 @@ function initialize(){
    		  	document.getElementById('output_area').value = str+" worker: 2";   
    		};
         if (document.getElementById('custom_table').checked == true) {
-            s = '#'; // prefix to indicate string to make table from
+            s = '^'; // prefix to indicate string to make table from
             s += book_string;
             hclimber3.postMessage(s);  	// command hclimber to make custom table
             //alert("custom tet tabel constructed");
