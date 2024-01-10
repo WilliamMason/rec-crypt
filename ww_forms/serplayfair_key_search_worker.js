@@ -36,6 +36,7 @@ var crib_flag=0;
 var crib;
 var crib_buffer = [];
 var crib_len;
+var reversed_key_flag = false;
 
 
 function make_table(str) {
@@ -260,6 +261,9 @@ function get_key_array(wrd){
             if (  used_indx[i] == 0 )
                 key[indx++] = i
         }
+		if (reversed_key_flag)
+			key.reverse();
+				
 }
 
 
@@ -361,8 +365,13 @@ function do_key_search(str){
                 out_str += '\nKey word: '+wrd;
                 out_str += '\nKey: ';
                 for (i=0;i<keysquare_width*keysquare_width;i++)
-                    out_str += alpha.charAt(work_key[i]);
-                out_str += "\nroute: "+k+" ("+route_name[k]+")";
+                    out_str += alpha.charAt(work_key[i]);				
+                //out_str += "\nroute: "+k+" ("+route_name[k]+")";
+				if ( reversed_key_flag)
+					out_str += "\nroute: "+k+" ("+route_name[k]+" reversed)";
+				else 
+					out_str += "\nroute: "+k+" ("+route_name[k]+")";				
+				
                 //document.getElementById('output_area').value = out_str;
                 postMessage(out_str);
             }
@@ -390,6 +399,7 @@ onmessage = function(event) { //receiving a message
     period = parseInt(event.data.period);
     flag6x6 = event.data.flag6x6;
     str = event.data.str;
+	reversed_key_flag = event.data.reversed_key_flag;			
     do_key_search(str);
   }
 }

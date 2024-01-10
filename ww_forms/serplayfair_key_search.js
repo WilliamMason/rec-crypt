@@ -67,6 +67,7 @@ function do_key_search(){
 	var str,c,i,n,j,k;
     var op_choice;
     var period, flag6x6;
+	var reversed_key_flag;	
 
    if (!do_check()) return;  
     if (document.getElementById('use6x6').checked)
@@ -105,12 +106,17 @@ function do_key_search(){
    for (i=0;i< word_list_array.length;i++)
         bufView[i] = word_list_array[i];
 	worker.postMessage( {op_choice:1, buf:buf},[buf]);   
-	
+   
    //worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
    //worker.webkitPostMessage( {op_choice:2, str:str});
    period = document.getElementById('s_period').value;	
-   worker.postMessage( {op_choice:2, str:str, period:period, flag6x6:flag6x6});
+   //worker.postMessage( {op_choice:2, str:str, period:period, flag6x6:flag6x6});
    //worker.postMessage( {op_choice:2, str:str});
+	if (document.getElementById('reversed_key').checked)
+		reversed_key_flag = true;
+	else
+		rerversed_key_flag = false;
+    worker.postMessage( {op_choice:2, period:period, flag6x6:flag6x6 ,str:str,reversed_key_flag:reversed_key_flag});
 
 //document.getElementById('debug_area').value="key search";
 }
