@@ -7,6 +7,11 @@ var key;
 var digits = '0123456789ABCDEFGHI';
 var upperC="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
 function numb10_to_base(n,base){
 	var r,q,i,s;
 
@@ -84,6 +89,8 @@ function do_calc(op_num){
 		return;
 	}
 	key = document.getElementById('key_area').value;
+	if (key != '(none)')
+		key = letters_only(key); // remove any blanks
 	key = key.toUpperCase();
 	if ( key != '(NONE)'){
 		if (base !=key.length){
