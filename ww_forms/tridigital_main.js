@@ -28,6 +28,14 @@ var key_cols;
 var used_digit = [];
 var num_key;
 
+var cpos; // global
+
+function letters_only(str){ // remove everything except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
 function do_undo(){
     var i,j;
 
@@ -453,6 +461,28 @@ function xlate() {
 	document.getElementById('outputblock').innerHTML=str;
 }
 
+function insert_symbols_from_selection_box(p_letter,pos){ // pos is the position of the digit you clicked under, the position of the p_letter
+	//alert("insertion box not empty");
+	var i,j,k,c,n,s;
+	var selection = document.getElementById('insertion_Box').value;
+	selection = letters_only(selection);
+	c = selection.charAt(0);
+	if ( c != p_letter){
+		s = 'letter selected is '+p_letter+ ' but that is not first letter in the selection box';
+		alert(s);
+		return;
+	}
+	// insert the rest of the letters.
+	for (i=1;i<selection.length;i++){
+        c = selection.charAt(i);              
+        n = symbols.indexOf(c);
+        if ( n!=-1) {
+            plain[pos+i] = c; /// cpos is global variable, position within the symbols of the plain letter you clicked on.
+            update_check_key(c,code.charAt(pos+i));
+        }
+	}	
+	document.getElementById('insertion_Box').value = '';
+}	
 
 function selectmouse(e){
    var p_letter,n,c,n1,c_old,c_letter;
@@ -474,7 +504,7 @@ function selectmouse(e){
   }
   else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
 	  dobj = fobj;
-	  x = fobj.className.slice(5);
+	  x = fobj.className.slice(5); // position of the code digit you clicked under
 	  p_letter=symbols.charAt(cpos);
       n = parseInt(x);
       c = code.charAt(n);
@@ -498,6 +528,8 @@ function selectmouse(e){
             document.getElementById('redo_button').disabled = true;
             plain[ n ] = p_letter;
             plain_key[cpos] = c;
+			if (document.getElementById('insertion_Box').value != '')
+				insert_symbols_from_selection_box(p_letter,n);
         }
       }
       update_check_key(p_letter,plain_key[cpos]);
@@ -614,6 +646,7 @@ function letterblock_setup() {
 	
 	
  s = "Click on one of the blue symbols below , then click below a digit in the box above or on a place in the Key Table below. ";
+ //s += " To insert several symbols put them in the <b>Insertion Box</b> and insert the first symbol"; // move to below keyblock 
 	document.getElementById('directions').innerHTML=s;
 	s=''
 	s += '<div id="letterblock" class="letter_block" ';
@@ -629,6 +662,7 @@ function letterblock_setup() {
 	}
 	s=s+'<br>';
 	s += '</div>';
+	s += " To insert several symbols put them in the <b>Insertion Box</b> and insert the first symbol as usual.<br>"
 	s += '<br>Key Table:<br>';
 	document.getElementById('holdletterblock').innerHTML=s;
 	last_cell='';
@@ -830,6 +864,8 @@ function set_original_buttons() {
 	str += '<INPUT id="show_sol" type=button value="Get current plaintext" >';
     str += '<br><br><br>';
     str = str + '<INPUT id="setup_swap2" type=button value="swap rows or columns in key" >';
+	str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+	str += '<b>Insertion Box: </b> <input type=text value = "" size = 6 id="insertion_Box" > '
 	document.getElementById('button_actions').innerHTML= str;
     document.getElementById('start_over2').addEventListener("click",start_over);
     document.getElementById('reset2').addEventListener("click",reset);
