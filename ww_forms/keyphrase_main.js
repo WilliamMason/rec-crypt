@@ -27,6 +27,12 @@ var best_score = -1000;
 var current_channel = 0;
 var crib = '';
 
+function letters_only(str){ // remove everything except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
+
+
 
 function do_undo(){
     var i,j;
@@ -200,6 +206,7 @@ function reset_key(){
 function letterblock_setup(){
 	var s,i,c;
     s = "Click on one of the blue symbols below , then click below a cipher letter in the box above or on a place in the Key Table below. ";
+	s += "<br> To insert several symbols put them in the <b>Insertion Box</b> and insert the first symbol as usual.<br>"
     document.getElementById('initial').innerHTML=s;
     document.getElementById('letterblock').style.display="block";
 	
@@ -291,11 +298,18 @@ function outblock_setup(){
 function initialize(){
 reset_key();
 letterblock_setup()
+insertionblock_setup();
 outblock_setup()
 disk_setup();
 web_worker_setup();
 }
 
+
+function insertionblock_setup(){
+	//alert("insertion box goes here");
+	var s='<b>Insertion Box: </b> <input type=text value = "" size = 6 id="insertion_Box" > '
+	document.getElementById('insertionblock').innerHTML=s;
+}
 
 function disk_setup(){
 var str;
@@ -409,6 +423,30 @@ function copy_selection () {
             
 }
 
+function insert_symbols_from_selection_box(p_letter,pos){ // pos is the position of the digit you clicked under, the position of the p_letter
+	//alert("insertion box not empty");
+	
+	var i,j,k,c,n,s;
+	var selection = document.getElementById('insertion_Box').value;
+	selection = letters_only(selection);
+	c = selection.charAt(0);
+	if ( c != p_letter){
+		s = 'letter selected is '+p_letter+ ' but that is not first letter in the selection box';
+		alert(s);
+		return;
+	}
+	// insert the rest of the letters.
+	for (i=1;i<selection.length;i++){
+        c = selection.charAt(i);              
+        n = symbols.indexOf(c);
+        if ( n!=-1) {
+            plain[pos+i] = c; 
+            plain_key[n] = code.charAt(pos+i);
+        }
+	}	
+	document.getElementById('insertion_Box').value = '';
+	
+}	
 
 function selectmouse(e){
   var p_letter,n,c,n1,c_old,c_letter;
@@ -452,6 +490,9 @@ function selectmouse(e){
             document.getElementById('redo_button').disabled = true;
             plain[ n ] = p_letter;
             plain_key[cpos] = c;
+			if (document.getElementById('insertion_Box').value != '')
+				insert_symbols_from_selection_box(p_letter,n);
+			
         }
       }
       //next 3 lines for debugging
