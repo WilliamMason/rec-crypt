@@ -360,8 +360,8 @@ function get_trial_decrypt(period){
                 out_str += ", doppleschach score: "+n.toFixed(2);
                 out_str += "\n% accept: "+ (100.0*numb_accepted/(i+1)).toFixed(2);
 			out_str += '\nSwagman First Offset: ';
-			for (i=0;i<period;i++) 
-				out_str += key[i][0]+' ';
+			for (j=0;j<period;j++) 
+				out_str += key[j][0]+' ';
 				
             }
 			
