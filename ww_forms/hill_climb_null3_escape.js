@@ -226,7 +226,7 @@ function get_plain_text(){
 			plain_text[temp_len++] = words[j][ (words[j].length+escape_pos+letter_pos)%words[j].length ];
 		}
 		else
-			plain_text[temp_len++] = 24; //'x'-'a';
+			plain_text[temp_len++] = 23; //'x'
 	}
     
 }
