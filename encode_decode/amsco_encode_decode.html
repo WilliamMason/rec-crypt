@@ -20,6 +20,10 @@ function letters_only(str){ // remove everthing except letters
 	return str.replace(/[^a-z]/g,'');
 }
 
+function letters_only(str){ // remove everthing except letters
+	str = str.toLowerCase();
+	return str.replace(/[^a-z]/g,'');
+}
 
 function do_check(status){
 	var s,s1,n,c, key_numbs,max_num,i,j,k;
@@ -145,7 +149,8 @@ function amsco_tramp_encrypt(plaintext,key,first_entry){
 	}
 
 	if (!numb_flag){
-    // change alphabetic key to numeric key.	
+    // change alphabetic key to numeric key.
+		key = letters_only(key); // remove all blanks
 		n = 0;
 		for (i=0;i<26;i++){
 			for (j=0;j<key.length;j++)
@@ -316,6 +321,7 @@ function amsco_tramp_decrypt(codetext,key,first_entry){
 
 	if (!numb_flag){
     // change alphabetic key to numeric key.	
+		key = letters_only(key); // remove all blanks
 		n = 0;
 		for (i=0;i<26;i++){
 			for (j=0;j<key.length;j++)
