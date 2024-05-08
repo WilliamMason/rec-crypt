@@ -96,9 +96,14 @@ function grandpre_encrypt(plaintext,key){
   for (i=0;i<key_len;i++){
 	  n = upperC.indexOf(key.charAt(i+key_len*j));
 	  if (key_len<10){
-      n1 = j+1;
-      n2 = i+1;
+      		n1 = j+1;
+      		n2 = i+1;
 	  }
+	  else { // 10x10 case
+		n1 = j;
+		n2 = i;
+	  }
+	  
 	  inverse_key[n][let_count[n]]= ''+n1+n2;
 	  let_count[n] += 1;
   }
