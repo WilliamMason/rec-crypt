@@ -1,0 +1,370 @@
+<html>
+<head>
+<SCRIPT language=JavaScript>
+
+var key;
+var alpha = 'abcdefghijklmnopqrstuvwxyz';
+
+var plaintext_groups;
+var codetext_groups;
+var key_array;
+
+var period;
+var ciph_type;
+
+var VSLIDEFAIR = 0;
+var BSLIDEFAIR = 1;
+var VIGENERE = 2;
+var VARIANT = 3;
+var BEAUFORT = 4;
+var VAUTOKEY = 5;
+var BAUTOKEY = 6;
+var VEAUTOKEY = 7;
+var PORTA = 8;
+var PAUTOKEY = 9;
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+var  digits = '0123456789';
+
+function do_check(status){
+	var s,s1,n,c;
+	var alpha='abcdefghijklmnopqrstuvwxyz';
+	s = document.getElementById('input_area').value;
+	if (s == ''){
+		alert("No text entered");
+		return(false)
+	}
+
+	s = document.getElementById('key').value;
+	s = digits_only(s);
+	if (s == ''){
+		alert("Key has no digits");
+		return(false)
+	}
+	
+	return(true);
+}
+
+function do_encrypt(){
+var plaintext,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('in'))
+	return;
+//alert("encrypt");
+plaintext = document.getElementById('input_area').value.toLowerCase();
+
+key = document.getElementById('key').value;
+
+ciph_type = VIGENERE
+codetext = vig_encrypt(plaintext,key,ciph_type);
+s = '';
+s += "Gronsfeld cipher\n";
+//s += 'ciph_type: '+ciph_type;
+s += "ciphertext:\n"+codetext.toUpperCase();
+s += "\nplaintext:\n"+plaintext;
+s += "\nkey: "+key.toUpperCase();
+
+
+	s += '\nWorksheet:\n';
+	
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+
+
+
+document.getElementById('output_area').value = s;
+}
+
+function vig_encrypt(plaintext,key,ciph_type){
+        var i,j,k, index,x,y,c,n, cnt;
+        var c1,c2,c3,c4, result;
+        var n1,n2,n3;
+		var col,pos,k1;
+		var next_index;
+		var code_text = [];
+
+
+		var num_code = convert_string(plaintext);
+		//var key_code = convert_string(key);
+		key = digits_only(key);
+		var key_code = [];
+		for (i=0;i<key.length;i++)
+			key_code[i] = digits.indexOf(key.charAt(i));
+		var period = key_code.length;
+	
+	for (col=0;col<period;col++){
+		pos = col;
+		kl = key_code[col];
+        next_index = 0;
+		while (pos < num_code.length){
+            c1 = num_code[pos];
+			//code_text[pos] = decode_let(buffer[pos],kl);
+            code_text[pos] = encode_let(c1,kl,ciph_type);
+			if (ciph_type != PORTA && ciph_type >= VAUTOKEY)
+				kl = num_code[pos];
+			pos += period;
+		}
+	}
+	var codetext=''
+	cnt = 0;
+	for (i=0;i<code_text.length;i++){
+		codetext += alpha.charAt(code_text[i]);
+		if ( ((++cnt)%5) == 0)
+			codetext += ' ';
+		if ( (cnt%55) ==0 ){
+			codetext += '\n';
+			cnt = 0;
+		}
+	}
+	line_limit = period*Math.floor(66/(period+1));
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+    for (i=0;i<num_code.length;i++){
+        codetext_groups += alpha.charAt(code_text[i]).toUpperCase();
+		plaintext_groups += alpha.charAt(num_code[i])
+        if ( (++cnt)%period == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+        }
+    }
+		
+	return(codetext);
+//alert(key_code);
+
+}
+
+function encode_let(cp,ky,num_type){
+	var ct;
+	if (num_type == VIGENERE || num_type == VEAUTOKEY)
+		//cp = (26+ct-ky)%26;
+		ct = (cp+ky)%26;
+	else if (num_type == VARIANT || num_type == VAUTOKEY)
+		//cp = (ct+ky)%26;
+		ct = (26+cp-ky)%26;
+	else if (num_type == BEAUFORT || num_type == BAUTOKEY)
+		//cp = (26+ky-ct)%26;
+		ct = (26+ky-cp)%26;
+	else { // PORTA
+		ky = Math.floor(ky/2);
+		ct = cp;
+		if (ct < 13){
+			ct += ky;
+			if (ct < 13) ct += 13;
+		}
+		else {
+			ct -= ky;
+			if (ct > 12) ct -= 13;
+		}
+	}
+	return( ct );
+}	
+
+
+
+function do_decrypt(){
+var plaintext,key1,key_width,s,codetext,i,j,s1,s2,cnt;
+
+if (!do_check('de'))
+	return;
+
+codetext = document.getElementById('input_area').value.toLowerCase();
+key = document.getElementById('key').value;
+s = codetext.toLowerCase();
+
+/*
+s1 = document.getElementById('vtype');
+s2 = s1.options[s1.selectedIndex].value;
+ciph_type = parseInt(s2.charAt(0) ); // global
+s1 = s2.substring(2);
+*/
+ciph_type = VIGENERE
+plaintext = vig_decrypt(s,key,ciph_type);
+s = '';
+s += "Gronsfeld cipher\n";
+
+s += 'plaintext:\n'+plaintext;
+s += "\nciphertext:\n"+codetext.toUpperCase();
+s += "\nkey: "+key.toUpperCase();
+
+	s += '\nWorksheet:\n';
+	
+	codetext_groups = codetext_groups.toUpperCase();
+	s1 = '';
+	s2 = '';
+	for (i=0;i<codetext_groups.length;i++){
+		s1 += codetext_groups.charAt(i);
+		s2 += plaintext_groups.charAt(i);
+		if ( codetext_groups.charAt(i+1) == '\n'){
+			s += s1+'\n'+s2+'\n';
+			s1= '';
+			s2 = '';
+			i++;
+		}
+	}
+	if (s1 !='')
+				s += s1+'\n'+s2+'\n';
+
+document.getElementById('output_area').value = s;
+}
+
+function vig_decrypt(s,key,ciph_type){
+        var i,j,k, index,x,y,c,n, cnt;
+        var c1,c2,c3,c4, result;
+        var n1,n2,n3;
+		var col,pos,k1;
+		var next_index;
+		var plain_text = [];
+
+		
+	if (ciph_type <= BSLIDEFAIR) {
+		var plaintext = slidefair_decode(s,key,ciph_type);
+		return(plaintext);
+	}
+		var num_code = convert_string(s);
+		//var key_code = convert_string(key);
+		key = digits_only(key);
+		var key_code = [];
+		for (i=0;i<key.length;i++)
+			key_code[i] = digits.indexOf(key.charAt(i));
+		
+		var period = key_code.length;
+	
+	for (col=0;col<period;col++){
+		pos = col;
+		kl = key_code[col];
+        next_index = 0;
+		while (pos < num_code.length){
+            c1 = num_code[pos];
+			//plain_text[pos] = decode_let(buffer[pos],kl);
+            plain_text[pos] = decode_let(c1,kl,ciph_type);
+			if (ciph_type != PORTA && ciph_type >= VAUTOKEY)
+				kl = plain_text[pos];
+			pos += period;
+		}
+	}
+	var plaintext=''
+	for (i=0;i<plain_text.length;i++)
+		plaintext += alpha.charAt(plain_text[i]);
+	line_limit = period*Math.floor(66/(period+1));
+    cnt = 0;
+	codetext_groups = '';
+	plaintext_groups = '';
+    for (i=0;i<num_code.length;i++){
+        codetext_groups += alpha.charAt(num_code[i]).toUpperCase();
+		plaintext_groups += plaintext.charAt(i);
+        if ( (++cnt)%period == 0){
+            codetext_groups += ' ';
+			plaintext_groups += ' ';
+            if ( (cnt%line_limit) == 0){
+                codetext_groups += '\n';
+				plaintext_groups += '\n';
+			}
+        }
+    }
+		
+	return(plaintext);
+//alert(key_code);
+
+}
+
+function convert_string(code) {
+	var num_code = [],i,clen,n;
+	
+	//code = document.puzzle.ciphertext.value;
+	code = code.toLowerCase();
+	clen=0;
+	for (i=0;i<code.length;i++) {
+		n = alpha.indexOf(code.charAt(i))
+		if ( n != -1){
+			num_code[clen]=n;
+			clen++;
+		}
+	}
+	return num_code;
+}
+
+function decode_let(ct,ky,num_type){
+	var cp;
+	if (num_type == VIGENERE || num_type == VEAUTOKEY)
+		cp = (26+ct-ky)%26;
+	else if (num_type == VARIANT || num_type == VAUTOKEY)
+		cp = (ct+ky)%26;
+	else if (num_type == BEAUFORT || num_type == BAUTOKEY)
+		cp = (26+ky-ct)%26;
+	else { // PORTA
+		ky = Math.floor(ky/2);
+		cp = ct;
+		if (cp < 13){
+			cp += ky;
+			if (cp < 13) cp += 13;
+		}
+		else {
+			cp -= ky;
+			if (cp > 12) cp -= 13;
+		}
+	}
+	return( cp );
+}	
+
+
+
+
+onload = function() {
+
+    document.getElementById('do_encrypt').addEventListener("click",do_encrypt);
+    document.getElementById('do_decrypt').addEventListener("click",do_decrypt);
+
+    //document.getElementById('do_clear_all').addEventListener("click",do_clear_all);
+//	selected_route = -1;
+
+    
+}
+
+
+</script>
+</head>
+
+<body bgcolor="Silver">
+<center><h3>Gronsfeld Encrypt/Decrypt</h3></center>
+
+<div>Plaintext/Ciphertext<br>
+<textarea name="text" rows="5" cols="100" id="input_area">
+</textarea></div>
+<br><br>
+Key: <input type="text" name = "key" id="key"> &nbsp;&nbsp;&nbsp;(digits only)
+<br><br>
+Output:
+<br>
+<textarea name="text" rows="10" cols="100" id="output_area">
+</textarea>
+<br><br>
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Encrypt" id="do_encrypt" >
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+<input type="button" value="Decrypt" id="do_decrypt" >
+
+</body>
+</html>
