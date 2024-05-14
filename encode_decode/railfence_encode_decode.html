@@ -35,11 +35,12 @@ for (i=0;i < n;i++)
 
 s = plaintext.toLowerCase();
 codetext = redefence_encrypt(s,key,offset);
+var code = letters_only(codetext);
 s = '';
 s += "Railfence transposition cipher\n";	
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
-s += "\nkey: "+key;
+s += "\nRails: "+key.length;
 s += '\noffset: '+offset;
 s += '\nworksheet:\n';
 key = digits_only(key);
@@ -49,7 +50,8 @@ var next_line = 80;
 var pline = [];
 var index = parseInt(offset);
 for (i=0;i<numb_rails;i++){
-	pline[i] = key.charAt(i)+'  '; // assume no key numbers are more than 9
+	//pline[i] = key.charAt(i)+'  '; // assume no key numbers are more than 9
+	pline[i] = '  ';
 }
 if (index >= numb_rails-1){
      index = 2*numb_rails-index-2		
@@ -60,8 +62,13 @@ else
 cnt = 0;
 for (i=0;i<plain.length;i++){
 	for (j=0;j<numb_rails;j++){
-		if ( j== index)
-			pline[j] += plain.charAt(i);
+		if ( j== index){
+			if (document.getElementById('regular').checked)
+				pline[j] += plain.charAt(i);
+			else
+				pline[j] += code.charAt(i);
+			
+		}
 		else	pline[j] += ' ';
 	}
 	index += inc;
@@ -148,8 +155,14 @@ function redefence_encrypt(plaintext,key,start_row){
         if ( offset[i].length == 0) continue;
         index = pos = 0;
         while( offset[i][index ] + pos < plain.length){
-            k = plain[ offset[i][index] + pos];
-            code[cnt++] = k;
+			if (document.getElementById('regular').checked){
+				k = plain[ offset[i][index] + pos];
+				code[cnt++] = k;
+			}
+			else {
+				k = plain[cnt++];
+				code[ offset[i][index] + pos] = k;
+			}
             if ( ++index == offset[i].length ){
                 index = 0;
                 pos += numeric_key.length
@@ -185,12 +198,13 @@ for (i=0;i < n;i++)
 	key += digits.charAt(i);
 	
 s = codetext.toLowerCase();
+var code = letters_only(s);
 plaintext = redefence_decrypt(s,key,offset);
 s = '';
 s += "Railfence transposition cipher\n";	
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
-s += "\nkey: "+key.toUpperCase();
+s += "\nRails: "+key.length;
 s += '\noffset: '+offset;
 s += '\nworksheet:\n';
 key = digits_only(key);
@@ -200,7 +214,8 @@ var next_line = 80;
 var pline = [];
 var index = parseInt(offset);
 for (i=0;i<numb_rails;i++){
-	pline[i] = key.charAt(i)+'  '; // assume no key numbers are more than 9
+	//pline[i] = key.charAt(i)+'  '; // assume no key numbers are more than 9
+	pline[i] = '  '; // assume no key numbers are more than 9
 }
 if (index >= numb_rails-1){
      index = 2*numb_rails-index-2		
@@ -211,8 +226,14 @@ else
 cnt = 0;
 for (i=0;i<plain.length;i++){
 	for (j=0;j<numb_rails;j++){
-		if ( j== index)
-			pline[j] += plain.charAt(i);
+		if ( j== index){
+			if (document.getElementById('regular').checked)
+				pline[j] += plain.charAt(i);
+			else
+				pline[j] += code.charAt(i);
+			
+			//pline[j] += plain.charAt(i);
+		}
 		else	pline[j] += ' ';
 	}
 	index += inc;
@@ -285,8 +306,14 @@ function redefence_decrypt(codetext,key,start_row){
         if ( offset[i].length == 0) continue;
         index = pos = 0;
         while( offset[i][index ] + pos < code.length){
-			k = code[cnt++];
-            plain[ offset[i][index] + pos] = k;
+			if (document.getElementById('regular').checked){
+				k = code[cnt++];
+				plain[ offset[i][index] + pos] = k;
+			}
+			else {
+				k = code[ offset[i][index] + pos];
+				plain[cnt++] = k;	
+			}
             if ( ++index == offset[i].length ){
                 index = 0;
                 pos += numeric_key.length
@@ -392,14 +419,19 @@ Output:
 </textarea>
 <br><br>
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
-<input type="button" value="Encrypt" id="do_encrypt" > (horizontal to zig-zag)
+<input type="button" value="Encrypt" id="do_encrypt" > 
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
-<input type="button" value="Decrypt" id="do_decrypt" > (zig-zag to horizontal)
+<input type="button" value="Decrypt" id="do_decrypt" > 
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
+Encrypt rows to zig-zag <input type="radio" name="r_buttons" id = "regular" checked>
+&nbsp;&nbsp;
+Encrypt zig-zag to rows <input type="radio" name="r_buttons" id = "alternate">
+&nbsp;&nbsp;
 
 
 </div>
 <br><br>
-Note: You could use the Decrypt button to encrypt and then the Encrypt button will decrypt.
+
 
 </body>
 </html>
