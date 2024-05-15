@@ -38,6 +38,11 @@ codetext = redefence_encrypt(s,key,offset);
 var code = letters_only(codetext);
 s = '';
 s += "Railfence transposition cipher\n";	
+if (document.getElementById('regular').checked)
+	s+= 'encrypt zig-zag to rows\n'
+else
+	s+= 'encrypt rows to zig-zag\n'
+	
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
 s += "\nRails: "+key.length;
@@ -202,6 +207,11 @@ var code = letters_only(s);
 plaintext = redefence_decrypt(s,key,offset);
 s = '';
 s += "Railfence transposition cipher\n";	
+if (document.getElementById('regular').checked)
+	s+= 'encrypt zig-zag to rows\n'
+else
+	s+= 'encrypt rows to zig-zag\n'
+
 s += "ciphertext:\n"+codetext.toUpperCase();
 s += "\nplaintext:\n"+plaintext;
 s += "\nRails: "+key.length;
@@ -423,9 +433,9 @@ Output:
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
 <input type="button" value="Decrypt" id="do_decrypt" > 
 &nbsp; &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp;
-Encrypt rows to zig-zag <input type="radio" name="r_buttons" id = "regular" checked>
+Encrypt zig-zag to rows <input type="radio" name="r_buttons" id = "regular" checked>
 &nbsp;&nbsp;
-Encrypt zig-zag to rows <input type="radio" name="r_buttons" id = "alternate">
+Encrypt rows to zig-zag <input type="radio" name="r_buttons" id = "alternate">
 &nbsp;&nbsp;
 
 
