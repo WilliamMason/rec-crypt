@@ -9,6 +9,8 @@ var period;
 var max_period = 15;
 var fudge_factor, numb_decrypts;
 var min_period = 3;
+var points_per_repeat = 2.5;
+
 var swagman_calcs = function(){
 // T has compressed binary Single letter - Trigraph Discrepancy values
 // had to replace \ by \\
@@ -287,6 +289,20 @@ function get_trial_decrypt(period){
             }
             return(score);
         }    
+	function get_repeats(key){
+	var i,j,k,c,n,s;
+	var width = key[0].length;
+	n = 0; // numb repeats
+	for (k=0;k<width;k++){
+		for (i=0;i<width-1;i++)
+			for (j=i+1;j<width;j++)
+				if ( key[i][k] == key[j][k])
+					n++;
+			
+	}// next k
+	return(n);
+	
+	}
 
     var do_swagman_calc = function(code){ // return this function which can use the pseudo-global variables
         var str, alpha,out_str,c,n,i,ct,sum,c1,c2,j,k,flag;
@@ -309,7 +325,8 @@ function get_trial_decrypt(period){
         var begin_level = 1.0
         var noise_step = 1.5;
         var noise_level = begin_level;
-        var cycle_numb = 0;        
+        var cycle_numb = 0;  
+		var repeats;		
 		
 
        for (period = min_period; period <= max_period; period++){
@@ -346,24 +363,31 @@ function get_trial_decrypt(period){
 		key[n3][n1]=v2;
 		key[n3][n2]=v1;
         score = get_score(period);
-            if (score>max_score){
+		repeats = get_repeats(key);
+		// adjust scoe by subtracting repeats
+		score -= (repeats*points_per_repeat);		
+		if (score<0) 
+			score = 0;
+        if (score>max_score){
                 max_score = score;
                 out_str = '';
                 x = score.toFixed(2);
                 //out_str += x+'~';
                 for (j=0;j<buf_len;j++)
                     out_str += l_alpha.charAt(plain_text[j]);
-                out_str += "\nscore: "+score.toFixed(2);
+                out_str += "\nadjusted score: "+score.toFixed(2);				
+                //out_str += "\nscore: "+score.toFixed(2);
                 k = 1000*score/(buffer.length-2);
                 out_str += ", normalized score: "+k.toFixed(2);
                 n = (k-69)/(740-69); // std english bstd score = 740, random english bstd score = 69
                 out_str += ", doppleschach score: "+n.toFixed(2);
                 out_str += "\n% accept: "+ (100.0*numb_accepted/(i+1)).toFixed(2);
+				out_str += '\nnumner of repeated numbers in columns: '+repeats;				
 			out_str += '\nSwagman First Offset: ';
 			for (j=0;j<period;j++) 
 				out_str += key[j][0]+' ';
 				
-            }
+        }
 			
             if (score > local_best_score-fudge_factor*buffer.length/(noise_level)) {	
                 if (score != local_best_score)
