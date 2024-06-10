@@ -1,0 +1,1424 @@
+<!-- Originally Gromark scratchpad with crib dragging in javascript -->
+<HTML>
+<!-- written by BION 
+draft 2 tried to combine scan from left and scan from right
+draft 3 tries to check crib drag against sequence key digits already entered, looking for conflicts and extending the crib drag output if there are no conflicts 
+draft 4 rearranges wrapper blocks
+-->
+<HEAD>
+<!--
+<link rel="shortcut icon" href="Bicon16_alt2.ico">
+-->
+<TITLE>Sequence tramp Worksheet</TITLE>
+<style>
+.wrapper {
+  display: grid;
+  grid-gap: 10px;
+  grid-auto-rows: minmax(50px, auto);
+  padding: 10px;
+  max-width: 1000px;
+
+}
+
+
+.wrapper > div { 
+ padding: 10px;
+}
+
+
+.button_actions{
+  grid-column: 1 ;
+  grid-row: 3;
+}
+
+.crib_actions{
+  grid-column: 2 ;
+  grid-row: 1;
+}
+
+.undo_actions{
+  grid-column: 2 ;
+  grid-row: 3;
+}
+
+.extend_key_block{
+	grid_column: 2;
+	grid_row 2;
+}
+.hold_letter_block{
+  grid-column: 1 ;
+  grid-row: 1;
+  font-family:monospace; font-size: 15px; cursor: crosshair; 
+
+}
+
+.key_block{
+  grid-column: 1;
+  grid-row: 2;
+  font-family:monospace; font-size: 15px; cursor: crosshair;
+
+}
+
+#c_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:100px;
+	top:100px;
+	width:500px;
+	height:500px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:none;	
+}
+
+
+</style>
+<script type="text/javascript">
+
+function do_cancel_message(){
+document.getElementById('c_display').style.display="none";
+}
+
+function pseudo_alert(message){
+    var s;
+	s = '<span id="c_display"><br>';
+    s += message+'<br>';
+	s += '<br><br><center><input value="OK" id="cancel_messagecr6" type="button">';
+	document.getElementById('cm_display').innerHTML=s;
+	document.getElementById('c_display').style.display="block";
+    document.getElementById('cancel_messagecr6').addEventListener("click", do_cancel_message);                
+}        
+
+
+// undo and redo routines and variables
+
+var undo_array = [];
+var redo_array = [];
+var undo_index = 0;
+var redo_index = 0;
+
+var numb_symbols = 26;
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+
+function do_undo(){
+    var i,j;
+
+    if (undo_index == 0) return;
+    redo_array[redo_index] = [];
+	for (i=0;i<numb_symbols;i++) {
+		redo_array[redo_index][i] = seq_key[ i ];
+	}
+    redo_index++;
+    undo_index--;    
+	for (i=0;i<numb_symbols;i++) {
+		seq_key[ i ] = undo_array[undo_index][i];
+	}
+    
+    document.getElementById('redo_button').disabled = false;
+    update_keyblock();    
+    xlate();
+}
+function do_redo(){
+    var i,j;
+    
+    if (redo_index == 0)
+        return;
+    redo_index--;
+    undo_index++;
+	for (i=0;i<numb_symbols;i++) {
+		seq_key[ i ] = redo_array[redo_index][ i ];
+	}
+    update_keyblock();
+    xlate();
+}
+
+function update_undo(){
+    var i,j;
+
+    undo_array[undo_index] = [];
+	for (i=0;i<numb_symbols;i++) {
+		undo_array[undo_index][ i ] = seq_key[ i ];
+	}
+    undo_index++;
+    redo_index = 0;
+
+}
+
+
+//next definition needed by Internet explorer, firefox already has it
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+var code,code_array,crib_pos,cribtext;
+var symbols="abcdefghijklmnopqrstuvwxyz-"
+var digits="0123456789";
+var digits_and_question="0123456789?"; // for letterblock and keyblock 
+var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
+val_letter_selected=0;
+var fire_fox=!document.all;
+var dobj, solving_flag =0;
+var asize = 5;
+var line_len = 90;
+var crib_entered=0;
+var line_limit=45;
+
+var data;
+
+var seq_key = new Array();
+var buf_len;
+var chain = [];
+var primer;
+var old_xlation;
+var chain_lengths = [];
+var di_array = [];
+var period;
+
+var crib;
+var buffer = [];
+
+function get_chain(){
+    var i,j,k,index,n,c;
+
+    index = 0;
+    for (i=0;i<primer.length;i++){
+        c = primer.charAt(i);
+        n = digits.indexOf(c);
+        if ( n != -1)
+            chain[index++] = n
+    }
+    if ( index != 5) {
+        alert("Warning. Primer does not have 5 digits.");
+    }
+    for (j = 0;j<buf_len-index;j++) 
+       chain[j+index] = (chain[j]+chain[j+1]) % 10;
+	 // get chain lengths
+	 for (i=0;i<10;i++)
+		chain_lengths[i] = 0;
+	for (i=0;i<chain.length;i++)
+		chain_lengths[ chain[i] ]++;
+	
+}       
+
+function reset_key() {
+	var j;
+    
+    for (j=0;j<10;j++)
+        seq_key[j] = '?';
+}
+
+function setup_code() {
+    var i,c,n;
+	
+    var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	data = document.ciphertext.cipher_place.value;
+	data = data.toUpperCase();
+	code = '';
+    code_array = [];
+    buf_len = 0;
+	for (i=0;i<data.length;i++) {
+		c = data.charAt(i);
+		if ( alpha.indexOf(c) >-1 ) {
+            code += c;
+            code_array[buf_len++] = c;
+		}
+	}
+	solving_flag=1;
+    get_chain(); // can get chain now that we know buf_len, also gets chain_lengths 
+	old_xlation = [];
+	for (i = 0;i<buf_len;i++)
+		old_xlation[i]= '-';
+    undo_index = redo_index = 0;   
+    buffer = [];
+
+	for ( i=0;i<code_array.length;i++){
+		c = code_array[i]
+		n = alpha.indexOf(c);
+		if ( n>=0){
+			buffer[i] = n;
+		}
+	}
+	
+}	
+
+function key_lookup(pos) { // see if cipher letter - chain at pos is represented in the key
+	var n,i;
+
+    for (i=0;i<26;i++)
+        if (seq_key[i] == code_array[pos])
+            break;
+    if ( i==26) return('-'); // letter not in key array
+
+    n = (26+i-chain[pos])%26;
+    return(symbols.charAt(n)); 
+}
+
+function key_digit_start_index(){
+	var i,j,k,n,c,s;
+	var digit_start_index = {};
+	//scan from right to left
+	var current_key_index = 9;
+	var current_last_position = buf_len;
+	while( current_key_index >=0 && seq_key[current_key_index] != '?'){
+		if ( !(seq_key[current_key_index] in digit_start_index) )
+				digit_start_index[ seq_key[current_key_index] ] = current_last_position-chain_lengths[seq_key[current_key_index]];
+		current_last_position -= chain_lengths[seq_key[current_key_index]];
+		current_key_index--;	
+	}
+	// scan from left to right
+	current_key_index = 0;
+	current_last_position = 0;
+	while( current_key_index <10 && seq_key[current_key_index] != '?'){
+		if ( !(seq_key[current_key_index] in digit_start_index) )
+				digit_start_index[ seq_key[current_key_index] ] = current_last_position;
+		current_last_position += chain_lengths[seq_key[current_key_index]];
+		current_key_index++;	
+	}
+	return(digit_start_index);
+}
+
+
+function xlate() {
+	var state,str,limit,pos,pl,cnt,di,s;
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;
+	}
+	var digit_start_index = {};
+	var known_index = {};
+	
+	str='';
+	//str='<style="font-family:monospace; font-size:15px;">';
+	limit=line_limit;
+	if (buf_len<limit)
+		limit = buf_len;
+	pos=0;
+	cnt=0;
+	pl='';
+    di = '';
+	var key_count = 0;
+	var key_value_unknown = false;
+	var copies_remaining = 0;
+	/*
+	//scan from right to left
+	var current_key_index = 9;
+	var current_last_position = buf_len;
+	while( current_key_index >=0 && seq_key[current_key_index] != '?'){
+		if ( !(seq_key[current_key_index] in digit_start_index) )
+				digit_start_index[ seq_key[current_key_index] ] = current_last_position-chain_lengths[seq_key[current_key_index]];
+		current_last_position -= chain_lengths[seq_key[current_key_index]];
+		current_key_index--;	
+	}
+	// scan from left to right
+	current_key_index = 0;
+	current_last_position = 0;
+	while( current_key_index <10 && seq_key[current_key_index] != '?'){
+		if ( !(seq_key[current_key_index] in digit_start_index) )
+				digit_start_index[ seq_key[current_key_index] ] = current_last_position;
+		current_last_position += chain_lengths[seq_key[current_key_index]];
+		current_key_index++;	
+	}
+	*/
+	digit_start_index = key_digit_start_index();
+	for (pos =0;pos<buf_len;pos++)
+			di_array[pos] = '?'	
+
+
+	for (var i=0;i<10;i++){
+		if (i in digit_start_index )
+			for (pos = digit_start_index[i]; pos<digit_start_index[i]+chain_lengths[i];pos++)
+				di_array[pos] = digits.charAt(i);
+	}
+	var next_key_digit = 0;	
+	pos = 0;	
+	di = '';
+	cnt = 0;
+	while (pos<buf_len ) {
+		str = str+code_array[pos]+' ';
+		di += di_array[pos]+'&nbsp';
+		pos++;
+		cnt++;
+		if (cnt>=limit) {
+            str += '<br>'+di;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+            di = '';
+			cnt=0;
+			if (pos+line_limit>buf_len)
+				limit = buf_len-pos;;
+		}
+	}
+		
+	document.getElementById('outputblock').innerHTML=str;
+	for (n in digit_start_index)
+		known_index[n] = digit_start_index[n];
+	decode(known_index);
+}
+
+
+function decode(known_index){
+	// decode into plainblock
+	var i,j,k,c,n,s,str;
+	var cnt = 0;
+//alert("decode");
+	limit=line_limit;
+	if (buf_len<limit)
+		limit = buf_len;
+
+var pl = '';
+var ci = '';
+var seq_key_index = [];
+for (i=0;i<10;i++)
+	seq_key_index[i] = 0;
+
+str = '';
+for (i=0;i<buf_len;i++){
+		if (chain[i] in known_index ){
+			n = known_index[ chain[i] ]
+			//pl += code_array[ n ].toLowerCase()+'&nbsp';
+			known_index[ chain[i] ]++;
+			s = code_array[n ].toLowerCase();
+				
+			if ( s != old_xlation[i]){
+				old_xlation[i]=s;
+				pl = pl+'<font color="red"><span class = "plain'+i+'">'+s+'&nbsp;</span></font>';								
+				
+			}
+			else
+				pl = pl+'<span class = "plain'+i+'">'+s+'&nbsp;</span>';
+			
+		}
+		else 
+			pl+= '-'+'&nbsp;'
+		ci += chain[i]+'&nbsp';
+		cnt++;
+		if (cnt>=limit) {
+            str += '<br>'+ci;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			ci = '';
+			cnt=0;
+			if (i+line_limit>buf_len)
+				limit = buf_len-i;;
+		}
+	
+}
+if (cnt>0){
+            str += '<br>'+ci;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+
+}
+//pl += '<br><br>';	
+
+str = 'Plaintext:<br><br>'+str+'<br><br>'
+document.getElementById('plainblock').innerHTML = str;
+return;
+}
+
+function insert_crib(text,position, known_index){
+
+	var i,j,k,c,n,s,str;
+	var cnt = 0;
+//alert("decode");
+	limit=line_limit;
+	if (buf_len<limit)
+		limit = buf_len;
+
+var pl = '';
+var ci = '';
+var seq_key_index = [];
+for (i=0;i<10;i++)
+	seq_key_index[i] = 0;
+
+var crib_pos = 0;
+str = '';
+for (i=0;i<buf_len;i++){
+	if (i<position){
+		if (chain[i] in known_index ){
+			n = known_index[ chain[i] ]
+			pl += code_array[ n ].toLowerCase() +'&nbsp;'
+			known_index[ chain[i] ]++;
+		}
+		else
+		 pl+= '-'+'&nbsp;'
+		ci += chain[i]+'&nbsp';
+	}
+	else if (i<position+text.length){
+		//j = digits.indexOf( di_array[i] );
+		j =  chain[i];
+/*		
+		c = digits.charAt(j);
+		n = di_array.indexOf(c);
+		if ( n != -1){
+		s = code_array[n+seq_key_index[j] ].toLowerCase();
+*/
+		s = text.charAt(crib_pos++);
+		
+		
+				
+		if ( s != old_xlation[i]){
+            old_xlation[i]=s;
+			pl = pl+'<font color="red"><span class = "plain'+i+'">'+s+'&nbsp;</span></font>';								
+			
+        }
+		else
+			pl = pl+'<span class = "plain'+i+'">'+s+'&nbsp;</span>';
+		
+
+		//pl += code_array[n+seq_key_index[j] ].toLowerCase();
+		if (chain[i] in known_index )
+			known_index[ chain[i] ]++;
+		seq_key_index[j]++;
+		ci+= chain[i]+'&nbsp';
+	}
+	else{
+		if (chain[i] in known_index ){
+			n = known_index[ chain[i] ]
+			pl += code_array[ n ].toLowerCase() +'&nbsp;'
+			known_index[ chain[i] ]++;
+		}
+		else	
+			pl += '-'+'&nbsp';
+		ci += chain[i]+'&nbsp';
+		
+	}
+		cnt++;
+		if (cnt>=limit) {
+            str += '<br>'+ci;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			pl='';
+			ci = '';
+			cnt=0;
+			if (i+line_limit>buf_len)
+				limit = buf_len-i;;
+		}
+	
+}
+if (cnt>0){
+            str += '<br>'+ci;
+			str = str+'<br><font color="blue">'+pl+'</font><br>'
+
+}
+//pl += '<br><br>';	
+
+str = 'Plaintext:<br><br>'+str+'<br><br>'
+document.getElementById('plainblock').innerHTML = str;
+
+}
+
+
+function plain_letter_encrypt(c, pos){
+	var n,i, index, cnt,k,
+
+	index = 0;
+	cnt = 0;
+	k = 0;
+	while(k<pos){
+		k++;
+		cnt++;
+		if ( cnt == period ){
+			index = (index+1)%period;
+			cnt = 0;
+			}
+	}
+	i = symbols.indexOf(c);
+    n = (26+i+chain[pos])%26;
+	
+
+    return(n); 
+
+}
+
+
+function selectmouse(e){
+  var i,c,s,old;
+  
+  var fobj       = fire_fox ? e.target : event.srcElement;
+  if (fobj.className.slice(1)=="key") {
+    dobj = fobj;
+	cpos = digits_and_question.indexOf(dobj.className.charAt(0));  
+	letter_selected=1;
+	//reset key
+	letterblock_setup();
+	c=dobj.className.charAt(0);	
+	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c.toUpperCase()+'</span>';
+	document.getElementById(dobj.id).innerHTML= s;
+	//next 2 lines for debugging
+	//s = "you clicked on "+c;
+	//document.debug.output_area.value= s; 	
+    return false;
+  }
+  else if (fobj.className.slice(1)=="keyblock" && letter_selected) {
+	  dobj = fobj;
+	  letter=digits_and_question.charAt(cpos);
+      c = digits_and_question.charAt(cpos); // uppercase
+	  letter_selected=0;
+	  cell=dobj.className.slice(0,1);
+      update_undo();
+      document.getElementById('redo_button').disabled = true;          
+      
+	  //update key array
+	  //check for duplicate letters and erase old if found
+	  if ( letter != '?' ) {
+          for (i=0;i<10;i++){
+            if (seq_key[i] == c) {
+                seq_key[i] = '?';
+                old = digits.charAt(i);
+				s= '<span width="75" height = "75" id ="'+old+'keymatrix" class="'+old+'keyblock" style="color:blue">';
+				s+='-</span>';
+				document.getElementById(old+'keymatrix').innerHTML= s;
+            }
+          }
+	  }						  
+	  seq_key[ digits.indexOf(cell)] = c;
+	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
+	  s=s+c+'</span>';
+	  document.getElementById(dobj.id).innerHTML= s;
+      
+	  //reset letter block
+	  letterblock_setup();
+
+	  xlate();
+      //next 2 lines for debugging
+	  //s = "you put it under pair "+cell+"\n";
+	  //document.debug.output_area.value= s; 	
+      return false;
+  }
+  /* not using "plain" class 
+  else if (fobj.className.slice(0,5)=="plain" && letter_selected) {
+	  dobj = fobj;
+	  x = fobj.className.slice(5);
+	  let_pos = parseInt(x);
+	  p_letter= symbols.charAt(cpos);
+	  cell = code_array[ let_pos];
+
+	  letter = cell;
+      update_undo();
+      document.getElementById('redo_button').disabled = true;          
+     
+	  letter_selected=0;
+	  
+	  //remove any previous copy of the cipher letter 
+      for (i=0;i<26;i++){
+		  	c = symbols.charAt(i);
+		  	if (seq_key[i] == letter){
+			  	s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	  			s=s+'-'+'</span>';
+	  			document.getElementById(c+'keymatrix').innerHTML= s;
+	  			seq_key[i]='-';	
+  	         }
+      }
+	  if ( p_letter != '-') {// code position for this plaintext letter and insert cipher letter there	  
+		n = plain_letter_encrypt(p_letter, let_pos);
+	    seq_key[ n ] = letter;
+		c = symbols.indexOf(n);
+	    s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+	    s=s+letter+'</span>';
+	    document.getElementById(symbols.charAt(n)+'keymatrix').innerHTML= s;      
+      }
+	  //reset letter block
+	  letterblock_setup();
+	  //last_cell=cell;
+	  xlate();
+	  //restore_original();	  
+      return false;	  
+	}    
+*/  
+}
+document.onmousedown=selectmouse;
+
+function letterblock_setup() {
+	var s,i,c;
+	
+	
+	s='<br>Click on one of the blue symbols below , then click on a cell inside the key table.<BR>	';
+	document.getElementById('directions').innerHTML=s;	
+	s=''
+    /*
+	s += '<div id="letterblock" class="letter_block" ';
+	s += 'style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; '
+	s += 'margin-right:20px; padding:10px">'
+    */
+
+	for (i=0;i<digits.length;i++) {
+		c = digits.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c.toUpperCase()+'</span> </span>';
+	}	
+	// add '?' as final choice
+	c = '?'
+	s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
+		s=s+c+'</span> </span>'
+	//s=s+'<br>';	
+	//s += '</div>';
+	//s += '<br>Key Table:<br>';
+	document.getElementById('holdletterblock').innerHTML=s;	
+    document.getElementById("holdletterblock").style.backgroundColor = "Chartreuse";
+    document.getElementById("holdletterblock").style.border = "3px ridge black";
+
+}
+
+function do_extend(){
+var i,j,k,c,n,s;
+//alert("extend");
+
+update_undo();
+document.getElementById('redo_button').disabled = true;          
+
+var used_digits = {};
+for (i=0;i<10;i++){
+	if (seq_key[i] != '?')
+		used_digits[seq_key[i] ] = 1;
+}
+// have to extend more randomly
+var unused_digits = [];
+for (i=0;i<10;i++)
+	if (! (digits.charAt(i) in used_digits) )
+		unused_digits.push(i);
+//shuffle the unused digits;		
+for (i=unused_digits.length-1;i>0;i--){
+	j = Math.floor(Math.random()*(i+1) )
+	n = unused_digits[i]
+	unused_digits[i] = unused_digits[j];
+	unused_digits[j] = n;
+}	
+
+j = 0;
+for (i=0;i<10;i++){
+	if (seq_key[i] == '?')
+		seq_key[ i ] = digits.charAt( unused_digits[j++])
+}
+
+
+	
+//s = "extended key is "+seq_key;
+//alert(s);
+update_keyblock();
+xlate();
+
+}
+
+function keyblock_setup() {
+	var s,i,c;
+	
+	s='';
+	//s=s+'<br>';	
+	//s += '<br>Key Table:<br>';
+	s += 'Key Table:<br><br>';
+	//letters across the top
+	for (i=0;i<10;i++) {
+		c = digits.charAt(i);
+
+		s = s+'<span width="75" height="75" style="border:2px solid red;background: chartresue;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top" class="'+c+'keytop" style="color:blue">';		
+		s=s+c+'</span> </span>';
+
+	}		
+	s=s+'&nbsp;<br>';
+
+
+	//row of key cells
+	for (j=0;j<10;j++) {
+		//c=symbols.charAt(j);
+		c = seq_key[j];
+		s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+j+'keymatrix" class="'+j+'keyblock" style="color:blue">';
+		s=s+c+'</span> </span>';
+	}
+	s=s+'&nbsp;<br>';	
+
+
+	document.getElementById('keyblock').innerHTML=s;	
+    document.getElementById("keyblock").style.backgroundColor = "Chartreuse";
+    document.getElementById("keyblock").style.border = "3px ridge black";
+
+}
+
+function update_keyblock() {
+	var s,i,c;
+	
+	s='';
+	//s=s+'<br>';	
+	//s += '<br>Key Table:<br>';
+	s += 'Key Table:<br><br>';
+	//letters across the top
+	for (i=0;i<10;i++) {
+		c = digits.charAt(i);
+		s = s+'<span width="75" height="75" style="border:2px solid red;background: chartresue;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'key_top" class="'+c+'keytop" style="color:blue">';		
+		s=s+c+'</span> </span>';
+
+	}		
+	s=s+'&nbsp;<br>';
+
+
+	//row of key cells
+	for (j=0;j<10;j++) {
+		//c=symbols.charAt(j);
+		c = seq_key[j];
+		s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
+		s=s+'&nbsp<span width="75" height = "75" id ="'+j+'keymatrix" class="'+j+'keyblock" style="color:blue">';
+		s=s+seq_key[j]+'</span> </span>';
+	}
+	s=s+'&nbsp;<br>';	
+
+
+	document.getElementById('keyblock').innerHTML=s;	
+
+}
+
+
+function start_over() {
+	if (solving_flag==0) {
+		code = document.ciphertext.cipher_place.value;
+	}
+    update_undo();
+    document.getElementById('redo_button').disabled = true;          
+    
+	reset_key();
+	letterblock_setup()
+	keyblock_setup()
+	for (i = 0;i<buf_len;i++)
+		old_xlation[i]= '-';
+	
+	xlate();
+}	
+
+
+function redirect() {
+	window.location="playfair_lowres.html";
+}
+
+function screen_check() {
+	if (screen.width <1000) {
+		redirect();
+	}
+}
+
+
+function set_original_buttons() {
+    str = '';
+    str += '<center>';
+	str += '<INPUT onclick=start_over(); type=button value="start over" >';
+    str += '</center>';    
+	document.getElementById('button_actions').innerHTML= str;
+    document.getElementById("button_actions").style.backgroundColor = "IndianRed";
+    document.getElementById("button_actions").style.border = "3px ridge black";
+
+    
+    str = '';
+    str += '<center>';
+    str += '<INPUT onclick=drag_crib(); type=button value="Enter a crib" >';
+    str += '<INPUT onclick=drag_left(); type=button value="<- (crib left)" >'
+    str += '<INPUT onclick=drag_right(); type=button value="(crib right) ->" >'
+    str += '</center>';
+
+	document.getElementById('crib_actions').innerHTML= str;
+    document.getElementById("crib_actions").style.backgroundColor = "LightBLue";
+    document.getElementById("crib_actions").style.border = "3px ridge black";
+    str = '';
+    str += '<center>';    
+    str += '<input type=button value = "undo" onclick="do_undo()">'
+    str += '<input type=button value = "redo" onclick="do_redo()" id="redo_button" disabled>';
+    str += '</center>';
+    
+	document.getElementById('undo_actions').innerHTML= str;
+    document.getElementById("undo_actions").style.backgroundColor = "Yellow";
+    document.getElementById("undo_actions").style.border = "3px ridge black";
+	
+	str = '';
+    str += '<center>';    
+    str += '<input type=button value = "randomly extend key" onclick="do_extend()">'
+    str += '</center>';
+    
+	document.getElementById('extend_key_block').innerHTML= str;
+    document.getElementById('extend_key_block').style.backgroundColor = "Yellow";
+    document.getElementById('extend_key_block').style.border = "3px ridge black";
+	
+
+}
+
+
+function initialize(){
+
+	primer = document.getElementById('primer').value;  // set global variable 
+	primer = digits_only(primer);
+    if ( primer==''){
+        alert("No primer entered!");
+        return;
+    }
+	period = primer.length;
+	if (period != 5){
+		alert("Primer does not have 5 digits");
+		return;
+	}
+	// make plaintext area visible
+	document.getElementById('plainblock').style.display = 'block';
+	reset_key();
+	letterblock_setup();
+	keyblock_setup();
+	set_original_buttons();
+	xlate();
+}
+
+function test_pos(start_pos,crib_len){
+	var j, count,nb,nc,n,k,i,s,s1,re,m_array;
+	var flag,n1,n2, flag2;
+	var x,y;
+    var chain_digits;
+    var max_col_length;
+    var pre_crib_digits, post_crib_digits;
+	var digit_crib_length_flag =[];
+	var digit_ciphertext_start = [];
+	var digit_ciphertext_length = [];
+	var ciphertext_digit_columns = [];
+    pre_crib_digits = [];
+	for (i=0;i<10;i++)
+		digit_crib_length_flag[i] = false;
+    for (i=0;i<10;i++)
+        pre_crib_digits[i] = 0;
+    for (i=0;i<start_pos;i++)
+        pre_crib_digits[ chain[i] ]++;
+    post_crib_digits = [];
+    for (i=0;i<10;i++)
+        post_crib_digits[i] = 0;
+    for (i=start_pos+crib_len;i<buf_len;i++)
+        post_crib_digits[ chain[i] ]++;
+    // get number of digits before and after crib.
+// get crib letters corresponding to chain digits
+	chain_digits = [];
+    for (i=0;i<10;i++)
+        chain_digits[i] = [];
+	// set up equivalent variables.
+	//crib = cribtext; 
+	crib = [];
+	for (i=0;i<cribtext.length;i++){
+		c = cribtext.charAt(i);
+		n = symbols.indexOf(c);
+		if ( n>=0)
+			crib[i] = n;
+	
+
+	}
+    for (i=0;i<crib_len;i++){
+        n = crib[i];
+        j = chain_digits[ chain[start_pos+i] ].length; //number of letters that already have this chain digit
+        chain_digits[ chain[start_pos+i] ] [ j ] = n;
+    }
+    // search ciphertext for string with same chain digits as crib
+    max_col_length = 0;
+	s = '';
+    for (i=0;i<10;i++){
+        if (chain_digits[i].length> max_col_length)
+            max_col_length = chain_digits[i].length;
+        if (chain_digits[i].length>1){ // at least 2 letters with this chain digit
+                n1 = chain_digits[i][0];
+                flag = true;
+                // n1 & letters following must be at least a digraph in ciphertext if this crib position works.
+                for (k=pre_crib_digits[i];k<buf_len-post_crib_digits[i]-chain_digits[i].length+1;k++) {
+                    if ( buffer[k] == n1 ) {// possible match
+                        flag2 = true;
+                        for (x=1;x< chain_digits[i].length;x++)
+                            if ( chain_digits[i][x] != buffer[k+x] ){
+                                flag2 = false; // no match
+                                break;
+                        }
+                        if ( flag2 ) {// have match
+                            flag = false;
+							if ( chain_digits[i].length >3) // very unlikely more than one copy 
+								digit_crib_length_flag[i] = true;
+							else{ // see if only one copy in ciphertext
+								//s1 = alpha_str.substring(k,k+chain_digits[i].length); // string to search for
+								s1 = code.substring(k,k+chain_digits[i].length); // string to search for
+								re = new RegExp(s1,'g');// put string ionto regular global expression
+								//m_array = alpha_str.match(re);
+								m_array = code.match(re);
+								if (m_array.length>1) // more than one match
+									digit_crib_length_flag[i] = false; //already initialized to false but doesn't hurt to emphasize it
+								else
+									digit_crib_length_flag[i] = true;
+							}
+							
+							digit_ciphertext_start[i] = k - pre_crib_digits[i];
+							digit_ciphertext_length[i] = pre_crib_digits[i]+chain_digits[i].length+post_crib_digits[i];
+							//digit_ciphertext_start[i] = k
+							//digit_ciphertext_length[i] = chain_digits[i].length
+							s += '\ndigits for '+i+' start at '+digit_ciphertext_start[i]+' digits length is '+digit_ciphertext_length[i];
+							//console.log(s);
+                            break;
+                        }
+                    }                    
+                }
+                if ( flag) // digraph doesn't exist in ciphertext, this position doesn't work
+                    return(-1);
+        }
+    }
+// see if any cipher ovelaps
+for (i=0;i<buf_len;i++)
+	ciphertext_digit_columns[i] = '?'; // start out empty-cells
+for (i=0;i<10;i++)
+	if (digit_crib_length_flag[i]){
+		for (j=0;j<digit_ciphertext_length[i];j++){
+			n = digit_ciphertext_start[i]+j;
+			if (ciphertext_digit_columns[n] != '?'){
+				s += "\ncolumn conflict at position "+n+" between digit columns "+ciphertext_digit_columns[n]+" and "+i;
+				console.log(s);
+				return(-1);
+			}
+			ciphertext_digit_columns[n] = i;
+		}
+	}
+var total_empty = 0;
+for (i=0;i<	ciphertext_digit_columns.length;i++)
+	if ( ciphertext_digit_columns[i] == '?')
+		total_empty++;
+/*		
+var total_needed = 0;
+for (i=0;i<10;i++)
+	if (!digit_crib_length_flag[i])
+		total_needed += digit_totals[i];
+*/		
+var min_available = 10000;
+var min_odd_available = 10001;
+var available_string_lengths = [];
+/*
+for (i=0;i<10;i++)
+	if (!digit_crib_length_flag[i]){
+		available_string_lengths.push( digit_totals[i]) ;
+		if ( digit_totals[i] < min_available)
+			min_available = digit_totals[i];
+		if ( (digit_totals[i] & 1) && digit_totals[i] < min_odd_available )
+			min_odd_available = digit_totals[i];
+	}
+*/
+for (i=0;i<10;i++)
+	if (!digit_crib_length_flag[i]){
+		available_string_lengths.push( chain_lengths[i]) ;
+		if ( chain_lengths[i] < min_available)
+			min_available = chain_lengths[i];
+		if ( (chain_lengths[i] & 1) && chain_lengths[i] < min_odd_available )
+			min_odd_available = chain_lengths[i];
+	}
+		
+var unknown_string_lengths = [];			
+var q_flag = false;
+x = 0;
+var min_unknown = 10000;
+var min_odd_unknown = 10001;
+for (i=0;i<	ciphertext_digit_columns.length;i++){
+	if ( ciphertext_digit_columns[i] == '?'){
+		if (q_flag){
+			x++
+		}
+		else {
+			x = 1;
+			q_flag = true;
+		}
+	}
+	else {
+		if (q_flag){
+			unknown_string_lengths.push(x);	
+			q_flag = false;
+			if (x<min_unknown)
+				min_unknown = x;
+			if ( (x&1) && x<min_odd_unknown)
+				min_odd_unknown = x;
+			
+		}
+	}
+}
+if (q_flag){
+	unknown_string_lengths.push(x);	
+	if (x<min_unknown)
+		min_unknown = x;
+	if ( (x&1) && x<min_odd_unknown)
+		min_odd_unknown = x;		
+}
+
+if (min_unknown < min_available){
+	s = 'minimum unknown string length ('+min_unknown+') is less than any available digit string length';
+	console.log(s);
+	return(-1);
+}
+if (min_odd_unknown < min_odd_available){
+	s = 'minimum odd unknown string length ('+min_odd_unknown+') is less than any available odd digit string length';
+	console.log(s);
+	return(-1);
+}
+
+return([max_col_length,ciphertext_digit_columns,total_empty,unknown_string_lengths,available_string_lengths ]);
+} /* end test_pos */
+
+function drag_crib(){
+    var not_found;
+	var s,n, out_str,s1;
+	var digit_start_index = {};
+	var known_index = {};
+    
+	var crib= prompt('Enter crib');
+	if (crib==' ' || crib==null)
+		return;
+    /*
+	if (solving_flag){
+		ck=confirm('Dragging will reset the key table. Proceed?');
+		if (ck != true)
+			return;
+	}
+    */
+	if (solving_flag ==0) {
+		setup_code();
+		if (solving_flag==0) return;
+	}
+	cribtext='';
+	crib = crib.toLowerCase();	
+	for (i=0;i<crib.length;i++) {
+		c = crib.charAt(i);
+		if (symbols.indexOf(c) !=-1 ) {//allow '-' chars in crib!
+			cribtext = cribtext+c;
+		}
+	}
+	crib_pos=0;
+	not_found=1;
+	while(crib_pos< code_array.length-cribtext.length+1) {
+		/*
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+		*/
+		result = test_pos(crib_pos,cribtext.length);
+		n = result[0];		
+		if (n>=0){
+			not_found=0;
+			digit_start_index = {};
+			out_str = 'ciphertext digit strings ( ? for unknown digits )<br>';
+			s = result[1];
+			for (i=0;i<s.length;i++){
+			if (s[i] != '?' && !(s[i] in digit_start_index) )
+				digit_start_index[ s[i] ] = i;
+			out_str += s[i];
+			//if (s[i] == '?')
+				//total_empty++;
+			if ( (i+1)%55 == 0)
+				out_str += '<br>';
+			}
+			var digit_start_index_for_key = key_digit_start_index(); // digit_start_ index for the key, is it consistent with digit _start_index just calculated?
+			for (n in digit_start_index){
+				if ( n in digit_start_index_for_key && digit_start_index[n] != digit_start_index_for_key[n]){
+					s1 = "Crib position "+crib_pos+" inconsistent with current key posiion for digit "+n;
+					alert(s1);
+					return;
+				}
+			}
+			for (n in digit_start_index_for_key)
+				if (! (n in digit_start_index))
+					digit_start_index[n] = digit_start_index_for_key[n];
+			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			// show digit totals
+			out_str += '<br>digit totals<br>';
+			for (i=0;i<10;i++)
+				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
+			    //out_str += '\ntotal still needed: '+result[3]+'\n';
+			out_str += '\nstring lengths of unknowns: ';
+			for (i=0;i<result[3].length;i++)
+				out_str += result[3][i]+' ';
+			out_str += '<br><br>available digit string lengths: ';
+			for (i=0;i<result[4].length;i++)
+				out_str += result[4][i]+' ';
+			out_str += '<br>';			
+			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
+			//alert(s);
+			out_str = s+out_str;
+			//alert(out_str);
+			pseudo_alert(out_str);
+			known_index = {};
+			for ( n in digit_start_index)
+				known_index[n] = digit_start_index[n];
+			insert_crib(cribtext,crib_pos,known_index)
+			//alert(out_str);
+			break; // OK!
+		}
+		
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();	
+	}
+	//fill in plaintext
+	//alert("done")
+	//xlate();
+	crib_entered=1;	
+}
+
+function drag_right(){
+var  s,n;
+	var digit_start_index = {};
+	var known_index = {};
+
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}
+	not_found=1;	
+	crib_pos++;
+	if (crib_pos>=code_array.length-cribtext.length+1)
+		crib_pos=0;
+	while(crib_pos< code_array.length-cribtext.length+1) {
+	/*
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+	*/
+	result = test_pos(crib_pos,cribtext.length);
+		n = result[0];		
+		if (n>=0){
+			not_found=0;
+			digit_start_index = {};
+			out_str = 'ciphertext digit strings ( ? for unknown digits )<br>';
+			s = result[1];
+			for (i=0;i<s.length;i++){
+			if (s[i] != '?' && !(s[i] in digit_start_index) )
+				digit_start_index[ s[i] ] = i;
+			out_str += s[i];
+			//if (s[i] == '?')
+				//total_empty++;
+			if ( (i+1)%55 == 0)
+				out_str += '<br>';
+			}
+			var digit_start_index_for_key = key_digit_start_index(); // digit_start_ index for the key, is it consistent with digit _start_index just calculated?
+			for (n in digit_start_index){
+				if ( n in digit_start_index_for_key && digit_start_index[n] != digit_start_index_for_key[n]){
+					s1 = "Crib position "+crib_pos+" inconsistent with current key position for digit "+n;
+					alert(s1);
+					return;
+				}
+			}			
+			for (n in digit_start_index_for_key)
+				if (! (n in digit_start_index))
+					digit_start_index[n] = digit_start_index_for_key[n];
+			
+			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			// show digit totals
+			out_str += '<br>digit totals<br>';
+			for (i=0;i<10;i++)
+				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
+			    //out_str += '\ntotal still needed: '+result[3]+'\n';
+			out_str += '\nstring lengths of unknowns: ';
+			for (i=0;i<result[3].length;i++)
+				out_str += result[3][i]+' ';
+			out_str += '<br><br>available digit string lengths: ';
+			for (i=0;i<result[4].length;i++)
+				out_str += result[4][i]+' ';
+			out_str += '<br>';			
+			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
+			//alert(s);
+			out_str = s+out_str;
+			//alert(out_str);
+			pseudo_alert(out_str);
+			known_index = {};
+			for ( n in digit_start_index)
+				known_index[n] = digit_start_index[n];
+			insert_crib(cribtext,crib_pos,known_index)
+			//alert(out_str);
+			break; // OK!
+		}
+		
+		crib_pos++;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();	
+	}	
+	//fill in plaintext
+	//xlate();
+
+}
+function drag_left(){
+var s,n,i,oout_str;
+	var digit_start_index = {};
+	var known_index = {};
+
+	if (crib_entered==0) {
+		drag_crib();
+		return;
+	}	
+	not_found=1;	
+	crib_pos--;
+	if (crib_pos<0)
+		crib_pos=code_array.length-cribtext.length;
+	while(crib_pos>=0) {
+/*	
+		if ( ck_crib_pos() ) {
+			not_found=0;
+			break; // OK!
+		}
+*/
+	result = test_pos(crib_pos,cribtext.length);
+		n = result[0];		
+		if (n>=0){
+			not_found=0;
+			digit_start_index = {};
+			out_str = 'ciphertext digit strings ( ? for unknown digits )<br>';
+			s = result[1];
+			for (i=0;i<s.length;i++){
+			if (s[i] != '?' && !(s[i] in digit_start_index) )
+				digit_start_index[ s[i] ] = i;
+			out_str += s[i];
+			//if (s[i] == '?')
+				//total_empty++;
+			if ( (i+1)%55 == 0)
+				out_str += '<br>';
+			}
+			var digit_start_index_for_key = key_digit_start_index(); // digit_start_ index for the key, is it consistent with digit _start_index just calculated?
+			for (n in digit_start_index){
+				if ( n in digit_start_index_for_key && digit_start_index[n] != digit_start_index_for_key[n]){
+					s1 = "Crib position "+crib_pos+" inconsistent with current key position for digit "+n;
+					alert(s1);
+					return;
+				}
+			}
+			for (n in digit_start_index_for_key)
+				if (! (n in digit_start_index))
+					digit_start_index[n] = digit_start_index_for_key[n];
+			
+			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			// show digit totals
+			out_str += '<br>digit totals<br>';
+			for (i=0;i<10;i++)
+				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
+			    //out_str += '\ntotal still needed: '+result[3]+'\n';
+			out_str += '\nstring lengths of unknowns: ';
+			for (i=0;i<result[3].length;i++)
+				out_str += result[3][i]+' ';
+			out_str += '<br><br>available digit string lengths: ';
+			for (i=0;i<result[4].length;i++)
+				out_str += result[4][i]+' ';
+			out_str += '<br>';			
+			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
+			//alert(s);
+			out_str = s+out_str;
+			//alert(out_str);
+			pseudo_alert(out_str);
+			known_index = {};
+			for ( n in digit_start_index)
+				known_index[n] = digit_start_index[n];
+			insert_crib(cribtext,crib_pos,known_index)
+		
+			//alert(out_str);
+			break; // OK!
+		
+		}
+		
+		crib_pos--;
+	}
+	if ( not_found ){
+		reset_key();
+		keyblock_setup();	
+	}	
+	//fill in plaintext
+	//xlate();
+
+}
+
+</script>
+</HEAD>
+<BODY bgcolor="Silver">
+<center><span style="font-weight:bold;">Sequence transposition Worksheet</span></center><br>
+<Form name=ciphertext>
+<!-- mark space for cipher and plaintext -->
+<div id="outputblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:250px; margin-right:100px; padding: 10px; background:white; cursor: crosshair; ">
+Ciphertext: (Type or paste cipher into this box)<BR>
+<TEXTAREA id=cipher_place spellcheck="false" style="font-family:monospace" name=output_area rows=9 cols=90>
+</TEXTAREA><BR>
+</div>
+</form>
+<div id="plainblock"
+style="overflow:auto; font-family:monospace; font-size: 15px; height:250px; margin-right:100px; padding: 10px; background:white; cursor: crosshair; display:none">
+</div>
+<!---
+Click on one of the blue symbols below , then click on a cell inside the key table<BR>
+--->
+<span id="directions">
+Enter cipher and a 5 digit primer, then click initialize button.
+
+<br><br>
+Primer: <input type="text" id="primer" size=5  >
+<INPUT onclick=initialize(); type=button value="initialize" >
+</span>
+<div class="wrapper">
+<!-- mark off space for letter block -->
+<div id="holdletterblock" class="hold_letter_block">
+</div>
+<!-----------
+<div id="letterblock" class="letter_block"
+style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
+	margin-right:20px; padding:10px">
+</div>
+--->
+
+<!---
+Key Table:<br>
+-->
+
+<!-- mark off space for key block -->
+<div id="keyblock" class="key_block" >
+</div>
+
+<div id="extend_key_block" class="extend_key_block" >
+</div>
+
+<!-- mark off space for buttons -->
+<div id="button_actions" class="button_actions">
+</div>
+
+<div id="crib_actions" class="crib_actions">
+</div>
+
+<div id="undo_actions" class="undo_actions">
+</div>
+
+
+</div> <!-- end of wrapper div -->
+<!--
+<br><br><br><br>
+<br><br><br><br>
+<Form name=debug>
+output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
+</Form>
+-->
+<div id = "cm_display" >
+</div>	
+
+</BODY>
+</HTML>
