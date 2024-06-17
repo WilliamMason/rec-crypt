@@ -63,7 +63,7 @@ draft 4 rearranges wrapper blocks
 	position:absolute; /* use absolute position so message is superimposed on cipher display */
 	left:100px;
 	top:100px;
-	width:500px;
+	width:550px;
 	height:500px;
 	background: #EEEEEE;
 	color: #000;
@@ -1141,22 +1141,35 @@ function drag_crib(){
 			for (n in digit_start_index_for_key)
 				if (! (n in digit_start_index))
 					digit_start_index[n] = digit_start_index_for_key[n];
-			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			//out_str += '<br>total empty cells = '+result[2]+'<br>';
 			// show digit totals
-			out_str += '<br>digit totals<br>';
+			//out_str += '<br>digit totals<br>';
+			out_str += '<br>';
 			for (i=0;i<10;i++)
 				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
 			    //out_str += '\ntotal still needed: '+result[3]+'\n';
 			out_str += '\nstring lengths of unknowns: ';
 			for (i=0;i<result[3].length;i++)
 				out_str += result[3][i]+' ';
+			/*
 			out_str += '<br><br>available digit string lengths: ';
 			for (i=0;i<result[4].length;i++)
 				out_str += result[4][i]+' ';
+			*/
 			out_str += '<br>';			
 			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
 			//alert(s);
 			out_str = s+out_str;
+			out_str += "code: <br>";
+			n = 0;
+			for (i=0;i<code.length;i++){
+				out_str += code.charAt(i);
+				if (++n == 50) {
+					out_str += "<br>";
+					n = 0;
+				}
+			}
+			
 			//alert(out_str);
 			pseudo_alert(out_str);
 			known_index = {};
@@ -1218,31 +1231,43 @@ var  s,n;
 			var digit_start_index_for_key = key_digit_start_index(); // digit_start_ index for the key, is it consistent with digit _start_index just calculated?
 			for (n in digit_start_index){
 				if ( n in digit_start_index_for_key && digit_start_index[n] != digit_start_index_for_key[n]){
-					s1 = "Crib position "+crib_pos+" inconsistent with current key position for digit "+n;
+					s1 = "Crib position "+crib_pos+" inconsistent with current key posiion for digit "+n;
 					alert(s1);
 					return;
 				}
-			}			
+			}
 			for (n in digit_start_index_for_key)
 				if (! (n in digit_start_index))
 					digit_start_index[n] = digit_start_index_for_key[n];
-			
-			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			//out_str += '<br>total empty cells = '+result[2]+'<br>';
 			// show digit totals
-			out_str += '<br>digit totals<br>';
+			//out_str += '<br>digit totals<br>';
+			out_str += '<br>';
 			for (i=0;i<10;i++)
 				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
 			    //out_str += '\ntotal still needed: '+result[3]+'\n';
 			out_str += '\nstring lengths of unknowns: ';
 			for (i=0;i<result[3].length;i++)
 				out_str += result[3][i]+' ';
+			/*
 			out_str += '<br><br>available digit string lengths: ';
 			for (i=0;i<result[4].length;i++)
 				out_str += result[4][i]+' ';
+			*/
 			out_str += '<br>';			
 			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
 			//alert(s);
 			out_str = s+out_str;
+			out_str += "code: <br>";
+			n = 0;
+			for (i=0;i<code.length;i++){
+				out_str += code.charAt(i);
+				if (++n == 50) {
+					out_str += "<br>";
+					n = 0;
+				}
+			}
+			
 			//alert(out_str);
 			pseudo_alert(out_str);
 			known_index = {};
@@ -1250,7 +1275,7 @@ var  s,n;
 				known_index[n] = digit_start_index[n];
 			insert_crib(cribtext,crib_pos,known_index)
 			//alert(out_str);
-			break; // OK!
+			break; // OK!		
 		}
 		
 		crib_pos++;
@@ -1302,7 +1327,7 @@ var s,n,i,oout_str;
 			var digit_start_index_for_key = key_digit_start_index(); // digit_start_ index for the key, is it consistent with digit _start_index just calculated?
 			for (n in digit_start_index){
 				if ( n in digit_start_index_for_key && digit_start_index[n] != digit_start_index_for_key[n]){
-					s1 = "Crib position "+crib_pos+" inconsistent with current key position for digit "+n;
+					s1 = "Crib position "+crib_pos+" inconsistent with current key posiion for digit "+n;
 					alert(s1);
 					return;
 				}
@@ -1310,30 +1335,41 @@ var s,n,i,oout_str;
 			for (n in digit_start_index_for_key)
 				if (! (n in digit_start_index))
 					digit_start_index[n] = digit_start_index_for_key[n];
-			
-			out_str += '<br>total empty cells = '+result[2]+'<br>';
+			//out_str += '<br>total empty cells = '+result[2]+'<br>';
 			// show digit totals
-			out_str += '<br>digit totals<br>';
+			//out_str += '<br>digit totals<br>';
+			out_str += '<br>';
 			for (i=0;i<10;i++)
 				out_str += 'digit '+i+' total '+chain_lengths[i]+'<br>'
 			    //out_str += '\ntotal still needed: '+result[3]+'\n';
 			out_str += '\nstring lengths of unknowns: ';
 			for (i=0;i<result[3].length;i++)
 				out_str += result[3][i]+' ';
+			/*
 			out_str += '<br><br>available digit string lengths: ';
 			for (i=0;i<result[4].length;i++)
 				out_str += result[4][i]+' ';
+			*/
 			out_str += '<br>';			
 			s = "Crib "+cribtext+" ok at position: "+crib_pos+'<br>';
 			//alert(s);
 			out_str = s+out_str;
+			out_str += "code: <br>";
+			n = 0;
+			for (i=0;i<code.length;i++){
+				out_str += code.charAt(i);
+				if (++n == 50) {
+					out_str += "<br>";
+					n = 0;
+				}
+			}
+			
 			//alert(out_str);
 			pseudo_alert(out_str);
 			known_index = {};
 			for ( n in digit_start_index)
 				known_index[n] = digit_start_index[n];
 			insert_crib(cribtext,crib_pos,known_index)
-		
 			//alert(out_str);
 			break; // OK!
 		
@@ -1373,7 +1409,7 @@ Click on one of the blue symbols below , then click on a cell inside the key tab
 Enter cipher and a 5 digit primer, then click initialize button.
 
 <br><br>
-Primer: <input type="text" id="primer" size=5  >
+Primer: <input type="text" id="primer" size=5 >
 <INPUT onclick=initialize(); type=button value="initialize" >
 </span>
 <div class="wrapper">
