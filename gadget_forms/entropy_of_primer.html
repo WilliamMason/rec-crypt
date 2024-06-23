@@ -1,0 +1,148 @@
+<html>
+<!-- Basic skeleton. A one button function call
+-->
+<head>
+<script type="text/javascript">
+
+function digits_only(str){ // remove everthing except digits
+	str = str.toLowerCase();
+	return str.replace(/[^0-9]/g,'');
+}
+
+var chain = [];
+var primer = [];
+function get_chain(len){
+    var i,j,k,index,n,c;
+
+    index = 0;
+    for (i=0;i<primer.length;i++){
+        n = primer[i];
+        chain[index++] = n
+    }
+    for (j = 0;j<len-index;j++) 
+       chain[j+index] = (chain[j]+chain[j+1]) % 10;
+}       
+
+function get_max_min_entropy(len){
+var i,j,k,c,n,s;
+var d1,d2,d3,d4,d5;
+var digits = '0123456789';
+var entropy,freq, unique_digits;
+
+var max_entropy = 0;
+var min_entropy = 100;
+var max_primer, min_primer;
+
+// 25,000 is enough because primers come in groups of 4
+for (n = 0;n<=25000;n++){
+	s = ''+n;// convert to string
+	while (s.length<5){
+	 s = '0'+s;
+	}
+	primer = [];
+	for (i=0;i<5;i++){
+		k = s.charAt(i);
+		primer.push(digits.indexOf(k) );
+	}
+	get_chain(len);
+	// get frequencies
+	freq = [];
+	for (i=0;i<10;i++)
+	  freq[i] = 0;
+	for(i=0;i<len;i++){
+		freq[ chain[i] ]++;
+	}
+	
+	entropy = 0;
+	for (i=0;i<10;i++)
+	  if (freq[i] != 0)
+	    entropy += -(freq[i]/len)*Math.log2(freq[i]/len);
+	if (entropy > max_entropy){
+		max_entropy = entropy;
+		max_primer = s;
+	}
+	if (entropy < min_entropy){
+		unique_digits = new Set(chain);
+		j = unique_digits.size;
+		if ( j == 10){ // all ten digits present in chain
+			min_entropy = entropy;
+			min_primer = s;
+		}
+		
+	}
+	
+	
+}
+return( [max_entropy,max_primer,min_entropy,min_primer]);
+}
+
+
+
+
+function do_processing(){
+    var out_str,s,str;
+	var i,j,k,c,n;
+	var len;
+    
+	out_str="";
+	str = document.getElementById('input_area').value;
+	str = digits_only(str);
+	if (str.length != 5){
+		alert("The primer does not have 5 digits");
+		return;
+	}
+	out_str += "The primer is: "+str;
+	s = document.getElementById('t_length').value
+	out_str += '\ntext length is: '+s
+	len = parseInt(s);
+
+	for (i=0;i<str.length;i++){
+		c = parseInt( str.charAt(i) );
+		primer.push(c);
+	}
+	get_chain(len);
+	out_str += '\nchain is:\n';
+	out_str += chain;
+	
+	// get frequencies
+	var freq = [];
+	for (i=0;i<10;i++)
+	  freq[i] = 0;
+	for(i=0;i<len;i++){
+		freq[ chain[i] ]++;
+	}
+
+	var entropy = 0;
+	for (i=0;i<10;i++)
+	  if (freq[i] != 0)
+	    entropy += -(freq[i]/len)*Math.log2(freq[i]/len);
+	out_str += '\n\nentropy is '+entropy;
+	var unique_digits = new Set(chain);
+	n = unique_digits.size;
+	out_str += '\nthere are '+n+' unique digits in the chain';
+	
+	var result = get_max_min_entropy(len);
+	out_str += '\n\nmax entropy = '+result[0]+' for primer '+result[1];
+	out_str += '\nmin entropy = '+result[2]+' for primer '+result[3];
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> <center>Entropy of a primer, maximum and minimum entropies</center></h3>
+<br>
+Enter a 5 digit primer in the box. Change the text length to the value you want. Click the process button and it will output the entropy of the primer you entered <br> and also the minimum (for chains containing all 10 digits)  and maximum entropies for the text length
+<br><br>
+primer: <input type="text" size = 5  id="input_area" >
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+text length: <input type="text" size = 5 value = "100" id="t_length" >
+<br><br>
+
+Output:<br>
+<textarea id="output_area" cols=80 rows=15>
+</textarea>
+<br>
+<input type="button" value="Process" onclick=do_processing();>
+<br><br>
+</body>
+</html>
