@@ -1,0 +1,220 @@
+<html>
+<head>
+
+<script>
+function setup_grid(){
+    var str,j,i,c,n;
+    
+    str = '';
+
+    j = 0;
+    for (i=0;i<10;i++){
+        str += '<div class="entry"> <input type="checkbox" name="r_buttons" class="largerCheckbox" id="r'+j+'" checked></div>';
+        j++;
+    }
+	str += '<div class= "label"> selected </div>';	
+    for (i=0;i<10;i++){
+        str += '<div class="chain_size"> <input type="text" name="r_buttons" class="largerCheckbox" id="r'+j+'" checked></div>';
+        j++;
+    }
+	str += '<div class="label">lengths</div>';
+
+     str += '<div class="digit">0</div>';
+	 str += '<div class="digit">1</div>';
+	 str += '<div class="digit">2</div>';
+	 str += '<div class="digit">3</div>';
+	 str += '<div class="digit">4</div>';
+	 str += '<div class="digit">5</div>';
+	 str += '<div class="digit">6</div>';
+	 str += '<div class="digit">7</div>';
+	 str += '<div class="digit">8</div>';
+	 str += '<div class="digit">9</div>';
+	 str += '<div class="label">digits</div>';
+        j++;
+    
+
+    document.getElementById('wrapper').innerHTML = str;
+}
+
+function unique_sums(input_array,digit_array){
+var s1,s2,s3,s4,i,j,k,c,n,s;
+
+
+var sums = {};
+
+for (s1 = 0;s1<input_array.length;s1++) {
+		n = parseInt( input_array[s1]);
+		if (n in sums)
+			sums[n].push([''+input_array[s1]+'('+digit_array[s1]+')' ])
+	
+		else 
+			sums[n] = [''+input_array[s1]+'('+digit_array[s1]+')' ];
+}	
+for (s1 = 0;s1<input_array.length-1;s1++)	
+	for (s2 = s1+1;s2<input_array.length;s2++){
+		n = parseInt( input_array[s1])+parseInt(input_array[s2] );
+		if (n in sums)
+			sums[n].push([''+input_array[s1]+'+'+input_array[s2]+'('+digit_array[s1]+digit_array[s2]+')' ])
+	
+		else 
+			sums[n] = [''+input_array[s1]+'+'+input_array[s2] +'('+digit_array[s1]+digit_array[s2]+')']
+	}
+
+for (s1 = 0;s1<input_array.length-2;s1++)	
+	for (s2 = s1+1;s2<input_array.length-1;s2++)
+		for (s3 = s2+1;s3<input_array.length;s3++){
+		n = parseInt( input_array[s1])+parseInt(input_array[s2] )+parseInt(input_array[s3]);
+		if (n in sums)
+			sums[n].push([''+input_array[s1]+'+'+input_array[s2]+'+'+input_array[s3]+'('+digit_array[s1]+digit_array[s2]+digit_array[s3]+')' ])
+	
+		else 
+			sums[n] = [''+input_array[s1]+'+'+input_array[s2]+'+'+input_array[s3]+'('+digit_array[s1]+digit_array[s2]+digit_array[s3]+')'  ]
+	}
+// OK came across an example where you need sum of 4 values
+for (s1 = 0;s1<input_array.length-3;s1++)	
+	for (s2 = s1+1;s2<input_array.length-2;s2++)
+		for (s3 = s2+1;s3<input_array.length-1;s3++)
+			for (s4 = s3+1;s4<input_array.length;s4++){
+		n = parseInt( input_array[s1])+parseInt(input_array[s2] )+parseInt(input_array[s3])+parseInt(input_array[s4]);
+		if (n in sums)
+			sums[n].push([''+input_array[s1]+'+'+input_array[s2]+'+'+input_array[s3]+'+'+input_array[s4]+'('+digit_array[s1]+digit_array[s2]+digit_array[s3]+digit_array[s4]+')' ])
+	
+		else 
+			sums[n] = [''+input_array[s1]+'+'+input_array[s2]+'+'+input_array[s3]+'+'+input_array[s4] +'('+digit_array[s1]+digit_array[s2]+digit_array[s3]+digit_array[s4]+')' ]
+	}
+	
+
+ return(sums);
+
+}
+
+function do_processing(){
+    var out_str,s,str,s_array,d_array;
+	var i,j,k,c,n;
+    
+out_str="";
+s_array = [];
+d_array = [];
+var digits = '0123456789';
+var select_id, length_id;
+for (i=0;i<10;i++){
+	select_id = 'r'+i;
+	length_id = 'r1'+i;
+	if ( document.getElementById(select_id).checked ){
+		s_array.push( document.getElementById(length_id).value);
+		d_array.push( digits.charAt(i) ); 
+	}
+
+}
+out_str += "Length combinations that give specific sums\nlengths used:\n";
+for (i=0;i<s_array.length;i++)
+	out_str += s_array[i]+' ';
+out_str += "\ncorresponding to digits:\n"
+for (i=0;i<s_array.length;i++)
+	out_str += d_array[i]+' ';
+out_str += '\n';
+var result = unique_sums(s_array,d_array);
+if (document.getElementById('all_sums').checked)		{
+	for (s in result)
+		out_str += '\n'+s+':'+ result[s]
+}
+else {
+	// return specific sum
+
+	n = parseInt(document.getElementById('specific_sum').value );
+	if (isNaN(n)) {
+		alert("no number entered");
+		return;
+	}
+ 
+	if (n in result)
+		out_str += '\n'+n+':'+ result[n];
+	else
+		out_str += '\n'+n+' is not a sum of any combination in the input string';
+
+}
+
+document.getElementById('output_area').value = out_str;
+}
+
+onload = function() {
+
+    setup_grid();
+}
+
+
+</script>
+<style>
+
+/* message display box */
+#m_display {
+	position:absolute; /* use absolute position so message is superimposed on cipher display */
+	left:20px;
+	top:10px;
+	width:800px;
+	height:150px;
+	background: #EEEEEE;
+	color: #000;
+	border:3px ridge black;
+	padding:10px;
+	display:hidden;
+}
+
+.largerCheckbox {
+    width: 40px;
+    height: 40px;
+}
+
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(10,75px) auto;
+  grid-gap: 10px;
+  grid-auto-rows: minmax(50px, auto);
+  padding: 10px;
+  max-width: 850px;
+}
+
+.wrapper > div { /* Note: "> div"  must mean: for div's inside of wrapper div */
+ border: 2px solid black;
+ padding: 5px;
+}
+
+.label{
+background-color: Chartreuse ;
+justify-items:center;
+}
+.entry{
+background-color: Yellow ;
+}
+.chain_size {
+background-color: Moccasin;
+}
+.directions{
+background-color: Moccasin;
+}
+.digit{
+background-color: Pink;
+}
+</style>
+
+</head>
+<body bgcolor="Silver">
+<h3><center>Sequence tramp helper (Length combinations that give specific sums.)</center></h3>
+Directions: Fill in lengths of digit chains, select or deselect desired columns, choose either every sum or set a specific sum, then click the process button.
+<div class="wrapper" id = "wrapper">
+</div> <!-- end wrapper -->
+Output:<br>
+<textarea id="output_area" cols=80 rows=15>
+</textarea>
+<br>
+<input type="button" value="Process" onclick=do_processing();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="radio" name="r_buttons" id = "all_sums" checked> Return all sums 
+&nbsp;&nbsp;
+<input type="radio" name="r_buttons" id = "one_sum"> Return combinations equal to <input type="text" size = 3 id="specific_sum" >
+
+<div id = "cm_display" >
+</div>
+
+</body>
+</html>
