@@ -1,0 +1,57 @@
+<html>
+<!-- Basic skeleton. A one button function call
+-->
+<head>
+<script type="text/javascript">
+
+function lower_case_letters_only(str){ // remove everthing except lower case letters
+	return str.replace(/[^a-z]/g,'');
+}
+
+
+function do_processing(){
+    var out_str,s,str;
+	var j,k,n,c,cnt;
+    
+	out_str="";
+	str = document.getElementById('input_area').value;
+	out_str += "The input string was: "+str;
+	s = lower_case_letters_only(str)
+	out_str += '\nplaintext:\n'+s;
+	
+	cnt = 0;
+	var lpl = parseInt(document.getElementById('letters_per_line').value);
+	var lines = '';
+	for (i=0;i<s.length;i++){
+		c = s.charAt(i);
+		lines += c;
+		cnt++;
+		if ( cnt == lpl){
+			lines += '\n';
+			cnt = 0;
+		}
+		
+	}
+	out_str += '\n\nplaintext broken into lines:\n'+lines;
+	document.getElementById('output_area').value = out_str;
+}
+</script>
+</head>
+<body bgcolor="Silver">
+<h3> Extract plaintext from worksheet</h3>
+Paste worksheet from interactive solver into Input box, click Extract to extract the Plaintext (the lower case letters) from the worksheet.
+<br><br>
+Input:<br>
+<textarea id="input_area" cols=80 rows = 5>
+</textarea><br>
+Output:<br>
+<textarea id="output_area" cols=80 rows=10>
+</textarea>
+<br>
+<input type="button" value="Extract" onclick=do_processing();>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+letters per line: <input type = "text" id = "letters_per_line" size = 3 value = 65 >
+
+<br><br>
+</body>
+</html>
