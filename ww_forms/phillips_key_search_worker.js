@@ -25,6 +25,7 @@ var buf_len;
 var noise_step, cycle_limit, begin_level;
 var fudge_factor = 0.2; // for backup in case I forget to send it.
 //var period=5; // default
+var reversed_key_flag = false;
 
 var crib_flag=0;
 var crib;
@@ -354,6 +355,9 @@ function get_key_array(wrd){
             if (  used_indx[i] == 0 )
                 key[indx++] = i
         }
+		if (reversed_key_flag)
+			key.reverse();
+		
 }
 
  
@@ -413,8 +417,13 @@ function do_key_search(str){
                 out_str += '\nKey: ';
                 for (i=0;i<25;i++) 
                     out_str += alpha.charAt(work_key[i]);
-                out_str += "\nroute: "+k+" ("+route_name[k]+")";
+                //out_str += "\nroute: "+k+" ("+route_name[k]+")";
                 //document.getElementById('output_area').value = out_str;	
+				if ( reversed_key_flag)
+					out_str += "\nroute: "+k+" ("+route_name[k]+" reversed)";
+				else 
+					out_str += "\nroute: "+k+" ("+route_name[k]+")";				
+				
                 postMessage(out_str);
             }
         }
@@ -443,6 +452,7 @@ onmessage = function(event) { //receiving a message
   else if (state == 2){
     //word_pattern_string = event.data.str;
     str = event.data.str;
+	reversed_key_flag = event.data.reversed_key_flag;			
     do_key_search(str);
   }
 }

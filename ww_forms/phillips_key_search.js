@@ -61,7 +61,7 @@ function errorHandler2(evt) {
     alert("got error handler");
   }
 }
-
+var reversed_key_flag = false;
  
 function do_key_search(){
 	var str,c,i,n,j,k;
@@ -100,11 +100,22 @@ function do_key_search(){
    // note: below, you need the .buffer at the end because word_list_array is a (char) view of the arrayBuffer, not
    // the arrayBuffer itself. If word_list_array was just an arrayBuffer you wouldn't need to add .buffer to it.
    //worker.webkitPostMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
-   worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
+   var buf = new ArrayBuffer(word_list_array.length);
+   var bufView = new Uint8Array(buf);
+   for (i=0;i< word_list_array.length;i++)
+        bufView[i] = word_list_array[i];
+	worker.postMessage( {op_choice:1, buf:buf},[buf]);   
+   
+   //worker.postMessage( {op_choice:1, buf:word_list_array.buffer},[word_list_array.buffer]);
    //worker.webkitPostMessage( {op_choice:2, str:str});
    //period = document.getElementById('t_period').value;	
    //worker.postMessage( {op_choice:2, str:str, period:period});
-   worker.postMessage( {op_choice:2, str:str});
+   //worker.postMessage( {op_choice:2, str:str});
+	if (document.getElementById('reversed_key').checked)
+		reversed_key_flag = true;
+	else
+		reversed_key_flag = false;
+    worker.postMessage( {op_choice:2, str:str,reversed_key_flag:reversed_key_flag});
 
 //document.getElementById('debug_area').value="key search";
 }
