@@ -11,6 +11,104 @@ var BASE3 = 76;
 
 var J_index;
 
+var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
+
+function make_table(str) {
+    var s,i;
+    var c, n,state;
+    var n1,n2,n3,x;
+    var max_n,max_v,c1,c2,c3,c4,mc1,mc2,mc3,mc4;
+    var weighted_tet_sum, unweighted_tet_sum;
+    
+    s = "0making table from sring of length "+str.length;
+    postMessage(s);
+    str = str.toUpperCase();
+    // initialize tet table
+    for (i=0;i<26*26*26*26;i++)
+        tet_table[i] = 0;
+    // make tet table with no blanks
+    max_n = 0;
+    max_v=0;
+    state = 0;
+    for (i=1; i<str.length;i++) { // start at 1 because char 0 is just the '#' flag
+        c = str.charAt(i);
+        n = alpha.indexOf(c);
+        if ( n == -1) continue; //not a letter
+        if (state == 0) {
+            n1 = n;
+            c1 = c;
+        }
+        else if (state == 1) {
+            n2 = n;
+            c2 = c;
+        }
+        else if (state == 2) {
+            n3 = n;
+            c3 = c;
+        }
+        else {
+            //x = n+26*n3+26*26*n2+26*26*26*n1;
+            x = n1+26*n2+26*26*n3+26*26*26*n;
+            tet_table[x]++;
+            n1 = n2;
+            n2 = n3;
+            n3 = n;
+            if (tet_table[x] > max_v) {
+                max_v = tet_table[x];
+                mc1 = c1;
+                mc2 = c2;
+                mc3 = c3;
+                mc4 = c;
+            }
+            max_n++;
+            c1 = c2;
+            c2 = c3;
+            c3 = c;
+        }
+        state++;
+    }    
+    s = '0there were '+max_n+' tetragraphs with greatest value of '+max_v;
+    s += ' for tet: '+mc1+mc2+mc3+mc4;
+    weighted_tet_sum = 0;
+    unweighted_tet_sum = 0;
+    
+    // still have to convert to logs.
+    for (i=0;i<26*26*26*26;i++){
+        n = tet_table[i];
+        tet_table[i] = Math.log(1+tet_table[i]);
+        weighted_tet_sum += n*tet_table[i];
+        unweighted_tet_sum += tet_table[i];            
+    }
+    // global variables for this tet table
+    random_score = 100*unweighted_tet_sum / (26*26*26*26);
+    std_eng_score = 100*weighted_tet_sum / max_n;
+       
+    /*
+    for (i=0;i<26*26*26*26;i++)
+        tet_table[i] = Math.log(1+tet_table[i]);
+    */
+    
+    postMessage(s);    
+}    
+
+
+function initialize_tet_table(){
+	var i,c,n,v;
+
+	for ( i = 0; i<26*26*26*26;i++)
+		tet_table[i] = 0.0;
+	for ( c in tet_values){
+		n = alpha.indexOf(tet_values[c].charAt(0))+	26*alpha.indexOf(tet_values[c].charAt(1))
+			+ 26*26*alpha.indexOf(tet_values[c].charAt(2))+ 26*26*26*alpha.indexOf(tet_values[c].charAt(3));
+		v = parseFloat(tet_values[c].slice(4));
+		tet_table[n] = v;
+	}
+	//alert("tet_table initialized");
+	postMessage("00~tet table initialized");
+}	
+initialize_tet_table();
+
+/*
 function initialize_tet_table(){
 	var i,c,n,v;
   var alpha="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -27,7 +125,7 @@ function initialize_tet_table(){
 	//postMessage("00~tet table initialized");
 }
 initialize_tet_table();
-
+*/
  
 function get_score(s0,s1,s2,s3){
   var i,j,c,n,score;
@@ -119,7 +217,15 @@ function do_solve(str){
 onmessage = function(event) { //receiving a message
 	var str,s;
 
+debugger;
   var state = event.data.op_choice;
-    str = event.data.str;
+  if (state ==2){
+
+   str = event.data.str;
+   make_table(str);	  
+  }
+  if (state==1){
+	     str = event.data.str;
         do_solve(str)
+  }
 }
