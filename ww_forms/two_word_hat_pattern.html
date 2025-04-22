@@ -3,7 +3,7 @@
 <head>
 <script src="bigword.js"> </script>
 <script type="text/javascript">
-var alpha = "0123456789ABCDEF"
+var alpha = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 var word_list_array=[];
 
 function do_processing(){
@@ -40,20 +40,24 @@ function do_processing(){
 	
 	ar = process_left_side(split_point) // output array
 	out_str += '\nleft side pattern is; '+ar.join('');
-	document.getElementById('left_pattern').value = ar.join('');
-	str = document.getElementById('left_pattern').value;
-	str = do_search(str);
-	document.getElementById('input_areal').value = str;
+	//document.getElementById('left_pattern').value = ar.join('');
+	//str = document.getElementById('left_pattern').value;
+	str = ar.join('');
+	//str = do_search(str);
+	var left_str = do_search(str);
+	//document.getElementById('input_areal').value = str;
 	ar = process_right_side(split_point) // output array
 	out_str += '\nright side pattern is; '+ar.join('');
-	document.getElementById('right_pattern').value = ar.join('');
-	str = document.getElementById('right_pattern').value;
-	str = do_search(str);
-	document.getElementById('input_arear').value = str;
+	//document.getElementById('right_pattern').value = ar.join('');
+	//str = document.getElementById('right_pattern').value;
+	str = ar.join('');
+	var right_str = do_search(str);
+	//document.getElementById('input_arear').value = str;
 	
 	document.getElementById('output_area').value = out_str;
 	str = document.getElementById('input_area').value;
-	do_final_processing(str);
+	//do_final_processing(str);
+	do_final_processing(str,right_str,left_str);
 }
 
 function check_for_missing_digits(str){
@@ -91,7 +95,8 @@ for (i=0;i<s.length;i++){
 	c = s.charAt(i);
 	n = alpha.indexOf(c);
 	if ( n == j){
-		out_put[i] = current_index;
+		//out_put[i] = current_index;
+		out_put[i] = alpha.charAt(current_index);
 		current_index++;
 	}
 }
@@ -114,7 +119,8 @@ for (i=0;i<s.length;i++){
 	c = s.charAt(i);
 	n = alpha.indexOf(c);
 	if ( n == j){
-		out_put[i] = current_index;
+		//out_put[i] = current_index;
+		out_put[i] = alpha.charAt(current_index);
 		current_index++;
 	}
 }
@@ -174,15 +180,18 @@ function do_search(str){
         
 }
 
-function do_final_processing(s){
-    var out_str,s,str;
+//function do_final_processing(s){
+function do_final_processing(s,s1,s2){
+    var out_str,s,str,s1;
 	var i,j,k,c,n;
     var left_array, right_array,hat,test_pattern,out_array,flag;
-	var alpha = '0123456789ABC';
+	//var alpha = '0123456789ABC'; // use global alpha
 	out_str="";
-	str = document.getElementById('input_areal').value;
+	//str = document.getElementById('input_areal').value;
+	str = s2;
 	left_array = str.split('\n');
-	str = document.getElementById('input_arear').value;
+	//str = document.getElementById('input_arear').value;
+	str = s1;
 	right_array = str.split('\n');
 	
 	//s = document.getElementById('hat').value;
@@ -197,6 +206,7 @@ function do_final_processing(s){
 	//out_str += "The input string was: "+str;
 	//out_str += '\nleft array: '+left_array;
 	//out_str += '\nright array: '+ right_array;
+	var no_result_flag = true;
 	for (i=0;i<left_array.length;i++)
 		for (j=0;j<right_array.length;j++){
 			test_pattern = convert_to_numeric_pattern( left_array[i],right_array[j] ); // test pattern will automatically have same length as hat;
@@ -207,11 +217,15 @@ function do_final_processing(s){
 					break;
 				}
 			}
-			if ( flag)
+			if ( flag){
 				out_array.push( left_array[i]+right_array[j] );
+				no_result_flag = false;
+			}
 		}
 	out_str += '\nhat: '+hat;
 	out_str += '\n\nResults: '+out_array;
+	if (no_result_flag)
+		out_str = "\nhat "+hat+"\nnothing found";
 	document.getElementById('output_area').value = out_str;
 }
 
@@ -376,12 +390,15 @@ Input entire numerical hat: (example 2308654197) <br>
 <br>
 divide into two words at position (starting at 0)  <input type="text" id = "pattern_divide" >
 <br><br>
+<div id="result" style="background:yellow; border: 3px ridge black; width:700px; padding:10px; ">
 Output:<br>
-<textarea id="output_area" cols=80 rows=5>
+<textarea id="output_area" cols=80 rows=10>
 </textarea>
 <br>
 <input type="button" value="Process" onclick=do_processing();>
 <br><br>
+</div>
+<!-- 
 left side pattern: <input type="text" id = "left_pattern" >
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 right side pattern: <input type="text" id = "right_pattern" >
@@ -392,6 +409,7 @@ left key words:<br>
 right key words:<br>
 <textarea id="input_arear" cols=80 >
 </textarea>
+-->
 <br><br>
 <input type="checkbox" id = "custom_list" >
 Use custom word/phrase list
@@ -403,4 +421,5 @@ List file:
 
 </body>
 </html>
+
 
