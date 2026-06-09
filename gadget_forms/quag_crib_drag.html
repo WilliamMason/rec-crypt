@@ -136,10 +136,11 @@ function construct_crib( stage){
         if ( flag) continue;
 		if ( stage < numb_cribs) construct_crib(stage+1);
 		else {
+            var pos_offset = document.getElementById('use_pos_ref').checked ? 1 : 0;
             if (numb_cribs == 0)
-                out_str += "\nOK at "+start_pos+"\n";
+                out_str += "\nOK at "+(start_pos+pos_offset)+"\n";
             else
-                out_str += "\nOK at "+start_positions.slice(0, numb_cribs+1).join(", ")+"\n";
+                out_str += "\nOK at "+start_positions.slice(0, numb_cribs+1).map(function(p){return p+pos_offset;}).join(", ")+"\n";
             index = 0;
             cnt = 0;
             for (i=0;i<buf_len;i++){
@@ -175,11 +176,14 @@ Crib (if multiple crib strings put them on separate lines):<br>
 <textarea id="crib_area" rows = 5 cols=90 >
 </textarea><br>
 <br>
+<input type="checkbox" id="use_pos_ref" onchange="document.getElementById('pos_ref_label').innerText = this.checked ? 'Output (positions start at 1):' : 'Output (positions start at 0):';">
+Use Position References<br>
+<br>
 <input type="button" value="Crib Drag" onclick=do_calc();>
-&nbsp  &nbsp &nbsp Period: 
+&nbsp  &nbsp &nbsp Period:
 <input type = text id="per"  size = 2 >
 <br><br>
-Output (positions start at 0):<br>
+<span id="pos_ref_label">Output (positions start at 0):</span><br>
 <textarea id="output_area" rows=12 cols=90>
 </textarea>
 
