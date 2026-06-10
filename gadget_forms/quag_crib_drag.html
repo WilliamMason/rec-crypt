@@ -146,22 +146,28 @@ function construct_crib( stage){
             else
                 out_str += "\nOK at "+start_positions.slice(0, numb_cribs+1).map(function(p){return p+pos_offset;}).join(", ")+"\n";
             match_count++;
+            var pt_blocks = [], ct_blocks = [];
+            var pt_block = '', ct_block = '';
             index = 0;
-            cnt = 0;
             for (i=0;i<buf_len;i++){
                 c = buffer[i];
                 c1 = quag_array[stage][index][c];
-                if (c1 == -1)
-                    out_str += '-';
-                else
-                    out_str += alpha[c1];
+                pt_block += (c1 == -1) ? '-' : alpha[c1];
+                ct_block += upperC[c];
                 index = (index+1) % period;
-                if ( ++cnt == 50){
-                    cnt = 0;
-                    out_str += '\n';
+                if (pt_block.length == period || i == buf_len-1){
+                    pt_blocks.push(pt_block);
+                    ct_blocks.push(ct_block);
+                    pt_block = '';
+                    ct_block = '';
                 }
             }
-            out_str += '\n';
+            var blocks_per_line = Math.max(1, Math.floor(51 / (period + 1)));
+            for (var b=0; b<pt_blocks.length; b+=blocks_per_line){
+                var last_group = (b + blocks_per_line >= pt_blocks.length);
+                out_str += pt_blocks.slice(b, b+blocks_per_line).join(' ') + '\n';
+                out_str += ct_blocks.slice(b, b+blocks_per_line).join(' ') + (last_group ? '\n' : '\n\n');
+            }
             if (document.getElementById('show_placements').checked) {
                 var pairs = [];
                 for (var si=0; si<=numb_cribs; si++)
