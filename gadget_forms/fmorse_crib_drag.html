@@ -11,6 +11,7 @@ var crib_symbols = 'abcdefghijklmnopqrstuvwxyz ';
 var code = [];
 var crib = [];
 var mcode_crib;
+var mcode_starts;
 
 var flag_6x6 = false;
 var numb_symbols;
@@ -80,6 +81,140 @@ var morse_order = ['...','..-','..x','.-.','.--','.-x','.x.','.x-','.xx',
 'x..','x.-','x.x','x-.','x--','x-x','xx.','xx-'];
 
 
+function print_output() {
+    var text = document.getElementById('output_area').value;
+    var w = window.open('', '_blank');
+    w.document.write('<pre>' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>');
+    w.document.close();
+    w.print();
+}
+
+function format_crib_match(crib_pos, eff, first_pos) {
+    var i, li, s, k, abs_pos, body_col, disp_col, p, w, eff_start;
+    var SEP = '-------------------------------------------------------------\n';
+    var HSEP = '=============================================================\n';
+    var LW  = 61;
+    var out = HSEP + 'Position ' + crib_pos + ' OK\n' + HSEP + '\n';
+
+    var lead_offset = eff.length - mcode_crib.length;
+
+    // PT letter positions: eff index of each crib letter's first Morse segment
+    var pt_info = [];
+    for (i = 0; i < crib_len; i++) {
+        var c = crib_symbols.charAt(crib[i]);
+        if (c != ' ') {
+            pt_info.push({ch: c, eff_idx: lead_offset + mcode_starts[i]});
+        }
+    }
+
+    // Map an eff index to cipher letter index k (relative to crib_pos)
+    function eff_to_k(m) {
+        if (first_pos == 0) return Math.floor(m / 3);
+        if (first_pos == 1) return m >= 2 ? Math.floor((m - 2) / 3) : -1;
+        return m >= 1 ? Math.floor((m - 1) / 3) : -1;
+    }
+
+    for (var row_start = 0; row_start < code.length; row_start += 25) {
+        var row_end = Math.min(row_start + 25, code.length);
+
+        // CT line
+        s = 'CT: ';
+        for (i = row_start; i < row_end; i++) {
+            li = i - row_start;
+            if (li > 0) s += (li % 5 == 0) ? '   ' : ' ';
+            s += symbols.charAt(code[i]);
+        }
+        out += s + '\n';
+
+        // Build Morse rows and PT rows as char arrays
+        var ml = [[], [], []];
+        var pl = [[], []];
+        for (w = 0; w < LW; w++) {
+            ml[0].push(' '); ml[1].push(' '); ml[2].push(' ');
+            pl[0].push(' '); pl[1].push(' ');
+        }
+        pl[0][0]='P'; pl[0][1]='T'; pl[0][2]=':';
+
+        // Partial leading segments for first_pos > 0 (incomplete preceding triplet)
+        if (first_pos > 0) {
+            var prev_abs = crib_pos - 1;
+            if (prev_abs >= row_start && prev_abs < row_end) {
+                var prev_li = prev_abs - row_start;
+                var prev_dc = 4 + Math.floor(prev_li / 5) * 12 + (prev_li % 5) * 2;
+                if (prev_dc < LW) {
+                    if (first_pos == 1) {
+                        ml[1][prev_dc] = eff[0];
+                        ml[2][prev_dc] = eff[1];
+                    } else {
+                        ml[2][prev_dc] = eff[0];
+                    }
+                }
+            }
+        }
+
+        // Fill Morse segments
+        for (k = 0; k < crib_pattern.length; k++) {
+            abs_pos = crib_pos + k;
+            if (abs_pos < row_start || abs_pos >= row_end) continue;
+            li = abs_pos - row_start;
+            body_col = Math.floor(li / 5) * 12 + (li % 5) * 2;
+            disp_col = 4 + body_col;
+            eff_start = (first_pos == 0) ? k*3 : (first_pos == 1) ? k*3+2 : k*3+1;
+            for (p = 0; p < 3; p++) {
+                if (eff_start+p < eff.length && disp_col < LW)
+                    ml[p][disp_col] = eff[eff_start + p];
+            }
+        }
+
+        // Partial trailing segments (eff elements after the last complete triplet)
+        if (crib_pattern.length > 0) {
+            var last_k = crib_pattern.length - 1;
+            var last_eff_start = (first_pos == 0) ? last_k*3 : (first_pos == 1) ? last_k*3+2 : last_k*3+1;
+            var trail_start = last_eff_start + 3;
+            var next_abs = crib_pos + crib_pattern.length;
+            if (trail_start < eff.length && next_abs >= row_start && next_abs < row_end) {
+                var next_li = next_abs - row_start;
+                var next_dc = 4 + Math.floor(next_li / 5) * 12 + (next_li % 5) * 2;
+                for (p = 0; trail_start + p < eff.length && p < 3; p++) {
+                    if (next_dc < LW) ml[p][next_dc] = eff[trail_start + p];
+                }
+            }
+        }
+
+        // Fill PT letters
+        for (i = 0; i < pt_info.length; i++) {
+            k = eff_to_k(pt_info[i].eff_idx);
+            if (k < 0) {
+                if (first_pos > 0) abs_pos = crib_pos - 1;
+                else continue;
+            } else {
+                if (k >= crib_pattern.length) continue;
+                abs_pos = crib_pos + k;
+            }
+            if (abs_pos < row_start || abs_pos >= row_end) continue;
+            li = abs_pos - row_start;
+            body_col = Math.floor(li / 5) * 12 + (li % 5) * 2;
+            disp_col = 4 + body_col;
+            if (disp_col < LW) {
+                if (pl[0][disp_col] == ' ') pl[0][disp_col] = pt_info[i].ch;
+                else                        pl[1][disp_col] = pt_info[i].ch;
+            }
+        }
+
+        out += ml[0].join('').replace(/\s+$/, '') + '\n';
+        out += ml[1].join('').replace(/\s+$/, '') + '\n';
+        out += ml[2].join('').replace(/\s+$/, '') + '\n';
+        out += pl[0].join('').replace(/\s+$/, '') + '\n';
+        if (pl[1].join('').trim().length > 0) {
+            out += pl[1].join('').replace(/\s+$/, '') + '\n';
+        } else {
+            out += '\n';
+        }
+        if (row_end < code.length) out += SEP;
+    }
+    return out;
+}
+
 function setup_code() {
 	var i,j,state,cnt,c, data,n1,n;
 
@@ -104,9 +239,8 @@ function setup_code() {
 
 
 function do_drag(){
-var result,s,n,c,i,cnt,crib_pos,out_str,j,k,x,m_cnt;
+var result,s,n,c,i,cnt,crib_pos,out_str,j,k,x,m_cnt,eff;
 var alpha = 'abcdefghijklmnopqrstuvwxyz';
-var temp_key;
 
 
 	result = setup_code(); // get code and convert to numbers
@@ -120,98 +254,90 @@ var temp_key;
 	}
 	crib = [];
     mcode_crib = [];
+    mcode_starts = [];
 	cnt = 0;
 	m_cnt = 0;
 	for (i=0;i<s.length;i++) {
 		c = s.charAt(i);
-		n = crib_symbols.indexOf(c);
-		if ( n >-1) {
-		  crib[cnt++]=n;
-		  // get morse code for c
-		  if ( c==' '){
+		if (c == '|') {
 		    mcode_crib[m_cnt++] = END_SYMBOL;
-		    if ( i==0) mcode_crib[m_cnt++] = END_SYMBOL;
-		  }
-		  else {
-  		  x = morse_dict[c]
-		    for (j=0;j<x.length;j++)
-		      mcode_crib[m_cnt++] = x[j];
-		    mcode_crib[m_cnt++] = END_SYMBOL;
-		  }
+		    if (m_cnt == 1) mcode_crib[m_cnt++] = END_SYMBOL;
+		} else {
+		    n = crib_symbols.indexOf(c);
+		    if (n > -1) {
+		        crib[cnt++] = n;
+		        if (c == ' ') {
+		            mcode_starts.push(-1);
+		            mcode_crib[m_cnt++] = END_SYMBOL;
+		        } else {
+		            mcode_starts.push(m_cnt);
+		            x = morse_dict[c];
+		            for (j=0;j<x.length;j++)
+		                mcode_crib[m_cnt++] = x[j];
+		            mcode_crib[m_cnt++] = END_SYMBOL;
+		        }
+		    }
 		}
 	}
     crib_len = cnt;
+    var crib_text = s.toUpperCase();
     s = '';
     for (i=0;i<m_cnt;i++)
         s += mcode_crib[i];
- out_str = "Morse code for crib is: "+s+" \n==============\n";
- get_crib_patterns(0);
- 	//document.getElementById('output_area').value = out_str;
- 	//return;
-	out_str += 'Crib positions (positions start at 0, starting at letter boundary):\n';
-	for (crib_pos=0;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+
+    var ct_str = '', ct_line = '', group_count = 0;
+    for (i=0;i<code.length;i++) {
+        ct_line += symbols.charAt(code[i]);
+        if ((i+1) % 5 == 0) {
+            group_count++;
+            if (group_count == 10) {
+                ct_str += ct_line + '\n';
+                ct_line = '';
+                group_count = 0;
+            } else {
+                ct_line += ' ';
+            }
+        }
+    }
+    if (ct_line.length > 0) ct_str += ct_line;
+
+ out_str = ct_str + '\n\n' + "Morse code for crib \""+crib_text+"\" is: "+s+" \n\nNote: Positions start at 0\n\n";
+
+	for (crib_pos=0;crib_pos<code.length;crib_pos++) {
+		if (crib_pos == 0) {
+			var strip = 0;
+			while (strip < mcode_crib.length && mcode_crib[strip] == 'x') strip++;
+			eff = mcode_crib.slice(strip);
+		} else if (mcode_crib[0] != 'x') {
+			eff = ['x'].concat(mcode_crib);
+		} else {
+			eff = mcode_crib.slice();
+		}
+		get_crib_patterns(eff, 0);
+		if (crib_pos + crib_pattern.length > code.length) break;
 		result = test_pos(crib_pos);
-		if ( result != -1) {
-			out_str += "Position "+crib_pos+" OK, ";
-			// show putative key
-			temp_key = [];
-			for (i=0;i<26;i++)
-			  temp_key[i] = '?';
-			for (i=0;i<crib_pattern.length;i++){
-			  n = symbols.indexOf(crib_pattern[i]);
-			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
-			}
-			out_str += 'key: ';
-			for (i=0;i<26;i++)
-			  out_str += temp_key[i];
-			out_str += '\n';
-			//out_str += '\n\n';
+		if (result != -1) {
+			out_str += format_crib_match(crib_pos, eff, 0);
 		}
 	}
-	 get_crib_patterns(1);
- 	//document.getElementById('output_area').value = out_str;
- 	//return;
-	out_str += '==============\nCrib positions (positions start at 0, skip first two morse symbols):\n';
-	for (crib_pos=1;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+
+	for (crib_pos=1;crib_pos<code.length;crib_pos++) {
+		eff = mcode_crib[0] != 'x' ? ['x'].concat(mcode_crib) : mcode_crib.slice();
+		get_crib_patterns(eff, 1);
+		if (crib_pos + crib_pattern.length > code.length) break;
 		result = test_pos(crib_pos);
-		if ( result != -1) {
-			out_str += "Position "+crib_pos+" OK, ";
-			// show putative key
-			temp_key = [];
-			for (i=0;i<26;i++)
-			  temp_key[i] = '?';
-			for (i=0;i<crib_pattern.length;i++){
-			  n = symbols.indexOf(crib_pattern[i]);
-			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
-			}
-			out_str += 'key: ';
-			for (i=0;i<26;i++)
-			  out_str += temp_key[i];
-			out_str += '\n';
-			//out_str += '\n\n';
+		if (result != -1) {
+			out_str += format_crib_match(crib_pos, eff, 1);
 		}
 	}
-	 get_crib_patterns(2);
- 	//document.getElementById('output_area').value = out_str;
- 	//return;
-	out_str += '==============\nCrib positions (positions start at 0, skip first morse symbol):\n';
-	for (crib_pos=1;crib_pos<code.length - crib_pattern.length+1;crib_pos++) {
+
+	for (crib_pos=1;crib_pos<code.length;crib_pos++) {
+		eff = mcode_crib[0] != 'x' ? ['x'].concat(mcode_crib) : mcode_crib.slice();
+		get_crib_patterns(eff, 2);
+		if (crib_pos + crib_pattern.length > code.length) break;
 		result = test_pos(crib_pos);
-		if ( result != -1) {
-			out_str += "Position "+crib_pos+" OK, ";
-			// show putative key
-			temp_key = [];
-			for (i=0;i<26;i++)
-			  temp_key[i] = '?';
-			for (i=0;i<crib_pattern.length;i++){
-			  n = symbols.indexOf(crib_pattern[i]);
-			  temp_key[n] = symbols.charAt(code[i+crib_pos]);
-			}
-			out_str += 'key: ';
-			for (i=0;i<26;i++)
-			  out_str += temp_key[i];
-			out_str += '\n';
-			//out_str += '\n\n';
+		if (result != -1) {
+			out_str += format_crib_match(crib_pos, eff, 2);
 		}
 	}
 
@@ -219,46 +345,28 @@ var temp_key;
 	
 }
 
-function get_crib_patterns(first_pos){
-          var j,k,index,x,y,i,n,cnt,full_len;
-        var c,c1,c2,c3,c4;
-
-        var flag;
-    // divide crib morse starting at beginning of cipher letter
+function get_crib_patterns(mcode, first_pos){
+    var i, n, cnt, full_len;
     crib_pattern = [];
     cnt = 0;
-    if ( first_pos == 0){
-      full_len = 3*Math.floor(mcode_crib.length/3)
-      for (i=0;i<full_len;i = i+3){
-        c1 = mcode_crib[i];
-        c2 = mcode_crib[i+1];
-        c3 = mcode_crib[i+2];
-        c = c1+c2+c3;
-        n = morse_order.indexOf(c);
-        crib_pattern[cnt++]= symbols.charAt(n);
-      }
-    }
-    else if (first_pos == 1){
-      full_len = 3*Math.floor( (mcode_crib.length-2)/3)
-      for (i=2;i<full_len;i = i+3){
-        c1 = mcode_crib[i];
-        c2 = mcode_crib[i+1];
-        c3 = mcode_crib[i+2];
-        c = c1+c2+c3;
-        n = morse_order.indexOf(c);
-        crib_pattern[cnt++]= symbols.charAt(n);
-      }
-    }
-    else{
-      full_len = 3*Math.floor( (mcode_crib.length-1)/3)
-      for (i=1;i<full_len;i = i+3){
-        c1 = mcode_crib[i];
-        c2 = mcode_crib[i+1];
-        c3 = mcode_crib[i+2];
-        c = c1+c2+c3;
-        n = morse_order.indexOf(c);
-        crib_pattern[cnt++]= symbols.charAt(n);
-      }
+    if (first_pos == 0){
+        full_len = 3*Math.floor(mcode.length/3);
+        for (i=0;i<full_len;i=i+3){
+            n = morse_order.indexOf(mcode[i]+mcode[i+1]+mcode[i+2]);
+            crib_pattern[cnt++] = symbols.charAt(n);
+        }
+    } else if (first_pos == 1){
+        full_len = 3*Math.floor((mcode.length-2)/3);
+        for (i=2;i<full_len;i=i+3){
+            n = morse_order.indexOf(mcode[i]+mcode[i+1]+mcode[i+2]);
+            crib_pattern[cnt++] = symbols.charAt(n);
+        }
+    } else {
+        full_len = 3*Math.floor((mcode.length-1)/3);
+        for (i=1;i<full_len;i=i+3){
+            n = morse_order.indexOf(mcode[i]+mcode[i+1]+mcode[i+2]);
+            crib_pattern[cnt++] = symbols.charAt(n);
+        }
     }
 };
 
@@ -286,14 +394,12 @@ Cipher:<br>
 <textarea id="input_area" cols=80 rows=10>
 </textarea>
 <br><br>
-Crib (can include blanks):
+Crib (can include blanks; use | for word boundary):
 <input type="text" size=25 id="crib">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="button" value="Drag" onclick="do_drag()" >
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <br><br>
-Output:<br>
+<input type="button" value="Drag" onclick="do_drag()" >
+<br><br>
+Output: &nbsp;<input type="button" value="Print" onclick="print_output()"><br>
 <textarea id="output_area" cols=80 rows=10>
 </textarea>
 
