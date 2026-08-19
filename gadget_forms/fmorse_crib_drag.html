@@ -212,6 +212,27 @@ function format_crib_match(crib_pos, eff, first_pos) {
         }
         if (row_end < code.length) out += SEP;
     }
+    var key_slots = [];
+    for (var ki = 0; ki < morse_order.length; ki++) key_slots[ki] = ' ';
+    for (k = 0; k < crib_pattern.length; k++) {
+        var mi = symbols.indexOf(crib_pattern[k]);
+        if (mi >= 0) key_slots[mi] = symbols.charAt(code[crib_pos + k]);
+    }
+    var key_rows = ['', '', ''];
+    var key_line1 = 'Key: ';
+    for (var ki = 0; ki < morse_order.length; ki++) {
+        if (ki > 0) { key_line1+=' '; key_rows[0]+=' '; key_rows[1]+=' '; key_rows[2]+=' '; }
+        key_line1  += key_slots[ki];
+        key_rows[0] += morse_order[ki][0];
+        key_rows[1] += morse_order[ki][1];
+        key_rows[2] += morse_order[ki][2];
+    }
+    var key_indent = '     ';
+    out += '\n\n' + key_line1 + '\n' +
+           key_indent + key_rows[0] + '\n' +
+           key_indent + key_rows[1] + '\n' +
+           key_indent + key_rows[2] + '\n\n';
+
     return out;
 }
 
