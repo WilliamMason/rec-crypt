@@ -278,11 +278,13 @@ var alpha = 'abcdefghijklmnopqrstuvwxyz';
     mcode_starts = [];
 	cnt = 0;
 	m_cnt = 0;
+	mcode_crib[m_cnt++] = END_SYMBOL;
 	for (i=0;i<s.length;i++) {
 		c = s.charAt(i);
 		if (c == '|') {
+		    crib[cnt++] = crib_symbols.indexOf(' ');
+		    mcode_starts.push(-1);
 		    mcode_crib[m_cnt++] = END_SYMBOL;
-		    if (m_cnt == 1) mcode_crib[m_cnt++] = END_SYMBOL;
 		} else {
 		    n = crib_symbols.indexOf(c);
 		    if (n > -1) {
@@ -329,8 +331,6 @@ var alpha = 'abcdefghijklmnopqrstuvwxyz';
 			var strip = 0;
 			while (strip < mcode_crib.length && mcode_crib[strip] == 'x') strip++;
 			eff = mcode_crib.slice(strip);
-		} else if (mcode_crib[0] != 'x') {
-			eff = ['x'].concat(mcode_crib);
 		} else {
 			eff = mcode_crib.slice();
 		}
@@ -343,7 +343,7 @@ var alpha = 'abcdefghijklmnopqrstuvwxyz';
 	}
 
 	for (crib_pos=1;crib_pos<code.length;crib_pos++) {
-		eff = mcode_crib[0] != 'x' ? ['x'].concat(mcode_crib) : mcode_crib.slice();
+		eff = mcode_crib.slice();
 		get_crib_patterns(eff, 1);
 		if (crib_pos + crib_pattern.length > code.length) break;
 		result = test_pos(crib_pos);
@@ -353,7 +353,7 @@ var alpha = 'abcdefghijklmnopqrstuvwxyz';
 	}
 
 	for (crib_pos=1;crib_pos<code.length;crib_pos++) {
-		eff = mcode_crib[0] != 'x' ? ['x'].concat(mcode_crib) : mcode_crib.slice();
+		eff = mcode_crib.slice();
 		get_crib_patterns(eff, 2);
 		if (crib_pos + crib_pattern.length > code.length) break;
 		result = test_pos(crib_pos);
@@ -466,7 +466,7 @@ Cipher:<br>
 <textarea id="input_area" cols=80 rows=10>
 </textarea>
 <br><br>
-Crib (can include blanks; use | for word boundary):
+Crib (spaces and | each insert a word separator 'x'):
 <input type="text" size=25 id="crib">
 <br><br>
 <input type="button" value="Drag" onclick="do_drag()" >
