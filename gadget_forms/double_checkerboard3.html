@@ -45,6 +45,7 @@ var line_len = 90;
 var crib_entered=0;
 var pair_line_limit=28;
 var last_cell, numb_repeats;
+var selected_plaintext_pos = -1;
 var double_ck_flag = 0;
 var data;
 
@@ -239,7 +240,7 @@ function xlate() {
 			c = c[0]
 			if ( ce==last_cell)
 				c = '<font color="red">'+c+'</font>';
-			pl = pl+c+'&nbsp;&nbsp;';
+			pl += '<span id="pt'+pos+'" onclick="select_plaintext('+pos+')" style="cursor:pointer">'+c+'</span>&nbsp;&nbsp;';
 		}
 		pos++;
 		cnt++;
@@ -254,7 +255,43 @@ function xlate() {
 	}
 	if (crib_entered != 1) hide_repeats();
 	document.getElementById('outputblock').innerHTML=str;
+	selected_plaintext_pos = -1;
 }
+
+function select_plaintext(pos) {
+	if (selected_plaintext_pos != -1)
+		document.getElementById('pt'+selected_plaintext_pos).style.background = '';
+	selected_plaintext_pos = pos;
+	document.getElementById('pt'+pos).style.background = 'yellow';
+}
+
+function type_plaintext(e) {
+	var letter,pr,cell;
+	e = e || window.event;
+	if (selected_plaintext_pos == -1 || e.ctrlKey || e.altKey || e.metaKey)
+		return;
+	letter = e.key.toLowerCase();
+	if (letter.length != 1 || symbols.indexOf(letter) == -1 || letter == '-')
+		return;
+	pr = code_array[selected_plaintext_pos];
+	cell = key_lookup(pr)[1];
+	if (cell == '55') {
+		alert('Cannot enter a letter under '+pr+': its row or column letter is missing from the table.');
+		return false;
+	}
+	if (check_key[cell] != letter && key_contains(letter)) {
+		if (!confirm("'"+letter+"' is already in the key table. Move it to "+pr+"?"))
+			return false;
+	}
+	erase_from_key(letter);
+	check_key[cell] = letter;
+	crib_entered = 0;
+	last_cell = cell;
+	restore_keyblock();
+	xlate();
+	return false;
+}
+document.onkeydown = type_plaintext;
 
 
 function selectmouse(e)
