@@ -4,6 +4,7 @@
 <HTML>
 <!-- written by BION -->
 <HEAD>
+<META charset="utf-8">
 <link rel="shortcut icon" href="Bicon16_alt2.ico">
 <TITLE>Double Checkerboard Worksheet</TITLE>
 <script type="text/javascript">
@@ -36,7 +37,7 @@ var code,code_array,crib_pos,cribtext;
 var symbols="abcdefghijklmnopqrstuvwxyz-"
 var digits="0123456789";
 var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
-val_letter_selected=0;
+var letter_selected=0;
 var fire_fox=!document.all;
 var dobj, solving_flag =0;
 var asize = 5;
@@ -506,6 +507,7 @@ function reset() {
 		input_ok();
 		hide_repeats();
 		document.ciphertext.cipher_place.value='';
+		data='';
 		solving_flag=0;
 		crib_entered=0;
 	}	
@@ -626,14 +628,13 @@ function set_original_buttons() {
 }
 
 function show_repeats() {
-		str = '<id = "crib_repeats" style="visibility:visible;"><br>';
-		str +='<font color="blue"> There are '+numb_repeats+' repeated pairs at this crib position.</font><br>';
-	    document.getElementById('crib_repeats').innerHTML= str;	
+	var repeats = document.getElementById('crib_repeats');
+	repeats.innerHTML = '<font color="blue">There are '+numb_repeats+' repeated pairs at this crib position.</font>';
+	repeats.style.visibility = 'visible';
 }
 
 function hide_repeats() {
-		str = '<id = "crib_repeats" style="visibility:hidden;"><br>';
-	    document.getElementById('crib_repeats').innerHTML= str;	
+	document.getElementById('crib_repeats').style.visibility = 'hidden';
 }
 
 
@@ -690,9 +691,9 @@ function drag_right() {
 	}
 	not_found=1;	
 	crib_pos++;
-	if (crib_pos>=code_array.length-cribtext.length+1)
+	if (crib_pos>=code_array.length-cribtext.length)
 		crib_pos=0;
-	while(crib_pos< code_array.length-cribtext.length+1) {
+	while(crib_pos< code_array.length-cribtext.length) {
 		if ( ck_crib_pos() ) {
 			not_found=0;
 			break; // OK!
@@ -720,7 +721,7 @@ function drag_left(){
 	not_found=1;	
 	crib_pos--;
 	if (crib_pos<0)
-		crib_pos=code_array.length-cribtext.length;
+		crib_pos=code_array.length-cribtext.length-1;
 	while(crib_pos>=0) {
 		if ( ck_crib_pos() ) {
 			not_found=0;
@@ -766,7 +767,7 @@ function enter_crib(){
 	}
 	crib_pos=0;
 	not_found=1;
-	while(crib_pos< code_array.length-cribtext.length+1) {
+	while(crib_pos< code_array.length-cribtext.length) {
 		if ( ck_crib_pos() ) {
 			not_found=0;
 			break; // OK!
@@ -882,29 +883,31 @@ function save_to_disk(){
 	
 	if (typeof(localStorage) == 'undefined' ) {
 		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
-	} 
-	else {
-		try {
-			localStorage.setItem("checkerboard.cipher", data); //saves to the database, “key”, “value”
-		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
-			}
+		return;
+	}
+	if (!data) {
+		alert('No cipher to save. Enter a cipher and start solving first.');
+		return;
+	}
+	try {
+		localStorage.setItem("checkerboard.cipher", data);
+		str = '';
+		for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+			str +=check_key[ digits.charAt(i)+digits.charAt(j) ];
 		}
+		localStorage.setItem("checkerboard.key", str);
+		str = '';
+		for (i=0;i<asize;i++) {
+			str += left_outer_key[digits.charAt(i)];
+			str += left_inner_key[digits.charAt(i)];
+			str += top_outer_key[digits.charAt(i)];
+			str += top_inner_key[digits.charAt(i)];
+		}
+		localStorage.setItem("checkerboard.outer_keys", str);
+	} catch (e) {
+		alert('Work not saved: '+e.message);
+		return;
 	}
-	str = '';
-	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		str +=check_key[ digits.charAt(i)+digits.charAt(j) ];
-	}
-	localStorage.setItem("checkerboard.key", str);
-	str = '';
-	for (i=0;i<asize;i++) {
-		str += left_outer_key[digits.charAt(i)];
-		str += left_inner_key[digits.charAt(i)];
-		str += top_outer_key[digits.charAt(i)];
-		str += top_inner_key[digits.charAt(i)];
-	}
-	localStorage.setItem("checkerboard.outer_keys", str);	
 	alert("Work saved on disk");
 
 }
@@ -913,7 +916,8 @@ function get_from_disk(){
 	var s,i,j,k;
 
 	data = localStorage.getItem("checkerboard.cipher");
-	if (data == undefined){
+	// older versions could save the literal string "undefined" before any cipher was entered
+	if (data == null || data == 'undefined'){
 		alert("No cipher stored");
 		return
 	}
@@ -922,7 +926,7 @@ function get_from_disk(){
 	keyblock_setup();
 	set_original_buttons();
 	set_crib_buttons();
-	
+	input_ok();
 	document.ciphertext.cipher_place.value=data;
 	solving_flag=0;
 	crib_entered=0;
