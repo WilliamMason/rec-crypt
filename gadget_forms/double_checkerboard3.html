@@ -155,8 +155,35 @@ function setup_code_pairs() {
 	if (even_letters.length > 5 || odd_letters.length > 5)
 		double_ck_flag = 1;
 	else double_ck_flag = 0;
-	code_array = code.split(' ');		
-}	
+	code_array = code.split(' ');
+	if (double_ck_flag == 0)
+		fill_border_letters(even_letters, odd_letters);
+}
+
+function border_is_blank(outer_key, inner_key) {
+	var i;
+	for (i=0;i<asize;i++) {
+		if (outer_key[digits.charAt(i)] != '-' || inner_key[digits.charAt(i)] != '-')
+			return(false);
+	}
+	return(true);
+}
+
+// Only fills a side the solver hasn't started labelling, so their own labels are never overwritten.
+function fill_border_letters(row_letters, column_letters) {
+	var i;
+	if (border_is_blank(left_outer_key, left_inner_key)) {
+		row_letters.sort();
+		for (i=0;i<row_letters.length;i++)
+			left_outer_key[digits.charAt(i)] = row_letters[i];
+	}
+	if (border_is_blank(top_outer_key, top_inner_key)) {
+		column_letters.sort();
+		for (i=0;i<column_letters.length;i++)
+			top_outer_key[digits.charAt(i)] = column_letters[i];
+	}
+	restore_keyblock();
+}
 
 function key_lookup(c) { // see if letter pair c is represented in the keysquare
 	var c1,p1,c2,p2,pr;
