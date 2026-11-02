@@ -664,13 +664,39 @@ function erase_from_key(letter) {
 	}
 }
 
-function update_table() {
-	var i,c,pr,cell,unplaced;
-	if (crib_entered != 1) {
-		alert('Nothing to enter: place a crib first.');
-		return;
+function distinct_coordinates(index) { // index 0 gives the row letters, 1 the column letters
+	var found = [];
+	var i,c;
+	for (i=0;i<code_array.length-1;i++) {
+		c = code_array[i].charAt(index);
+		if (found.indexOf(c) == -1)
+			found.push(c);
 	}
-	unplaced = [];
+	return(found);
+}
+
+function update_table() {
+	var unplaced = [];
+	if (solving_flag == 0) {
+		if (document.ciphertext.cipher_place.value.trim() == '')
+			return;
+		setup_code_pairs(); // also fills the border letters
+		if (solving_flag == 0)
+			return;
+	}
+	else if (double_ck_flag == 0)
+		fill_border_letters(distinct_coordinates(0), distinct_coordinates(1));
+	if (crib_entered == 1)
+		unplaced = enter_crib_into_key();
+	restore_keyblock();
+	xlate();
+	if (unplaced.length > 0)
+		alert('Not entered, their row or column letter is missing from the table: '+unplaced.join(' '));
+}
+
+function enter_crib_into_key() {
+	var i,c,pr,cell;
+	var unplaced = [];
 	for (i=0;i<cribtext.length;i++) {
 		c = cribtext.charAt(i);
 		if (c == '-')
@@ -686,10 +712,7 @@ function update_table() {
 		check_key[cell] = c;
 	}
 	crib_entered = 0;
-	restore_keyblock();
-	xlate();
-	if (unplaced.length > 0)
-		alert('Not entered, their row or column letter is missing from the table: '+unplaced.join(' '));
+	return(unplaced);
 }
 
 function show_repeats() {
