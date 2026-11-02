@@ -651,7 +651,45 @@ function set_original_buttons() {
 	str += '<INPUT onclick=clear_plaintext(); type=button value="clear plaintext" >';	
 	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br><br>';
 	str = str + '<INPUT onclick=setup_swap(); type=button value="swap rows or columns in key" >';
-	document.getElementById('button_actions').innerHTML= str;	
+	str += '<INPUT onclick=update_table(); type=button value="Update table" >';
+	document.getElementById('button_actions').innerHTML= str;
+}
+
+function erase_from_key(letter) {
+	var i,j,cell;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		cell = digits.charAt(i)+digits.charAt(j);
+		if (check_key[cell] == letter)
+			check_key[cell] = '-';
+	}
+}
+
+function update_table() {
+	var i,c,pr,cell,unplaced;
+	if (crib_entered != 1) {
+		alert('Nothing to enter: place a crib first.');
+		return;
+	}
+	unplaced = [];
+	for (i=0;i<cribtext.length;i++) {
+		c = cribtext.charAt(i);
+		if (c == '-')
+			continue;
+		pr = code_array[crib_pos+i];
+		cell = key_lookup(pr)[1];
+		if (cell == '55') {
+			if (unplaced.indexOf(pr) == -1)
+				unplaced.push(pr);
+			continue;
+		}
+		erase_from_key(c);
+		check_key[cell] = c;
+	}
+	crib_entered = 0;
+	restore_keyblock();
+	xlate();
+	if (unplaced.length > 0)
+		alert('Not entered, their row or column letter is missing from the table: '+unplaced.join(' '));
 }
 
 function show_repeats() {
@@ -665,6 +703,25 @@ function hide_repeats() {
 }
 
 
+function key_contains(letter) {
+	var i,j;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		if (check_key[digits.charAt(i)+digits.charAt(j)] == letter)
+			return(true);
+	}
+	return(false);
+}
+
+// A pair whose row or column letter isn't in the table yet can't be checked against it.
+function conflicts_with_key(pr, c) {
+	var cell = key_lookup(pr)[1];
+	if (c == '-' || cell == '55')
+		return(false);
+	if (check_key[cell] != '-')
+		return(check_key[cell] != c);
+	return(key_contains(c));
+}
+
 function ck_crib_pos() {
 	//reset_key();
 	var cipher_letters = {}; // can use dictionaries in javascript much like python
@@ -675,6 +732,7 @@ function ck_crib_pos() {
 	for (i=0;i<cribtext.length;i++) {
 		c = cribtext.charAt(i);
 		pr =code_array[crib_pos+i];
+		if (conflicts_with_key(pr, c)) return(0);
 		if (pr in cipher_letters && cipher_letters[pr] != c) return(0); // inconsistent here
 		if (pr in cipher_letters) numb_repeats++;
 		else cipher_letters[pr] = c;
@@ -716,57 +774,32 @@ function drag_right() {
 		enter_crib();
 		return;
 	}
-	not_found=1;	
-	crib_pos++;
-	if (crib_pos>=code_array.length-cribtext.length)
-		crib_pos=0;
-	while(crib_pos< code_array.length-cribtext.length) {
-		if ( ck_crib_pos() ) {
-			not_found=0;
-			break; // OK!
-		}
-		crib_pos++;
-	}
-	if ( not_found ){
-		crib_entered=2; // don't show any red letters		
-		clear_plaintext();
-		return;
-	}	
-	else show_repeats();
-	//fill in plaintext
-	crib_entered=1; // show cipher letters in red
-	xlate();
-	// wait until letter entered into key matrix (not boundary) before restoring normal color
-
+	drag_crib(1);
 }
 
 function drag_left(){
 	if (crib_entered==0) {
 		enter_crib();
 		return;
-	}	
-	not_found=1;	
-	crib_pos--;
-	if (crib_pos<0)
-		crib_pos=code_array.length-cribtext.length-1;
-	while(crib_pos>=0) {
-		if ( ck_crib_pos() ) {
-			not_found=0;
-			break; // OK!
-		}
-		crib_pos--;
 	}
-	if ( not_found ){
-		crib_entered=2; // don't show any red letters
-		clear_plaintext();
-		return;
-	}	
-	else show_repeats();
-	//fill in plaintext
-	crib_entered=1; // show cipher letters in red
-	xlate();
-	// wait until letter entered into key matrix (not boundary) before restoring normal color
+	drag_crib(-1);
+}
 
+// Searches round the whole cipher, so dragging past either end wraps to the next match.
+function drag_crib(step) {
+	var positions = code_array.length-cribtext.length;
+	var tries;
+	for (tries=0;tries<positions;tries++) {
+		crib_pos = (crib_pos+step+positions)%positions;
+		if ( ck_crib_pos() ) {
+			show_repeats();
+			crib_entered=1; // show cipher letters in red
+			xlate();
+			return;
+		}
+	}
+	crib_entered=2; // don't show any red letters
+	xlate();
 }
 
 
@@ -774,16 +807,10 @@ function enter_crib(){
 	var crib= prompt('Enter crib');
 	if (crib==' ' || crib==null)
 		return;
-	if (solving_flag){
-		ck=confirm('Dragging will reset the key table. Proceed?');
-		if (ck != true)
-			return;
-	}
 	if (solving_flag ==0) {
 		setup_code_pairs();
 		if (solving_flag==0) return;//odd number of digits!
 	}
-	clear_plaintext();
 	cribtext='';
 	crib = crib.toLowerCase();	
 	for (i=0;i<crib.length;i++) {
@@ -803,7 +830,7 @@ function enter_crib(){
 	}
 	if ( not_found ){
 		crib_entered=2; // don't show any red letters		
-		clear_plaintext();
+		xlate();
 		return;
 	}
 	else {
