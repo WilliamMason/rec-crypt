@@ -46,6 +46,7 @@ var crib_entered=0;
 var pair_line_limit=28;
 var last_cell, numb_repeats;
 var selected_plaintext_pos = -1;
+var selected_key_cell = '';
 var double_ck_flag = 0;
 var data;
 
@@ -57,6 +58,9 @@ var left_inner_key = new Array();
 var top_outer_key = new Array();
 var top_inner_key = new Array();
 var rows_selected = new Array();
+// a border label's element id is its position digit followed by one of these suffixes
+var border_keys = {key_top_outer: top_outer_key, key_top_inner: top_inner_key, key_left_outer: left_outer_key, key_left_inner: left_inner_key};
+var selected_border_id = '';
 var columns_selected = new Array();
 
 function reset_key() {
@@ -258,40 +262,93 @@ function xlate() {
 	selected_plaintext_pos = -1;
 }
 
-function select_plaintext(pos) {
+// The key cell is highlighted on its bordered box, which is the span around the cell's text
+function key_cell_box(cell) {
+	return(document.getElementById(cell+'keymatrix').parentElement);
+}
+
+function clear_selection() {
 	if (selected_plaintext_pos != -1)
 		document.getElementById('pt'+selected_plaintext_pos).style.background = '';
+	if (selected_key_cell != '')
+		key_cell_box(selected_key_cell).style.background = 'white';
+	if (selected_border_id != '')
+		document.getElementById(selected_border_id).parentElement.style.background = 'silver';
+	selected_plaintext_pos = -1;
+	selected_key_cell = '';
+	selected_border_id = '';
+}
+
+function select_plaintext(pos) {
+	clear_selection();
 	selected_plaintext_pos = pos;
 	document.getElementById('pt'+pos).style.background = 'yellow';
 }
 
-function type_plaintext(e) {
-	var letter,pr,cell;
+function select_key_cell(cell) {
+	clear_selection();
+	selected_key_cell = cell;
+	key_cell_box(cell).style.background = 'yellow';
+}
+
+function select_border(id) {
+	clear_selection();
+	selected_border_id = id;
+	document.getElementById(id).parentElement.style.background = 'yellow';
+}
+
+// Updates the table in place so the swap controls, if showing, are left alone
+function refresh_key_table() {
+	var i,j,cell,suffix;
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		cell = digits.charAt(i)+digits.charAt(j);
+		document.getElementById(cell+'keymatrix').textContent = check_key[cell];
+	}
+	for (i=0;i<asize;i++) for (suffix in border_keys)
+		document.getElementById(digits.charAt(i)+suffix).textContent = border_keys[suffix][digits.charAt(i)];
+}
+
+function type_letter(e) {
+	var letter,cell,target;
 	e = e || window.event;
-	if (selected_plaintext_pos == -1 || e.ctrlKey || e.altKey || e.metaKey)
+	if ((selected_plaintext_pos == -1 && selected_key_cell == '' && selected_border_id == '') || e.ctrlKey || e.altKey || e.metaKey)
 		return;
 	letter = e.key.toLowerCase();
 	if (letter.length != 1 || symbols.indexOf(letter) == -1 || letter == '-')
 		return;
-	pr = code_array[selected_plaintext_pos];
-	cell = key_lookup(pr)[1];
-	if (cell == '55') {
-		alert('Cannot enter a letter under '+pr+': its row or column letter is missing from the table.');
+	if (selected_border_id != '') {
+		border_keys[selected_border_id.slice(1)][selected_border_id.charAt(0)] = letter.toUpperCase();
+		clear_selection();
+		refresh_key_table();
+		xlate();
 		return false;
 	}
+	if (selected_key_cell != '') {
+		cell = selected_key_cell;
+		target = 'the selected cell';
+	}
+	else {
+		target = code_array[selected_plaintext_pos];
+		cell = key_lookup(target)[1];
+		if (cell == '55') {
+			alert('Cannot enter a letter under '+target+': its row or column letter is missing from the table.');
+			return false;
+		}
+	}
 	if (check_key[cell] != letter && key_contains(letter)) {
-		if (!confirm("'"+letter+"' is already in the key table. Move it to "+pr+"?"))
+		if (!confirm("'"+letter+"' is already in the key table. Move it to "+target+"?"))
 			return false;
 	}
+	clear_selection();
 	erase_from_key(letter);
 	check_key[cell] = letter;
 	crib_entered = 0;
 	last_cell = cell;
-	restore_keyblock();
+	refresh_key_table();
 	xlate();
 	return false;
 }
-document.onkeydown = type_plaintext;
+document.onkeydown = type_letter;
 
 
 function selectmouse(e)
@@ -301,6 +358,7 @@ function selectmouse(e)
     dobj = fobj;
 	cpos = symbols.indexOf(dobj.className.charAt(0));  
 	letter_selected=1;
+	clear_selection();
 	//reset key
 	letterblock_setup();
 	c=dobj.className.charAt(0);	
@@ -347,6 +405,10 @@ function selectmouse(e)
 	  //s = "you put it under pair "+cell+"\n";
 	  //document.debug.output_area.value= s; 	
       return false;
+  }
+  else if (fobj.className.slice(2)=="keyblock") {
+	  select_key_cell(fobj.className.slice(0,2));
+	  return false;
   }
   else if (fobj.className.slice(1)=="keytopouter" && letter_selected) {	  
 	  dobj = fobj;
@@ -426,6 +488,10 @@ function selectmouse(e)
 	  //s = s+check_key;
 	  //document.debug.output_area.value= s; 	
       return false;	  
+  }
+  else if (border_keys[fobj.id.slice(1)]) {
+	  select_border(fobj.id);
+	  return false;
   }
   else if (fobj.className.slice(1)=="keycolumn") {	  
 	  dobj = fobj;
@@ -547,6 +613,8 @@ function keyblock_setup() {
 	}	
 	s=s+'&nbsp;<br>';	
 	document.getElementById('keyblock').innerHTML=s;	
+	selected_key_cell = '';
+	selected_border_id = '';
 
 }
 
@@ -677,6 +745,8 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 	} // end if flag
 	s=s+'&nbsp;<br>';	
 	document.getElementById('keyblock').innerHTML=s;	
+	selected_key_cell = '';
+	selected_border_id = '';
 
 }
 	
@@ -684,12 +754,16 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 
 function set_original_buttons() {
 	var str;
-	str = '<INPUT onclick=start_over(); type=button value="start over" >';
-	str += '<INPUT onclick=clear_plaintext(); type=button value="clear plaintext" >';	
-	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br><br>';
-	str = str + '<INPUT onclick=setup_swap(); type=button value="swap rows or columns in key" >';
-	str += '<INPUT onclick=update_table(); type=button value="Update table" >';
+	str = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">';
+	str += '<div><INPUT onclick=update_table(); type=button value="Update table" >';
+	str += '<span id="crib_actions" style="position:relative; margin-left:45px;"></span></div>';
+	str += '<div><INPUT onclick=start_over(); type=button value="Start over" >';
+	str += '<INPUT onclick=clear_plaintext(); type=button value="Clear plaintext" >';
+	str += '<INPUT onclick=reset(); type=button value="Erase cipher" ></div>';
+	str += '<div><INPUT onclick=setup_swap(); type=button value="Swap rows or columns in key" ></div>';
+	str += '</div>';
 	document.getElementById('button_actions').innerHTML= str;
+	set_crib_buttons();
 }
 
 function erase_from_key(letter) {
@@ -759,7 +833,9 @@ function show_repeats() {
 }
 
 function hide_repeats() {
-	document.getElementById('crib_repeats').style.visibility = 'hidden';
+	var repeats = document.getElementById('crib_repeats');
+	if (repeats) // absent while the swap controls replace the buttons
+		repeats.style.visibility = 'hidden';
 }
 
 
@@ -908,9 +984,8 @@ function set_crib_buttons() {
 	str = '<INPUT onclick=enter_crib(); type=button value="Enter crib" >';
 	str += '<INPUT onclick=drag_left(); type=button value="Drag left" >';	
 	str += '<INPUT onclick=drag_right(); type=button value="Drag right" >';	
-	str +='<br>	<span id="crib_repeats"	style="visibility: hidden;"> ';
-	str +='	there are 0 repeated pairs at this crib position.	</span>'
-		
+	// positioned under the crib buttons so showing it doesn't push the button lines apart
+	str += '<span id="crib_repeats" style="visibility:hidden; position:absolute; left:0; top:100%; margin-top:4px; white-space:nowrap;"></span>';
 	document.getElementById('crib_actions').innerHTML= str;		
 }
 
@@ -1039,7 +1114,6 @@ function get_from_disk(){
 	letterblock_setup();
 	keyblock_setup();
 	set_original_buttons();
-	set_crib_buttons();
 	input_ok();
 	document.ciphertext.cipher_place.value=data;
 	solving_flag=0;
@@ -1095,25 +1169,22 @@ style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ri
 <BR>
 Key Table:<br>
 <!-- mark off space for key block -->
+<div style="display:flex;">
 <div id="keyblock" class="key_block"
-style="font-family:monospace; font-size: 15px; cursor: crosshair; float:left;
+style="font-family:monospace; font-size: 15px; cursor: crosshair;
 	  padding:10px">
 </div>
 
 
-<!-- mark off space for buttons -->
+<!-- mark off space for buttons: top padding keeps the first line where it was, bottom padding ends the last line at the key table's last row -->
 <div id="button_actions"
-style="float:left; margin-left:50px; margin-top:30px;">
+style="margin-left:50px; padding:30px 0 26px 0;">
 </div>
-
-<!-- mark off space for crib drag -->
-<div id="crib_actions"
-style="float:left; margin-left:50px; margin-top:30px;">
 </div>
 <div style="clear:left;">
-<INPUT onclick=save_to_disk(); type=button value="save work to disk" >
-<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" >
-<INPUT onclick=clear_disk(); type=button value="clear work from disk" >
+<INPUT onclick=save_to_disk(); type=button value="Save work to disk" >
+<INPUT onclick=get_from_disk(); type=button value="Retrieve work from disk" >
+<INPUT onclick=clear_disk(); type=button value="Clear work from disk" >
 </div>
 <script type="text/javascript">
 screen_check();
@@ -1121,7 +1192,6 @@ reset_key();
 letterblock_setup();
 keyblock_setup();
 set_original_buttons();
-set_crib_buttons();
 </script>
 
 
