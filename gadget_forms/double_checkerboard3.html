@@ -313,8 +313,8 @@ function type_letter(e) {
 	e = e || window.event;
 	if ((selected_plaintext_pos == -1 && selected_key_cell == '' && selected_border_id == '') || e.ctrlKey || e.altKey || e.metaKey)
 		return;
-	letter = e.key.toLowerCase();
-	if (letter.length != 1 || symbols.indexOf(letter) == -1 || letter == '-')
+	letter = (e.key == 'Delete' || e.key == 'Backspace' || e.key == ' ') ? '-' : e.key.toLowerCase();
+	if (letter.length != 1 || symbols.indexOf(letter) == -1)
 		return;
 	if (selected_border_id != '') {
 		border_keys[selected_border_id.slice(1)][selected_border_id.charAt(0)] = letter.toUpperCase();
@@ -330,12 +330,16 @@ function type_letter(e) {
 	else {
 		target = code_array[selected_plaintext_pos];
 		cell = key_lookup(target)[1];
+		if (cell == '55' && letter == '-') {
+			clear_selection();
+			return false;
+		}
 		if (cell == '55') {
 			alert('Cannot enter a letter under '+target+': its row or column letter is missing from the table.');
 			return false;
 		}
 	}
-	if (check_key[cell] != letter && key_contains(letter)) {
+	if (letter != '-' && check_key[cell] != letter && key_contains(letter)) {
 		if (!confirm("'"+letter+"' is already in the key table. Move it to "+target+"?"))
 			return false;
 	}
