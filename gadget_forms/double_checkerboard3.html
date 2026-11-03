@@ -755,12 +755,12 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 function set_original_buttons() {
 	var str;
 	str = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">';
-	str += '<div><INPUT onclick=update_table(); type=button value="Update table" >';
+	str += '<div><INPUT onclick=update_table(); type=button value="Update table" data-tip="Write the letters of the placed crib into the key table, and fill in blank row and column letters" >';
 	str += '<span id="crib_actions" style="position:relative; margin-left:45px;"></span></div>';
-	str += '<div><INPUT onclick=start_over(); type=button value="Start over" >';
-	str += '<INPUT onclick=clear_plaintext(); type=button value="Clear plaintext" >';
-	str += '<INPUT onclick=reset(); type=button value="Erase cipher" ></div>';
-	str += '<div><INPUT onclick=setup_swap(); type=button value="Swap rows or columns in key" ></div>';
+	str += '<div><INPUT onclick=start_over(); type=button value="Start over" data-tip="Clear the key table and its row and column letters, keeping the ciphertext so it can be edited" >';
+	str += '<INPUT onclick=clear_plaintext(); type=button value="Clear plaintext" data-tip="Clear the letters inside the key table, keeping the row and column letters" >';
+	str += '<INPUT onclick=reset(); type=button value="Erase cipher" data-tip="Erase the ciphertext and the key table to start a new cipher" ></div>';
+	str += '<div><INPUT onclick=setup_swap(); type=button value="Swap rows or columns in key" data-tip="Exchange two rows or two columns of the key table, together with their row or column letters" ></div>';
 	str += '</div>';
 	document.getElementById('button_actions').innerHTML= str;
 	set_crib_buttons();
@@ -981,9 +981,9 @@ function enter_crib(){
 
 function set_crib_buttons() {
 	var str;
-	str = '<INPUT onclick=enter_crib(); type=button value="Enter crib" >';
-	str += '<INPUT onclick=drag_left(); type=button value="Drag left" >';	
-	str += '<INPUT onclick=drag_right(); type=button value="Drag right" >';	
+	str = '<INPUT onclick=enter_crib(); type=button value="Enter crib" data-tip="Enter a probable word; it is placed at the first position that does not conflict with the key table" >';
+	str += '<INPUT onclick=drag_left(); type=button value="Drag left" data-tip="Move the crib to the previous position that fits" >';	
+	str += '<INPUT onclick=drag_right(); type=button value="Drag right" data-tip="Move the crib to the next position that fits" >';	
 	// positioned under the crib buttons so showing it doesn't push the button lines apart
 	str += '<span id="crib_repeats" style="visibility:hidden; position:absolute; left:0; top:100%; margin-top:4px; white-space:nowrap;"></span>';
 	document.getElementById('crib_actions').innerHTML= str;		
@@ -1140,6 +1140,32 @@ function get_from_disk(){
 	xlate();
 }
 
+var tooltip_timer;
+
+// a delay keeps tooltips from flashing up as the cursor passes over the buttons
+function schedule_tooltip(e) {
+	var button = e.target;
+	var tip = button.getAttribute('data-tip');
+	hide_tooltip();
+	if (!tip) return;
+	tooltip_timer = setTimeout(function() {
+		var tooltip = document.getElementById('tooltip');
+		var box = button.getBoundingClientRect();
+		tooltip.textContent = tip;
+		tooltip.style.left = (box.left + window.scrollX) + 'px';
+		tooltip.style.top = (box.bottom + window.scrollY + 6) + 'px';
+		tooltip.style.visibility = 'visible';
+	}, 800);
+}
+
+function hide_tooltip() {
+	clearTimeout(tooltip_timer);
+	document.getElementById('tooltip').style.visibility = 'hidden';
+}
+
+document.addEventListener('mouseover', schedule_tooltip);
+document.addEventListener('mousedown', hide_tooltip);
+
 function clear_disk(){
 	localStorage.removeItem("checkerboard.cipher");
 	localStorage.removeItem("checkerboard.key");	
@@ -1182,9 +1208,9 @@ style="margin-left:50px; padding:30px 0 26px 0;">
 </div>
 </div>
 <div style="clear:left;">
-<INPUT onclick=save_to_disk(); type=button value="Save work to disk" >
-<INPUT onclick=get_from_disk(); type=button value="Retrieve work from disk" >
-<INPUT onclick=clear_disk(); type=button value="Clear work from disk" >
+<INPUT onclick=save_to_disk(); type=button value="Save work to disk" data-tip="Save the ciphertext and key table in this browser, replacing any earlier save" >
+<INPUT onclick=get_from_disk(); type=button value="Retrieve work from disk" data-tip="Reload the ciphertext and key table last saved in this browser" >
+<INPUT onclick=clear_disk(); type=button value="Clear work from disk" data-tip="Delete the saved work from this browser" >
 </div>
 <script type="text/javascript">
 screen_check();
@@ -1204,5 +1230,6 @@ output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_
 </Form>
 -->
 
+<div id="tooltip" style="visibility:hidden; position:absolute; max-width:320px; padding:4px 8px; background:#ffffe1; border:1px solid gray; font-family:sans-serif; font-size:13px; pointer-events:none; z-index:10;"></div>
 </BODY>
 </HTML>
