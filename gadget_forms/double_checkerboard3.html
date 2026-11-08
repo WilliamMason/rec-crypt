@@ -7,6 +7,10 @@
 <META charset="utf-8">
 <link rel="shortcut icon" href="Bicon16_alt2.ico">
 <TITLE>Double Checkerboard Worksheet</TITLE>
+<style>
+[class$="keyblock"], [class$="keytopouter"], [class$="keytopinner"], [class$="keyleftouter"], [class$="keyleftinner"],
+[class$="keyrow"], [class$="keycolumn"] { cursor: pointer; }
+</style>
 <script type="text/javascript">
 
 //next definition needed by Internet explorer, firefox already has it
@@ -37,14 +41,13 @@ var code,code_array,crib_pos,cribtext;
 var symbols="abcdefghijklmnopqrstuvwxyz-"
 var digits="0123456789";
 var letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
-var letter_selected=0;
 var fire_fox=!document.all;
 var dobj, solving_flag =0;
 var asize = 5;
 var line_len = 90;
 var crib_entered=0;
 var pair_line_limit=28;
-var last_cell, numb_repeats;
+var last_cell='', numb_repeats;
 var selected_plaintext_pos = -1;
 var selected_key_cell = '';
 var double_ck_flag = 0;
@@ -313,8 +316,12 @@ function type_letter(e) {
 	e = e || window.event;
 	if ((selected_plaintext_pos == -1 && selected_key_cell == '' && selected_border_id == '') || e.ctrlKey || e.altKey || e.metaKey)
 		return;
-	letter = e.key.toLowerCase();
-	if (letter.length != 1 || symbols.indexOf(letter) == -1 || letter == '-')
+	if (e.key == 'Escape') {
+		clear_selection();
+		return false;
+	}
+	letter = (e.key == 'Delete' || e.key == 'Backspace' || e.key == ' ') ? '-' : e.key.toLowerCase();
+	if (letter.length != 1 || symbols.indexOf(letter) == -1)
 		return;
 	if (selected_border_id != '') {
 		border_keys[selected_border_id.slice(1)][selected_border_id.charAt(0)] = letter.toUpperCase();
@@ -330,12 +337,16 @@ function type_letter(e) {
 	else {
 		target = code_array[selected_plaintext_pos];
 		cell = key_lookup(target)[1];
+		if (cell == '55' && letter == '-') {
+			clear_selection();
+			return false;
+		}
 		if (cell == '55') {
 			alert('Cannot enter a letter under '+target+': its row or column letter is missing from the table.');
 			return false;
 		}
 	}
-	if (check_key[cell] != letter && key_contains(letter)) {
+	if (letter != '-' && check_key[cell] != letter && key_contains(letter)) {
 		if (!confirm("'"+letter+"' is already in the key table. Move it to "+target+"?"))
 			return false;
 	}
@@ -354,140 +365,9 @@ document.onkeydown = type_letter;
 function selectmouse(e)
 {
   var fobj       = fire_fox ? e.target : event.srcElement;
-  if (fobj.className.slice(1)=="key") {
-    dobj = fobj;
-	cpos = symbols.indexOf(dobj.className.charAt(0));  
-	letter_selected=1;
-	clear_selection();
-	//reset key
-	letterblock_setup();
-	c=dobj.className.charAt(0);	
-	s= '<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:red">'+c+'</span>';
-	document.getElementById(dobj.id).innerHTML= s;
-	//next 2 lines for debugging
-	//s = "you clicked on "+c;
-	//document.debug.output_area.value= s; 	
-    return false;
-  }
-  else if (fobj.className.slice(2)=="keyblock" && letter_selected) {
-	  dobj = fobj;
-	  crib_entered = 0;
-	  letter=symbols.charAt(cpos);
-	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
-	  s=s+letter+'</span>';
-	  document.getElementById(dobj.id).innerHTML= s;
-	  letter_selected=0;
-	  cell=dobj.className.slice(0,2);
-	  //update key array
-	  //check for duplicate letters and erase old if found
-	  if ( letter != '-' ) {
-		  for (i=0;i<5;i++){
-			  c1 = digits.charAt(i);
-			  for (j=0;j<5;j++) {
-				  c2 = digits.charAt(j);
-				  if (check_key[c1+c2]==letter && c1+c2 != cell){
-		  			//delete letter at old location
-		  			c = c1+c2;
-		  			check_key[c] = '-';
-					s= '<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
-					s+='-</span>';
-					document.getElementById(c+'keymatrix').innerHTML= s;
-				}
-			}
-		}
-	}						  
-	  check_key[ cell] = letter;
-	  //reset letter block
-	  letterblock_setup();
-	  last_cell=cell;
-	  xlate();
-      //next 2 lines for debugging
-	  //s = "you put it under pair "+cell+"\n";
-	  //document.debug.output_area.value= s; 	
-      return false;
-  }
-  else if (fobj.className.slice(2)=="keyblock") {
+  if (fobj.className.slice(2)=="keyblock") {
 	  select_key_cell(fobj.className.slice(0,2));
 	  return false;
-  }
-  else if (fobj.className.slice(1)=="keytopouter" && letter_selected) {	  
-	  dobj = fobj;
-	  letter=letters.charAt(cpos);
-	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
-	  s=s+letter+'</span>';
-	  document.getElementById(dobj.id).innerHTML= s;
-	  letter_selected=0;
-	  cell=dobj.className.slice(0,1);
-	  //update top outer key array
-	  top_outer_key[ cell] = letter;
-	  //reset letter block
-	  letterblock_setup();
-	  last_cell=cell;
-	  xlate();
-      //next 2 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-  else if (fobj.className.slice(1)=="keytopinner" && letter_selected) {	  
-	  dobj = fobj;
-	  letter=letters.charAt(cpos);
-	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
-	  s=s+letter+'</span>';
-	  document.getElementById(dobj.id).innerHTML= s;
-	  letter_selected=0;
-	  cell=dobj.className.slice(0,1);
-	  //update top inner key array
-	  top_inner_key[ cell] = letter;
-	  //reset letter block
-	  letterblock_setup();
-	  last_cell=cell;
-	  xlate();
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+check_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-  else if (fobj.className.slice(1)=="keyleftouter" && letter_selected) {	  
-	  dobj = fobj;
-	  letter=letters.charAt(cpos);
-	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
-	  s=s+letter+'</span>';
-	  document.getElementById(dobj.id).innerHTML= s;
-	  letter_selected=0;
-	  cell=dobj.className.slice(0,1);
-	  //update left outer key array
-	  left_outer_key[ cell] = letter;
-	  //reset letter block
-	  letterblock_setup();
-	  last_cell=cell;
-	  xlate();
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+check_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-  else if (fobj.className.slice(1)=="keyleftinner" && letter_selected) {	  
-	  dobj = fobj;
-	  letter=letters.charAt(cpos);
-	  s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:blue">';
-	  s=s+letter+'</span>';
-	  document.getElementById(dobj.id).innerHTML= s;
-	  letter_selected=0;
-	  cell=dobj.className.slice(0,1);
-	  //update left inner key array
-	  left_inner_key[ cell] = letter;
-	  //reset letter block
-	  letterblock_setup();
-	  last_cell=cell;
-	  xlate();
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+check_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
   }
   else if (border_keys[fobj.id.slice(1)]) {
 	  select_border(fobj.id);
@@ -536,24 +416,6 @@ function selectmouse(e)
 	  
 }
 document.onmousedown=selectmouse;
-
-function letterblock_setup() {
-	var s,i,c;
-	
-	s=''
-
-	for (i=0;i<symbols.length;i++) {
-		c = symbols.charAt(i);
-
-		s = s+'<span width="75" height="75" style="border: 2px solid white;background: white;"  >';
-		s=s+'&nbsp<span width="75" height = "75" id ="'+c+'letter" class="'+c+'key" style="color:blue">';
-		s=s+c+'</span> </span>';
-	}	
-	s=s+'<br>';	
-	document.getElementById('letterblock').innerHTML=s;	
-	last_cell='';
-
-}
 
 function keyblock_setup() {
 	var s,i,c;
@@ -623,7 +485,7 @@ function start_over() {
 		code = document.ciphertext.cipher_place.value;
 	}
 	reset_key();
-	letterblock_setup()
+	last_cell='';
 	keyblock_setup()
 	input_ok();
 	document.ciphertext.cipher_place.value=code;
@@ -634,7 +496,7 @@ function reset() {
 	do_erase = confirm("Erase the current cipher?")
 	if ( do_erase == true) {
 		reset_key();
-		letterblock_setup()
+		last_cell='';
 		keyblock_setup()
 		input_ok();
 		hide_repeats();
@@ -755,12 +617,12 @@ function restore_keyblock(flag) { // if flag ==1 include yellow selection boxes
 function set_original_buttons() {
 	var str;
 	str = '<div style="display:flex; flex-direction:column; justify-content:space-between; height:100%;">';
-	str += '<div><INPUT onclick=update_table(); type=button value="Update table" >';
+	str += '<div><INPUT onclick=update_table(); type=button value="Update table" data-tip="Write the letters of the placed crib into the key table, and fill in blank row and column letters" >';
 	str += '<span id="crib_actions" style="position:relative; margin-left:45px;"></span></div>';
-	str += '<div><INPUT onclick=start_over(); type=button value="Start over" >';
-	str += '<INPUT onclick=clear_plaintext(); type=button value="Clear plaintext" >';
-	str += '<INPUT onclick=reset(); type=button value="Erase cipher" ></div>';
-	str += '<div><INPUT onclick=setup_swap(); type=button value="Swap rows or columns in key" ></div>';
+	str += '<div><INPUT onclick=start_over(); type=button value="Start over" data-tip="Clear the key table and its row and column letters, keeping the ciphertext so it can be edited" >';
+	str += '<INPUT onclick=clear_plaintext(); type=button value="Clear plaintext" data-tip="Clear the letters inside the key table, keeping the row and column letters" >';
+	str += '<INPUT onclick=reset(); type=button value="Erase cipher" data-tip="Erase the ciphertext and the key table to start a new cipher" ></div>';
+	str += '<div><INPUT onclick=setup_swap(); type=button value="Swap rows or columns in key" data-tip="Exchange two rows or two columns of the key table, together with their row or column letters" ></div>';
 	str += '</div>';
 	document.getElementById('button_actions').innerHTML= str;
 	set_crib_buttons();
@@ -981,9 +843,9 @@ function enter_crib(){
 
 function set_crib_buttons() {
 	var str;
-	str = '<INPUT onclick=enter_crib(); type=button value="Enter crib" >';
-	str += '<INPUT onclick=drag_left(); type=button value="Drag left" >';	
-	str += '<INPUT onclick=drag_right(); type=button value="Drag right" >';	
+	str = '<INPUT onclick=enter_crib(); type=button value="Enter crib" data-tip="Enter a probable word; it is placed at the first position that does not conflict with the key table" >';
+	str += '<INPUT onclick=drag_left(); type=button value="Drag left" data-tip="Move the crib to the previous position that fits" >';	
+	str += '<INPUT onclick=drag_right(); type=button value="Drag right" data-tip="Move the crib to the next position that fits" >';	
 	// positioned under the crib buttons so showing it doesn't push the button lines apart
 	str += '<span id="crib_repeats" style="visibility:hidden; position:absolute; left:0; top:100%; margin-top:4px; white-space:nowrap;"></span>';
 	document.getElementById('crib_actions').innerHTML= str;		
@@ -1111,7 +973,7 @@ function get_from_disk(){
 		return
 	}
 	reset_key();
-	letterblock_setup();
+	last_cell='';
 	keyblock_setup();
 	set_original_buttons();
 	input_ok();
@@ -1140,11 +1002,85 @@ function get_from_disk(){
 	xlate();
 }
 
+var tooltip_timer;
+
+// a delay keeps tooltips from flashing up as the cursor passes over the buttons
+function schedule_tooltip(e) {
+	var button = e.target;
+	var tip = button.getAttribute('data-tip');
+	hide_tooltip();
+	if (!tip) return;
+	tooltip_timer = setTimeout(function() {
+		var tooltip = document.getElementById('tooltip');
+		var box = button.getBoundingClientRect();
+		tooltip.textContent = tip;
+		tooltip.style.left = (box.left + window.scrollX) + 'px';
+		tooltip.style.top = (box.bottom + window.scrollY + 6) + 'px';
+		tooltip.style.visibility = 'visible';
+	}, 800);
+}
+
+function hide_tooltip() {
+	clearTimeout(tooltip_timer);
+	document.getElementById('tooltip').style.visibility = 'hidden';
+}
+
+document.addEventListener('mouseover', schedule_tooltip);
+document.addEventListener('mousedown', hide_tooltip);
+
 function clear_disk(){
 	localStorage.removeItem("checkerboard.cipher");
 	localStorage.removeItem("checkerboard.key");	
 	localStorage.removeItem("checkerboard.outer_keys");		
 	alert("work cleared from disk");
+}
+
+function read_cipher() {
+	if (solving_flag == 1)
+		return true;
+	if (document.ciphertext.cipher_place.value.trim() == '') {
+		alert('No cipher entered.');
+		return false;
+	}
+	setup_code_pairs();
+	if (solving_flag == 0)
+		return false;
+	restore_keyblock();
+	xlate();
+	return true;
+}
+
+function show_popup(text) {
+	document.getElementById('popup_text').textContent = text;
+	document.getElementById('popup').style.display = 'flex';
+}
+
+function close_popup() {
+	document.getElementById('popup').style.display = 'none';
+}
+
+function show_coordinate_symbols() {
+	if (!read_cipher())
+		return;
+	show_popup('Row: '+distinct_coordinates(0).sort().join('')+'\nColumn: '+distinct_coordinates(1).sort().join(''));
+}
+
+function show_frequency_count() {
+	var counts = {};
+	var i,pair,pairs,width,plaintext,lines;
+	if (!read_cipher())
+		return;
+	for (i=0;i<code_array.length-1;i++)
+		counts[code_array[i]] = (counts[code_array[i]] || 0) + 1;
+	pairs = Object.keys(counts).sort(function(a, b) { return counts[b]-counts[a] || (a < b ? -1 : 1); });
+	width = String(counts[pairs[0]]).length;
+	lines = [];
+	for (i=0;i<pairs.length;i++) {
+		pair = pairs[i];
+		plaintext = key_lookup(pair)[0];
+		lines.push(pair+'  '+String(counts[pair]).padStart(width)+(plaintext == '-' ? '' : ' ('+plaintext+')'));
+	}
+	show_popup(lines.join('\n'));
 }
 
 
@@ -1160,18 +1096,13 @@ Ciphertext: (Type or paste cipher into this box. Note: digits will be converted 
 <TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
 </div>
 </form>
-Click on one of the blue symbols below , then click on a cell inside the key table or along its border<BR>
-<!-- mark off space for letter block -->
-<div id="letterblock" class="letter_block"
-style="font-family:monospace; font-size: 15px; cursor: crosshair; border: 3px ridge black; 
-	margin-right:20px; padding:10px">
-</div>
+<b>Usage:</b> Click a plaintext letter, a key table cell or a border letter, then type a letter. Delete, Backspace, hyphen or Space clears it.<BR>
 <BR>
 Key Table:<br>
 <!-- mark off space for key block -->
 <div style="display:flex;">
 <div id="keyblock" class="key_block"
-style="font-family:monospace; font-size: 15px; cursor: crosshair;
+style="font-family:monospace; font-size: 15px;
 	  padding:10px">
 </div>
 
@@ -1182,14 +1113,15 @@ style="margin-left:50px; padding:30px 0 26px 0;">
 </div>
 </div>
 <div style="clear:left;">
-<INPUT onclick=save_to_disk(); type=button value="Save work to disk" >
-<INPUT onclick=get_from_disk(); type=button value="Retrieve work from disk" >
-<INPUT onclick=clear_disk(); type=button value="Clear work from disk" >
+<INPUT onclick=save_to_disk(); type=button value="Save work to disk" data-tip="Save the ciphertext and key table in this browser, replacing any earlier save" >
+<INPUT onclick=get_from_disk(); type=button value="Retrieve work from disk" data-tip="Reload the ciphertext and key table last saved in this browser" >
+<INPUT onclick=clear_disk(); type=button value="Clear work from disk" data-tip="Delete the saved work from this browser" >
+<INPUT onclick=show_coordinate_symbols(); type=button value="Show coordinate symbols" data-tip="List the letters the ciphertext uses as row and column coordinates" >
+<INPUT onclick=show_frequency_count(); type=button value="Show frequency count" data-tip="List the ciphertext pairs by frequency, with any plaintext found for them" >
 </div>
 <script type="text/javascript">
 screen_check();
 reset_key();
-letterblock_setup();
 keyblock_setup();
 set_original_buttons();
 </script>
@@ -1204,5 +1136,12 @@ output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_
 </Form>
 -->
 
+<div id="tooltip" style="visibility:hidden; position:absolute; max-width:320px; padding:4px 8px; background:#ffffe1; border:1px solid gray; font-family:sans-serif; font-size:13px; pointer-events:none; z-index:10;"></div>
+<div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; z-index:20;">
+<div style="background:white; border:1px solid gray; padding:15px 20px; text-align:center;">
+<pre id="popup_text" style="text-align:left; font-size:15px; max-height:70vh; overflow:auto; margin:0 0 12px 0;"></pre>
+<INPUT onclick=close_popup(); type=button value="OK" >
+</div>
+</div>
 </BODY>
 </HTML>
