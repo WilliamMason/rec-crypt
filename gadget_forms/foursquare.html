@@ -30,7 +30,7 @@ function do_undo(){
     }
     if (undo_index == 0) return;
     redo_array[redo_index] = [];
-    redo_array2[redo_index] = [];    
+    redo_array2[redo_index] = [];
 	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
 		redo_array[redo_index][digits.charAt(i)+digits.charAt(j)] = square_key[ digits.charAt(i)+digits.charAt(j) ];
 		redo_array2[redo_index][digits.charAt(i)+digits.charAt(j)] = square_key2[ digits.charAt(i)+digits.charAt(j) ];
@@ -49,7 +49,7 @@ function do_undo(){
 }
 function do_redo(){
     var i,j;
-    
+
     if (redo_index == 0)
         return;
     redo_index--;
@@ -68,7 +68,7 @@ function update_undo(){
     var i,j;
 
     undo_array[undo_index] = [];
-    undo_array2[undo_index] = [];    
+    undo_array2[undo_index] = [];
 	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
 		undo_array[undo_index][digits.charAt(i)+digits.charAt(j)] = square_key[ digits.charAt(i)+digits.charAt(j) ];
 		undo_array2[undo_index][digits.charAt(i)+digits.charAt(j)] = square_key2[ digits.charAt(i)+digits.charAt(j) ];
@@ -79,51 +79,21 @@ function update_undo(){
 }
 
 
-//next definition needed by Internet explorer, firefox already has it
-if (!Array.prototype.indexOf)
-{
-  Array.prototype.indexOf = function(elt /*, from*/)
-  {
-    var len = this.length;
-
-    var from = Number(arguments[1]) || 0;
-    from = (from < 0)
-         ? Math.ceil(from)
-         : Math.floor(from);
-    if (from < 0)
-      from += len;
-
-    for (; from < len; from++)
-    {
-      if (from in this &&
-          this[from] === elt)
-        return from;
-    }
-    return -1;
-  };
-}
-
-var code,code_array,crib_pos,cribtext;
+var code_array,crib_pos,cribtext;
 var symbols="abcdefghiklmnopqrstuvwxyz-"; // no j
 var wildcard = symbols.indexOf('-');
 var digits="0123456789";
 var letters="ABCDEFGHIKLMNOPQRSTUVWXYZ-"; // no J
-var fire_fox=!document.all;
-var dobj, solving_flag =0;
+var solving_flag =0;
 var asize = 5;
-var line_len = 90;
 var crib_entered=0; // 1 while a placed crib is shown, 2 when the crib fits nowhere
 var crib_key = {};
 var crib_key2 = {};
 var pair_line_limit=28;
 var old_xlation;
 
-//try associative array for key
-var square_key = new Array();
-var square_key2 = new Array();
-var rows_selected = new Array();
-var columns_selected = new Array();
-var columns_selected2 = new Array();
+var square_key = {};
+var square_key2 = {};
 
 // plaintext typed at a pair position before both of its letters are known, e.g. '-v'
 var pending_plaintext = {};
@@ -134,9 +104,10 @@ var selected_key_id = '';
 var data;
 
 function reset_key() {
+	var i,j;
 	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		square_key[ digits.charAt(i)+digits.charAt(j) ] = '-';
-		square_key2[ digits.charAt(i)+digits.charAt(j) ] = '-';
+		square_key[square_cell(i, j)] = '-';
+		square_key2[square_cell(i, j)] = '-';
 	}
 	pending_plaintext = {};
     undo_index = redo_index = 0;
@@ -151,17 +122,17 @@ function update_undo_buttons() {
 function input_ok() {
 	var s='Ciphertext: (Paste the cipher into this box, or type it and click outside the box)<BR>';
 	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
-	
-	document.getElementById('outputblock').innerHTML=s;		
+
+	document.getElementById('outputblock').innerHTML=s;
 }
 
 
 function setup_code_pairs() {
-	var text;
+	var text,i,c;
+	var code = '';
+	var state = 0;
 	data = document.ciphertext.cipher_place.value;
 	text = data.toUpperCase().replace(/J/g, 'I');
-	state=0;
-	code = '';
 	for (i=0;i<text.length;i++) {
 		c = text.charAt(i);
 		if (c != '-' && letters.indexOf(c) != -1) {
@@ -181,7 +152,7 @@ function setup_code_pairs() {
 		solving_flag=0;
 		return;
 	}
-	code_array = code.split(' ');		
+	code_array = code.split(' ');
 	old_xlation = ['--'];
 	for (i = 0;i<code_array.length-1;i++)
 		old_xlation[i]= '--';
@@ -189,70 +160,39 @@ function setup_code_pairs() {
     update_undo_buttons();
 }
 
-function key_lookup(c) { // see if letter pair c is represented in the keysquare
-	var c1,p1,c2,p2,pr;
-	var row1, col1,row2,col2,flag,cr,cc;
-	var key = shown_key(), key2 = shown_key2();
-	
-//	s = "looking up "+c;
-//	document.debug.output_area.value= s; 	
-	
-	c1 = c.charAt(0);
-	c1 = c1.toLowerCase();
-	flag = 0;
-	for (i=0;i<5;i++){
-		cr = digits.charAt(i);
-		for (j=0;j<5;j++){
-			cc = digits.charAt(j);
-			if ( key2[cr+cc] == c1){
-				row1 = i;
-				col1 = j;
-				flag = 1;
-				break;
-			}
-		}
-		if ( flag == 1) break;
-	}
-	if ( flag == 0) return(['--',['55','55']]); // letter c1 not found in key square
-//	s = "found row1 col1 ";
-//	document.debug.output_area.value= s; 	
-	
-	c2 = c.charAt(1);
-	c2 = c2.toLowerCase();	
-	flag = 0;
-	for (i=0;i<5;i++){
-		cr = digits.charAt(i);
-		for (j=0;j<5;j++){
-			cc = digits.charAt(j);
-			if ( key[cr+cc] == c2){
-				row2 = i;
-				col2 = j;
-				flag = 1;
-				break;
-			}
-		}
-		if ( flag == 1) break;
-	}
-	if ( flag == 0) return(['--',['55','55']]); // letter c2 not found in key square 2
-	// corners of rectangle
-	index = 5*row1+col2;
-	r = symbols.charAt(index);	
-	index = 5*row2+col1;
-	r += symbols.charAt(index);		
-	return( [r,['55','55']]);
+function find_cell(square, letter) {
+	var cell;
+	for (cell in square)
+		if (square[cell] == letter)
+			return(cell);
+	return('');
+}
+
+// The plaintext pair sits at the other two corners of the rectangle formed by the
+// first ciphertext letter (top-right square) and the second (bottom-left square).
+function key_lookup(pair) {
+	var cell1 = find_cell(shown_key2(), pair.charAt(0).toLowerCase());
+	var cell2 = find_cell(shown_key(), pair.charAt(1).toLowerCase());
+	var row1,column1,row2,column2;
+	if (cell1 == '' || cell2 == '')
+		return('--');
+	row1 = Number(cell1.charAt(0));
+	column1 = Number(cell1.charAt(1));
+	row2 = Number(cell2.charAt(0));
+	column2 = Number(cell2.charAt(1));
+	return(symbols.charAt(5*row1+column2) + symbols.charAt(5*row2+column1));
 }
 
 
 
 function xlate() {
-	var state,str,limit,pos,pl,cnt,numb_pairs,c,changed;
+	var str,limit,pos,pl,cnt,numb_pairs,c,changed;
 	if (solving_flag ==0) {
 		setup_code_pairs();
 		if (solving_flag==0) return;//odd number of letters!
 	}
 	selected_plaintext_pos = -1;
 	str='';
-	//str='<style="font-family:monospace; font-size:15px;">';
 	limit=pair_line_limit;
 	numb_pairs=code_array.length-1;//final entry not a code pair
 	if (numb_pairs<limit)
@@ -275,14 +215,13 @@ function xlate() {
 		pos++;
 		cnt++;
 		if (cnt>=limit) {
-			//str=str+'\n'+pl+'\n';
 			str = str+'<br><font color="blue">'+pl+'</font><br>'
 			if (pos < numb_pairs)
 				str += '<br>';
 			pl='';
 			cnt=0;
 			if (pos+pair_line_limit>numb_pairs)
-				limit = numb_pairs-pos;;
+				limit = numb_pairs-pos;
 		}
 	}
 	document.getElementById('outputblock').innerHTML=str;
@@ -299,7 +238,7 @@ function shown_key2() {
 }
 
 function current_plaintext(pos) {
-	var plaintext = key_lookup(code_array[pos])[0];
+	var plaintext = key_lookup(code_array[pos]);
 	if (plaintext == '--' && pos in pending_plaintext)
 		plaintext = pending_plaintext[pos];
 	return(plaintext);
@@ -397,7 +336,7 @@ function enter_plaintext_letter(pos, half, letter) {
 }
 
 function type_letter(e) {
-	var letter;
+	var letter,key_id;
 	if ((selected_plaintext_pos == -1 && selected_key_id == '') || e.ctrlKey || e.altKey || e.metaKey || e.target.tagName == 'TEXTAREA')
 		return;
 	if (e.key == 'Escape') {
@@ -407,9 +346,15 @@ function type_letter(e) {
 	letter = (e.key == 'Delete' || e.key == 'Backspace' || e.key == ' ') ? '-' : e.key.toLowerCase().replace('j', 'i');
 	if (letter.length != 1 || symbols.indexOf(letter) == -1)
 		return;
+	// reading the cipher redraws the key tables, which drops the selection
+	key_id = selected_key_id;
+	if (!read_cipher()) {
+		clear_selection();
+		return false;
+	}
 	crib_entered = 0;
-	if (selected_key_id != '')
-		enter_key_letter(selected_key_id, letter);
+	if (key_id != '')
+		enter_key_letter(key_id, letter);
 	else
 		enter_plaintext_letter(selected_plaintext_pos, selected_plaintext_half, letter);
 	return false;
@@ -419,236 +364,65 @@ document.onkeydown = type_letter;
 
 function selectmouse(e)
 {
-  var fobj       = fire_fox ? e.target : event.srcElement;
+  var fobj = e.target;
   // a click on the padding of a key cell's box lands on the box, not the letter inside it
   if (fobj.children.length == 1)
     fobj = fobj.children[0];
   if (fobj.className.slice(2)=="keyblock" || fobj.className.slice(2)=="keyblock2") {
+    // this click doesn't take the focus, so leave the ciphertext box here; that also reads a typed cipher
+    document.activeElement.blur();
     select_key_cell(fobj.id);
     return false;
   }
-  else if (fobj.className.slice(1)=="keycolumn") {	  
-	  dobj = fobj;
-	  cell=dobj.className.slice(0,1);
-	  //update columns selected array
-	  columns_selected[ cell] ^= 1;
-	  if (columns_selected[ cell]==1) {
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
-	  	s +='X</span>';
-	   }
-	  else {	   
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
-	  	s +='&nbsp</span>';
-	   }		  
-	  document.getElementById(dobj.id).innerHTML= s;	
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+square_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-  else if (fobj.className.slice(1)=="keycolumn2") {	  
-	  dobj = fobj;
-	  cell=dobj.className.slice(0,1);
-	  //update columns selected array
-	  columns_selected2[ cell] ^= 1;
-	  if (columns_selected2[ cell]==1) {
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
-	  	s +='X</span>';
-	   }
-	  else {	   
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
-	  	s +='&nbsp</span>';
-	   }		  
-	  document.getElementById(dobj.id).innerHTML= s;	
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+square_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-  
-  else if (fobj.className.slice(1)=="keyrow") {	  
-	  dobj = fobj;
-	  cell=dobj.className.slice(0,1);
-	  //update rows selected array
-	  rows_selected[ cell] ^= 1;
-	  if (rows_selected[ cell]==1) {
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:black">';
-	  	s +='X</span>';
-	   }
-	  else {	   
-	  	s= '<span width="75" height = "75" id ="'+dobj.id+'" class="'+dobj.className+'" style="color:Yellow">';
-	  	s +='&nbsp</span>';
-	   }		  
-	  document.getElementById(dobj.id).innerHTML= s;		  
-      //next 3 lines for debugging
-	  //s = "you put it under letter "+cell+"\n";
-	  //s = s+square_key;
-	  //document.debug.output_area.value= s; 	
-      return false;	  
-  }
-	  
 }
 document.onmousedown=selectmouse;
-
-function keyblock_setup() {
-	var s,i,c;
-	
-	s='';
-	//two columns of blank place holders
-
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s=s+'<br>';
-	
-	for (i=0;i<5;i++) {
-		cr = digits.charAt(i);		
-		//row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
-			s=s+symbols.charAt(5*i+j)+'</span> </span>';
-		}
-		s =s + '&nbsp &nbsp';
-		//second row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix2" class="'+c+'keyblock2" style="color:blue">';
-			s=s+'-'+'</span> </span>';
-		}
-		
-		s=s+'&nbsp <br>';	
-	}	
-	s=s+'<br>';	
-	//two columns of blank place holders
-
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s=s+'<br>';
-	
-	for (i=0;i<5;i++) {
-		cr = digits.charAt(i);		
-		//row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
-			s=s+'-'+'</span> </span>';
-		}
-		s =s + '&nbsp &nbsp';
-		//second row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
-			s=s+symbols.charAt(5*i+j)+'</span> </span>';
-		}
-		
-		s=s+'&nbsp <br>';	
-	}	
-	s=s+'<br>';	
-	
-	document.getElementById('keyblock').innerHTML=s;	
-	selected_key_id = '';
-
-}
 
 function key_cell_color(square, crib_square, cell) {
 	return(crib_entered == 1 && crib_square[cell] != square[cell] ? 'red' : 'blue');
 }
 
+// an invisible line that spaces each pair of squares from the one above it
+function spacer_line() {
+	var spacer = '<span style="border: 2px solid silver;background: silver;">&nbsp&nbsp </span>';
+	return(spacer+spacer+'<br>');
+}
+
+function plain_cell(row, column) {
+	return('<span style="border: 2px solid black;background: white;">&nbsp<span style="color:blue">'+symbols.charAt(5*row+column)+'</span> </span>');
+}
+
+// suffix is '' for square_key (bottom left) and '2' for square_key2 (top right)
+function cipher_cell(row, column, suffix) {
+	var cell = square_cell(row, column);
+	var square = suffix == '2' ? square_key2 : square_key;
+	var crib_square = suffix == '2' ? crib_key2 : crib_key;
+	var shown = suffix == '2' ? shown_key2() : shown_key();
+	return('<span style="border: 2px solid black;background: white;">&nbsp<span id="'+cell+'keymatrix'+suffix+'" class="'+cell+'keyblock'+suffix+'" style="color:'+key_cell_color(square, crib_square, cell)+'">'+shown[cell].toUpperCase()+'</span> </span>');
+}
+
 function update_keyblock() {
-	var s,i,c;
-	var key = shown_key(), key2 = shown_key2();
-	
-	s='';
-	//two columns of blank place holders
-
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s=s+'<br>';
-	
-	for (i=0;i<5;i++) {
-		cr = digits.charAt(i);		
-		//row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
-			s=s+symbols.charAt(5*i+j)+'</span> </span>';
-		}
-		s =s + '&nbsp &nbsp';
-		//second row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			v = key2[c].toUpperCase();
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix2" class="'+c+'keyblock2" style="color:'+key_cell_color(square_key2, crib_key2, c)+'">';
-			s=s+v+'</span> </span>';
-		}
-		
-		s=s+'&nbsp <br>';	
-	}	
-	s=s+'<br>';	
-	//two columns of blank place holders
-
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s = s+'<span width="75" height="75" style="border: 2px solid silver;background: silver;"  >';
-	s=s+'&nbsp&nbsp<span width="75" height = "75" >';
-	s=s+'</span> </span>';
-	s=s+'<br>';
-	
-	for (i=0;i<5;i++) {
-		cr = digits.charAt(i);		
-		//row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			v = key[c].toUpperCase();
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:'+key_cell_color(square_key, crib_key, c)+'">';
-			s=s+v+'</span> </span>';
-		}
-		s =s + '&nbsp &nbsp';
-		//second row of key block cells
-		for (j=0;j<5;j++) {
-			cc=digits.charAt(j);
-			c = cr+cc;
-			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75"  style="color:blue">';
-			s=s+symbols.charAt(5*i+j)+'</span> </span>';
-		}
-		
-		s=s+'&nbsp <br>';	
-	}	
-	s=s+'<br>';	
-	
-	document.getElementById('keyblock').innerHTML=s;	
+	var i,j;
+	var s = spacer_line();
+	for (i=0;i<asize;i++) {
+		for (j=0;j<asize;j++)
+			s += plain_cell(i, j);
+		s += '&nbsp &nbsp';
+		for (j=0;j<asize;j++)
+			s += cipher_cell(i, j, '2');
+		s += '&nbsp <br>';
+	}
+	s += '<br>' + spacer_line();
+	for (i=0;i<asize;i++) {
+		for (j=0;j<asize;j++)
+			s += cipher_cell(i, j, '');
+		s += '&nbsp &nbsp';
+		for (j=0;j<asize;j++)
+			s += plain_cell(i, j);
+		s += '&nbsp <br>';
+	}
+	s += '<br>';
+	document.getElementById('keyblock').innerHTML=s;
 	selected_key_id = '';
-
 }
 
 function start_over() {
@@ -657,40 +431,27 @@ function start_over() {
 	}
 	crib_entered=0;
 	reset_key();
-	keyblock_setup()
+	update_keyblock();
 	input_ok();
 	document.ciphertext.cipher_place.value=data;
 	solving_flag=0;
 }
 
 function reset() {
-	do_erase = confirm("Erase the current cipher?")
-	if ( do_erase == true) {
-		crib_entered=0;
-		reset_key();
-		keyblock_setup()
-		input_ok();
-		document.ciphertext.cipher_place.value='';
-		solving_flag=0;
-	}
-}	
-
-
-
-function redirect() {
-	window.location="Foursquare_lowres.html";
-}
-
-function screen_check() {
-	if (screen.width <1000) {
-		redirect();
-	}
+	if (!confirm("Erase the current cipher?"))
+		return;
+	crib_entered=0;
+	reset_key();
+	update_keyblock();
+	input_ok();
+	document.ciphertext.cipher_place.value='';
+	solving_flag=0;
 }
 
 
 function set_original_buttons() {
-	str = '<INPUT onclick=start_over(); type=button value="start over" data-tip="Clear both key tables, keeping the ciphertext so it can be edited" >';
-	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" data-tip="Erase the ciphertext and both key tables to start a new cipher" ><br><br>';
+	var str = '<INPUT onclick=start_over(); type=button value="start over" data-tip="Clear both key tables, keeping the ciphertext so it can be edited" >';
+	str += '<INPUT onclick=reset(); type=button value="erase cipher" data-tip="Erase the ciphertext and both key tables to start a new cipher" ><br><br>';
     str += '<INPUT onclick=do_undo(); id = "undo_button" type=button value="undo" disabled data-tip="Undo the last change to the key tables, or remove a crib that has not been accepted" >';
     str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled data-tip="Redo the last change that was undone" ><br>';
     str += '<br><br>';
@@ -698,8 +459,8 @@ function set_original_buttons() {
     str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" data-tip="Reload the ciphertext and key tables last saved in this browser" ><br><br>';
     str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" data-tip="Delete the saved work from this browser" ><br><br>';
     str += '<INPUT onclick=show_frequency_count(); type=button value="show frequency count" data-tip="List the ciphertext pairs by frequency, with any plaintext found for them" >';
-    
-	document.getElementById('button_actions').innerHTML= str;	
+
+	document.getElementById('button_actions').innerHTML= str;
 }
 
 // The crib is placed on copies of the key tables, so the tables themselves are left alone
@@ -780,19 +541,17 @@ function drag_crib(step) {
 }
 
 function enter_crib() {
-	var crib = prompt('Enter crib');
-	var i,c;
+	var crib,i,c;
+	if (!read_cipher())
+		return;
+	crib = prompt('Enter crib');
 	if (crib == null)
 		return;
-	if (solving_flag == 0) {
-		setup_code_pairs();
-		if (solving_flag == 0) return; //odd number of letters!
-	}
 	cribtext = '';
 	crib = crib.toLowerCase().replace(/j/g, 'i');
 	for (i=0;i<crib.length;i++) {
 		c = crib.charAt(i);
-		if (symbols.indexOf(c) != -1) //allow '-' chars in crib!
+		if (symbols.indexOf(c) != -1) // '-' is kept as a wildcard
 			cribtext += c;
 	}
 	if (cribtext == '')
@@ -840,27 +599,30 @@ function remove_crib() {
 	xlate();
 }
 
-function save_to_disk(){
-	var i,j,cell,key_text,key2_text;
+var saved_work_name = "foursquare.work";
+// work saved before it was stored as a single entry
+var old_saved_names = ["foursquare.cipher", "foursquare.key", "foursquare.key2", "foursquare.pending"];
 
+function key_text(square) {
+	var i,j;
+	var text = '';
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++)
+		text += square[square_cell(i, j)];
+	return(text);
+}
+
+function save_to_disk(){
+	var work;
 	if (solving_flag == 0)
 		data = document.ciphertext.cipher_place.value;
 	if (data.trim() == '') {
 		alert('No cipher entered.');
 		return;
 	}
-	key_text = '';
-	key2_text = '';
-	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		cell = digits.charAt(i)+digits.charAt(j);
-		key_text += square_key[cell];
-		key2_text += square_key2[cell];
-	}
+	work = {cipher: data, key: key_text(square_key), key2: key_text(square_key2), pending: pending_plaintext};
 	try {
-		localStorage.setItem("foursquare.cipher", data);
-		localStorage.setItem("foursquare.key", key_text);
-		localStorage.setItem("foursquare.key2", key2_text);
-		localStorage.setItem("foursquare.pending", JSON.stringify(pending_plaintext));
+		localStorage.setItem(saved_work_name, JSON.stringify(work));
+		old_saved_names.forEach(function (name) { localStorage.removeItem(name); });
 	} catch (e) {
 		alert('Work not saved: '+e.message);
 		return;
@@ -868,38 +630,53 @@ function save_to_disk(){
 	alert("Work saved on disk");
 }
 
+function read_saved_work() {
+	var text = localStorage.getItem(saved_work_name);
+	if (text != null)
+		return(JSON.parse(text));
+	if (localStorage.getItem("foursquare.cipher") == null)
+		return(null);
+	return({
+		cipher: localStorage.getItem("foursquare.cipher"),
+		key: localStorage.getItem("foursquare.key"),
+		key2: localStorage.getItem("foursquare.key2"),
+		pending: JSON.parse(localStorage.getItem("foursquare.pending") || '{}')
+	});
+}
+
+function is_saved_key(text) {
+	return(typeof text == 'string' && text.length == asize*asize);
+}
+
 function get_from_disk(){
-	var i,j,cell,cipher_text,key_text,key2_text,pending_text;
+	var work,i,j,cell;
 
 	try {
-		cipher_text = localStorage.getItem("foursquare.cipher");
-		key_text = localStorage.getItem("foursquare.key");
-		key2_text = localStorage.getItem("foursquare.key2");
-		pending_text = localStorage.getItem("foursquare.pending");
+		work = read_saved_work();
 	} catch (e) {
 		alert('Work not retrieved: '+e.message);
 		return;
 	}
-	if (cipher_text == null) {
+	if (work == null) {
 		alert("No cipher stored");
 		return;
 	}
-	if (key_text == null || key2_text == null || key_text.length != asize*asize || key2_text.length != asize*asize) {
+	if (!is_saved_key(work.key) || !is_saved_key(work.key2)) {
 		alert("The saved work is incomplete, so nothing was retrieved.");
 		return;
 	}
-	data = cipher_text;
+	data = work.cipher;
 	crib_entered = 0;
 	reset_key();
 	input_ok();
 	document.ciphertext.cipher_place.value = data;
 	solving_flag = 0;
 	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		cell = digits.charAt(i)+digits.charAt(j);
-		square_key[cell] = key_text.charAt(asize*i+j);
-		square_key2[cell] = key2_text.charAt(asize*i+j);
+		cell = square_cell(i, j);
+		square_key[cell] = work.key.charAt(asize*i+j);
+		square_key2[cell] = work.key2.charAt(asize*i+j);
 	}
-	pending_plaintext = JSON.parse(pending_text || '{}');
+	pending_plaintext = work.pending || {};
 	update_keyblock();
 	xlate();
 }
@@ -931,10 +708,13 @@ document.addEventListener('mouseover', schedule_tooltip);
 document.addEventListener('mousedown', hide_tooltip);
 
 function clear_disk(){
-	localStorage.removeItem("foursquare.cipher");
-	localStorage.removeItem("foursquare.key");	
-	localStorage.removeItem("foursquare.key2");		
-	localStorage.removeItem("foursquare.pending");
+	try {
+		localStorage.removeItem(saved_work_name);
+		old_saved_names.forEach(function (name) { localStorage.removeItem(name); });
+	} catch (e) {
+		alert('Work not cleared: '+e.message);
+		return;
+	}
 	alert("work cleared from disk");
 }
 
@@ -984,7 +764,7 @@ function show_frequency_count() {
 	lines = [];
 	for (i=0;i<pairs.length;i++) {
 		pair = pairs[i];
-		plaintext = key_lookup(pair)[0];
+		plaintext = key_lookup(pair);
 		lines.push(pair+'  '+String(counts[pair]).padStart(width)+(plaintext == '--' ? '' : ' ('+plaintext+')'));
 	}
 	show_popup(lines.join('\n'));
@@ -1032,21 +812,10 @@ style="float:left; margin-left:50px; margin-top:30px;">
 
 
 <script type="text/javascript">
-//screen_check();
 set_original_buttons();
 reset_key();
-keyblock_setup();
+update_keyblock();
 </script>
-
-
-
-<!--
-<br><br><br><br>
-<br><br><br><br>
-<Form name=debug>
-output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_area rows=2 cols=90></TEXTAREA><BR>
-</Form>
---->
 
 <div id="tooltip" style="visibility:hidden; position:absolute; max-width:320px; padding:4px 8px; background:#ffffe1; border:1px solid gray; font-family:sans-serif; font-size:13px; pointer-events:none; z-index:10;"></div>
 <div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; z-index:20;">
