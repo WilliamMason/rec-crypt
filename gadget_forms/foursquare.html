@@ -149,7 +149,7 @@ function update_undo_buttons() {
 }
 
 function input_ok() {
-	var s='Ciphertext: (Type or paste cipher into this box)<BR>';
+	var s='Ciphertext: (Paste the cipher into this box, or type it and click outside the box)<BR>';
 	s=s+'<TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>';
 	
 	document.getElementById('outputblock').innerHTML=s;		
@@ -927,6 +927,16 @@ function read_cipher() {
 	return true;
 }
 
+function read_entered_cipher(e) {
+	if (e.target.id == 'cipher_place' && e.target.value.trim() != '')
+		read_cipher();
+}
+document.addEventListener('change', read_entered_cipher);
+// the pasted text is only in the box once the paste event has been handled
+document.addEventListener('paste', function (e) {
+	setTimeout(function () { read_entered_cipher(e); }, 0);
+});
+
 function show_popup(text) {
 	document.getElementById('popup_text').textContent = text;
 	document.getElementById('popup').style.display = 'flex';
@@ -963,7 +973,7 @@ function show_frequency_count() {
 <!-- mark space for cipher and plaintext -->
 <div id="outputblock"
 style="overflow:auto; font-family:monospace; font-size: 15px; height:200px; margin-right:100px; padding: 10px; background:white;">
-Ciphertext: (Type or paste cipher into this box)<BR>
+Ciphertext: (Paste the cipher into this box, or type it and click outside the box)<BR>
 <TEXTAREA id=cipher_place style="font-family:monospace" name=output_area rows=9 cols=90></TEXTAREA><BR>
 </div>
 </form>
