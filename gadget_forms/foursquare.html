@@ -270,6 +270,8 @@ function xlate() {
 		if (cnt>=limit) {
 			//str=str+'\n'+pl+'\n';
 			str = str+'<br><font color="blue">'+pl+'</font><br>'
+			if (pos < numb_pairs)
+				str += '<br>';
 			pl='';
 			cnt=0;
 			if (pos+pair_line_limit>numb_pairs)
