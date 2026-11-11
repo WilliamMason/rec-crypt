@@ -30,8 +30,14 @@ function read_custom_word_list(file) {
   reader.readAsText(file);
 }
 
+// Accented letters become their base letter (å -> a, é -> e) so they can match the a-z word list
+// while still counting as one letter for lengths and positions.
+function fold_diacritics(text) {
+    return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
 function parse_word_list(text) {
-    return text.toLowerCase().split(/[^a-z]+/).filter(function(word) { return word.length > 0; });
+    return fold_diacritics(text).split(/[^\p{L}]+/u).filter(function(word) { return word.length > 0; });
 }
 
 function alltrim(str) {
@@ -44,7 +50,7 @@ function condense_white_space(str) {
 
 // Apostrophes, hyphens and equals signs join their neighbours (don't -> dont) instead of splitting words.
 function reformat(text) {
-    var letters_and_spaces = text.replace(/['\-=]/g, '').toLowerCase().replace(/[^a-z]/g, ' ');
+    var letters_and_spaces = fold_diacritics(text.replace(/['\-=]/g, '')).replace(/[^\p{L}]/gu, ' ');
     return condense_white_space(alltrim(letters_and_spaces));
 }
 
@@ -107,22 +113,27 @@ function find_segmentations(plaintext_word, run, max_letters) {
     return segmentations;
 }
 
-function position_label(from_start, position) {
-    if (from_start) return position == 1 ? "first letter" : "letter " + position;
-    return position == 1 ? "last letter" : "letter " + position + " from end";
+function offset_position(position, word_length, anchor) {
+    if (anchor == 'end') return word_length - position + 1;
+    if (anchor == 'middle') return position - (word_length + 1) / 2;
+    return position;
 }
 
-// A position rule is scored on the first letter each ciphertext word supplies, counted from either end.
-function best_position_rule(segments) {
+function position_label(offset, anchor) {
+    if (anchor == 'end') return offset == 1 ? "last letter" : "letter " + offset + " from end";
+    if (anchor == 'middle') return offset == 0 ? "middle letter" : "letter " + offset + " from middle";
+    return offset == 1 ? "first letter" : "letter " + offset;
+}
+
+// A position rule is scored on the first letter each ciphertext word supplies, counted from the chosen anchor.
+function best_position_rule(segments, anchor) {
     var tally = {};
     var best = {label: '', count: 0};
     segments.forEach(function(segment) {
-        var labels = {};
         segment.positions[0].forEach(function(position) {
-            labels[position_label(true, position)] = true;
-            labels[position_label(false, segment.cipher_word.length - position + 1)] = true;
+            var label = position_label(offset_position(position, segment.cipher_word.length, anchor), anchor);
+            tally[label] = (tally[label] || 0) + 1;
         });
-        Object.keys(labels).forEach(function(label) { tally[label] = (tally[label] || 0) + 1; });
     });
     Object.keys(tally).forEach(function(label) {
         if (tally[label] > best.count) best = {label: label, count: tally[label]};
@@ -130,10 +141,10 @@ function best_position_rule(segments) {
     return best;
 }
 
-function make_hit(plaintext_word, run, max_letters) {
+function make_hit(plaintext_word, run, max_letters, anchor) {
     var best = null;
     find_segmentations(plaintext_word, run, max_letters).forEach(function(segments) {
-        var rule = best_position_rule(segments);
+        var rule = best_position_rule(segments, anchor);
         if (best == null || rule.count > best.rule.count)
             best = {word: plaintext_word, segments: segments, rule: rule};
     });
@@ -148,10 +159,12 @@ function compare_hits(a, b) {
     return a.word < b.word ? -1 : a.word > b.word ? 1 : 0;
 }
 
-function format_provenance(segments) {
+function format_provenance(segments, anchor) {
     return segments.map(function(segment) {
         var positions = segment.positions.map(function(p) {
-            return p.length == 1 ? String(p[0]) : '(' + p.join('|') + ')';
+            var offsets = p.map(function(position) { return offset_position(position, segment.cipher_word.length, anchor); })
+                .sort(function(a, b) { return a - b; });
+            return offsets.length == 1 ? String(offsets[0]) : '(' + offsets.join('|') + ')';
         }).join('+');
         return segment.chunk + '=' + segment.cipher_word + '[' + positions + ']';
     }).join(' ');
@@ -162,9 +175,9 @@ function pad(str, width) {
     return str;
 }
 
-function format_hits(hits) {
+function format_hits(hits, anchor) {
     var word_width = Math.max.apply(null, hits.map(function(hit) { return hit.word.length; }));
-    var provenances = hits.map(function(hit) { return format_provenance(hit.segments); });
+    var provenances = hits.map(function(hit) { return format_provenance(hit.segments, anchor); });
     var provenance_width = Math.max.apply(null, provenances.map(function(p) { return p.length; }));
     return hits.map(function(hit, i) {
         return pad(hit.word, word_width) + '  ' + pad(provenances[i], provenance_width) +
@@ -172,7 +185,7 @@ function format_hits(hits) {
     }).join('\n');
 }
 
-function find_hits(dictionary, start_pos, min_len, max_len, max_letters, required_sequence) {
+function find_hits(dictionary, start_pos, min_len, max_len, max_letters, required_sequence, anchor) {
   var longest_run = Math.min(max_len, cipher_words.length - start_pos);
   var hits_by_word = {};
   var run_length, run;
@@ -181,7 +194,7 @@ function find_hits(dictionary, start_pos, min_len, max_len, max_letters, require
     dictionary.forEach(function(word) {
       if (word.length < run_length || word.length > run_length * max_letters) return;
       if (word.indexOf(required_sequence) < 0) return;
-      var hit = make_hit(word, run, max_letters);
+      var hit = make_hit(word, run, max_letters, anchor);
       if (hit != null && (!hits_by_word[word] || compare_hits(hit, hits_by_word[word]) < 0))
         hits_by_word[word] = hit;
     });
@@ -189,11 +202,12 @@ function find_hits(dictionary, start_pos, min_len, max_len, max_letters, require
   return Object.keys(hits_by_word).map(function(word) { return hits_by_word[word]; }).sort(compare_hits);
 }
 
-function format_section(start_pos, end_pos, max_letters, required_sequence, hits) {
+function format_section(start_pos, end_pos, max_letters, required_sequence, anchor, hits) {
   var section = "===== Words " + start_pos + " to " + end_pos + ", " + max_letters +
       " letter(s) per word" + (required_sequence ? ", containing \"" + required_sequence + "\"" : "") +
+      ", positions from " + anchor +
       ": " + hits.length + " candidate words =====\n";
-  if (hits.length > 0) section += format_hits(hits) + '\n';
+  if (hits.length > 0) section += format_hits(hits, anchor) + '\n';
   return section;
 }
 
@@ -203,7 +217,8 @@ function do_processing(){
   var start_pos = iterate_all ? 0 : read_count('start_pos');
   var min_len = read_count('min_len');
   var max_len = read_count('max_len');
-  var required_sequence = alltrim(document.getElementById('required_sequence').value).toLowerCase();
+  var required_sequence = fold_diacritics(alltrim(document.getElementById('required_sequence').value));
+  var anchor = document.querySelector('input[name="offset_anchor"]:checked').value;
   var dictionary, available, search;
 
   if (isNaN(start_pos) || start_pos >= cipher_words.length) {
@@ -218,8 +233,8 @@ function do_processing(){
     alert("Maximum words to scan must be a whole number no smaller than the minimum.");
     return;
   }
-  if (!/^[a-z]*$/.test(required_sequence)) {
-    alert("The required letter sequence may contain only the letters a-z.");
+  if (!/^\p{L}*$/u.test(required_sequence)) {
+    alert("The required letter sequence may contain only letters.");
     return;
   }
   available = cipher_words.length - start_pos;
@@ -240,7 +255,7 @@ function do_processing(){
   search = {
     dictionary: dictionary, first_start: start_pos,
     last_start: iterate_all ? cipher_words.length - min_len : start_pos,
-    min_len: min_len, max_len: max_len, max_letters: max_letters, required_sequence: required_sequence,
+    min_len: min_len, max_len: max_len, max_letters: max_letters, required_sequence: required_sequence, anchor: anchor,
     output: "Each entry: letters=ciphertext word[positions of those letters]; best shared position rule\n\n"
   };
   set_search_running(true);
@@ -251,9 +266,9 @@ function do_processing(){
 // One start word is searched per timer tick so the page stays responsive and can show progress.
 function run_search_step(search, start_pos) {
   var hits = find_hits(search.dictionary, start_pos, search.min_len, search.max_len,
-      search.max_letters, search.required_sequence);
+      search.max_letters, search.required_sequence, search.anchor);
   search.output += format_section(start_pos, Math.min(start_pos + search.max_len, cipher_words.length) - 1,
-      search.max_letters, search.required_sequence, hits) + '\n';
+      search.max_letters, search.required_sequence, search.anchor, hits) + '\n';
   if (start_pos < search.last_start) {
     document.getElementById('output_area').value = search.output + '(searching...)';
     show_progress(search, start_pos + 1);
@@ -284,7 +299,16 @@ function initialize(){
   }
   cipher_words = str.split(' ');
   show_word_list();
+  update_middle_option();
   document.getElementById('process').disabled = false;
+}
+
+// Only words of odd length have a single middle letter to count from.
+function update_middle_option() {
+  var all_odd = cipher_words.every(function(word) { return word.length % 2 == 1; });
+  document.getElementById('anchor_middle_option').hidden = !all_odd;
+  if (!all_odd && document.getElementById('anchor_middle').checked)
+    document.getElementById('anchor_beginning').checked = true;
 }
 
 function show_word_list() {
@@ -323,9 +347,11 @@ onload = function() {
 <li>Click a numbered word to start the search there, or type the start word number. Enter <b>-1</b> to search from every start word in turn.</li>
 <li>Set the minimum and maximum number of consecutive ciphertext words a plaintext word may span.</li>
 <li>Choose how many letters each ciphertext word may supply (1 or 2). Letters taken from one word must appear in it in forward order.</li>
+<li>Choose the offset position that letter positions are counted from: the beginning (1, 2, 3, ...), the end (1 = last letter),
+or the middle (0 = middle letter, -1 before it, 1 after it). Middle is offered only when every ciphertext word has an odd number of letters.</li>
 <li>Optionally, list only words containing a letter sequence (e.g. "ten"), use a custom word list file, or add extra words to the word list.</li>
 <li>Click <b>Find words</b>. Each hit shows which letters came from which ciphertext word and at which positions,
-followed by the letter position shared by the most words (e.g. "first letter in 3/4 words"). Hits with the most consistent positions are listed first.</li>
+followed by the letter position, counted from the chosen offset, that is shared by the most words (e.g. "first letter in 3/4 words"). Hits with the most consistent positions are listed first.</li>
 </ol>
 Input:<br>
 <textarea id="input_area" cols=80 rows=10>
@@ -344,7 +370,7 @@ Start at word number (-1 = every start word): <input type="text" id="start_pos" 
 Minimum words to scan: <input type="text" id="min_len" size=3 value='3'>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Maximum words to scan: <input type="text" id="max_len" size=3 value='10'>
-<br><br>
+<br>
 <input type="button" value="Find words" onclick="do_processing()" disabled id="process">
 <span id="progress"></span>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -356,12 +382,18 @@ Maximum letters to select per word: <input type="radio" name="r_buttons" id="let
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Only words containing letter sequence (optional): <input type="text" id="required_sequence" size=10 value=''>
 <br>
+Offset position:
+<label><input type="radio" name="offset_anchor" id="anchor_beginning" value="beginning" checked> Beginning</label>
+&nbsp;&nbsp;&nbsp;
+<label id="anchor_middle_option" hidden><input type="radio" name="offset_anchor" id="anchor_middle" value="middle"> Middle &nbsp;&nbsp;&nbsp;</label>
+<label><input type="radio" name="offset_anchor" id="anchor_end" value="end"> End</label>
+<br><br>
 <input type="checkbox" id="custom_word_list">
 Use custom word list.
 &nbsp; &nbsp; &nbsp; &nbsp;
 Custom word list file:
 <input type="file" id="input">
-<br><br>
+<br>
 Extra words to add to the word list (separated by spaces or commas):<br>
 <input type="text" id="extra_words" size=80 value=''>
 <br><br>
