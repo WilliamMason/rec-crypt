@@ -23,6 +23,11 @@ var redo_pending = [];
 function do_undo(){
     var i,j;
 
+    // a placed crib isn't in the tables yet, so undoing it only removes it from the display
+    if (crib_entered == 1) {
+        remove_crib();
+        return;
+    }
     if (undo_index == 0) return;
     redo_array[redo_index] = [];
     redo_array2[redo_index] = [];    
@@ -38,6 +43,7 @@ function do_undo(){
 		square_key2[ digits.charAt(i)+digits.charAt(j) ] = undo_array2[undo_index][digits.charAt(i)+digits.charAt(j)];
 	}
     pending_plaintext = Object.assign({}, undo_pending[undo_index]);
+    crib_entered = 0;
     document.getElementById('redo_button').disabled = false;
     update_keyblock();
     xlate();
@@ -54,6 +60,7 @@ function do_redo(){
 		square_key2[ digits.charAt(i)+digits.charAt(j) ] = redo_array2[redo_index][digits.charAt(i)+digits.charAt(j)];
 	}
     pending_plaintext = Object.assign({}, redo_pending[redo_index]);
+    crib_entered = 0;
     update_keyblock();
     xlate();
 }
@@ -99,13 +106,16 @@ if (!Array.prototype.indexOf)
 
 var code,code_array,crib_pos,cribtext;
 var symbols="abcdefghiklmnopqrstuvwxyz-"; // no j
+var wildcard = symbols.indexOf('-');
 var digits="0123456789";
 var letters="ABCDEFGHIKLMNOPQRSTUVWXYZ-"; // no J
 var fire_fox=!document.all;
 var dobj, solving_flag =0;
 var asize = 5;
 var line_len = 90;
-var crib_entered=0;
+var crib_entered=0; // 1 while a placed crib is shown, 2 when the crib fits nowhere
+var crib_key = {};
+var crib_key2 = {};
 var pair_line_limit=28;
 var old_xlation;
 
@@ -175,6 +185,7 @@ function setup_code_pairs() {
 function key_lookup(c) { // see if letter pair c is represented in the keysquare
 	var c1,p1,c2,p2,pr;
 	var row1, col1,row2,col2,flag,cr,cc;
+	var key = shown_key(), key2 = shown_key2();
 	
 //	s = "looking up "+c;
 //	document.debug.output_area.value= s; 	
@@ -186,7 +197,7 @@ function key_lookup(c) { // see if letter pair c is represented in the keysquare
 		cr = digits.charAt(i);
 		for (j=0;j<5;j++){
 			cc = digits.charAt(j);
-			if ( square_key2[cr+cc] == c1){
+			if ( key2[cr+cc] == c1){
 				row1 = i;
 				col1 = j;
 				flag = 1;
@@ -206,7 +217,7 @@ function key_lookup(c) { // see if letter pair c is represented in the keysquare
 		cr = digits.charAt(i);
 		for (j=0;j<5;j++){
 			cc = digits.charAt(j);
-			if ( square_key[cr+cc] == c2){
+			if ( key[cr+cc] == c2){
 				row2 = i;
 				col2 = j;
 				flag = 1;
@@ -243,13 +254,14 @@ function xlate() {
 	cnt=0;
 	pl='';
 	while (pos<numb_pairs ) {
-		str = str+code_array[pos]+' ';
+		if (crib_entered == 1 && 2*pos+1 >= crib_pos && 2*pos < crib_pos+cribtext.length)
+			str += '<font color="red">'+code_array[pos]+'</font> ';
+		else
+			str += code_array[pos]+' ';
 
-		c = key_lookup(code_array[pos])[0];
-		if (c != '--')
+		c = current_plaintext(pos);
+		if (c.indexOf('-') == -1 && crib_entered != 1)
 			delete pending_plaintext[pos];
-		else if (pos in pending_plaintext)
-			c = pending_plaintext[pos];
 		changed = old_xlation[pos] != c;
 		old_xlation[pos] = c;
 		pl += plaintext_span(pos, 0, c, changed) + plaintext_span(pos, 1, c, changed) + '&nbsp;';
@@ -265,6 +277,22 @@ function xlate() {
 		}
 	}
 	document.getElementById('outputblock').innerHTML=str;
+}
+
+// While a crib is shown, the tables are displayed with the crib's letters added
+function shown_key() {
+	return(crib_entered == 1 ? crib_key : square_key);
+}
+
+function shown_key2() {
+	return(crib_entered == 1 ? crib_key2 : square_key2);
+}
+
+function current_plaintext(pos) {
+	var plaintext = key_lookup(code_array[pos])[0];
+	if (plaintext == '--' && pos in pending_plaintext)
+		plaintext = pending_plaintext[pos];
+	return(plaintext);
 }
 
 function plaintext_span(pos, half, plaintext, changed) {
@@ -329,7 +357,7 @@ function enter_key_letter(id, letter) {
 // A plaintext pair fixes both of its ciphertext letters at once, so a pair typed one letter
 // at a time is held in pending_plaintext until it is complete.
 function enter_plaintext_letter(pos, half, letter) {
-	var plaintext = old_xlation[pos];
+	var plaintext = current_plaintext(pos);
 	var new_plaintext = half == 0 ? letter+plaintext.charAt(1) : plaintext.charAt(0)+letter;
 	var ciphertext = code_array[pos].toLowerCase();
 	var p1 = symbols.indexOf(new_plaintext.charAt(0));
@@ -370,6 +398,7 @@ function type_letter(e) {
 	letter = (e.key == 'Delete' || e.key == 'Backspace' || e.key == ' ') ? '-' : e.key.toLowerCase();
 	if (letter.length != 1 || symbols.indexOf(letter) == -1)
 		return;
+	crib_entered = 0;
 	if (selected_key_id != '')
 		enter_key_letter(selected_key_id, letter);
 	else
@@ -530,8 +559,13 @@ function keyblock_setup() {
 
 }
 
+function key_cell_color(square, crib_square, cell) {
+	return(crib_entered == 1 && crib_square[cell] != square[cell] ? 'red' : 'blue');
+}
+
 function update_keyblock() {
 	var s,i,c;
+	var key = shown_key(), key2 = shown_key2();
 	
 	s='';
 	//two columns of blank place holders
@@ -559,9 +593,9 @@ function update_keyblock() {
 		for (j=0;j<5;j++) {
 			cc=digits.charAt(j);
 			c = cr+cc;
-			v = square_key2[c].toUpperCase();
+			v = key2[c].toUpperCase();
 			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix2" class="'+c+'keyblock2" style="color:blue">';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix2" class="'+c+'keyblock2" style="color:'+key_cell_color(square_key2, crib_key2, c)+'">';
 			s=s+v+'</span> </span>';
 		}
 		
@@ -584,9 +618,9 @@ function update_keyblock() {
 		for (j=0;j<5;j++) {
 			cc=digits.charAt(j);
 			c = cr+cc;
-			v = square_key[c].toUpperCase();
+			v = key[c].toUpperCase();
 			s = s+'<span width="75" height="75" style="border: 2px solid black;background: white;"  >';
-			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:blue">';
+			s=s+'&nbsp<span width="75" height = "75" id ="'+c+'keymatrix" class="'+c+'keyblock" style="color:'+key_cell_color(square_key, crib_key, c)+'">';
 			s=s+v+'</span> </span>';
 		}
 		s =s + '&nbsp &nbsp';
@@ -617,6 +651,7 @@ function start_over() {
 	input_ok();
 	document.ciphertext.cipher_place.value=code;
 	solving_flag=0;
+	crib_entered=0;
 }	
 
 function reset() {
@@ -652,193 +687,148 @@ function set_original_buttons() {
     str += '<br><br>';
     str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
     str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" ><br><br>';
-    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" >';
+    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" ><br><br>';
+    str += '<INPUT onclick=show_frequency_count(); type=button value="show frequency count" title="List the ciphertext pairs by frequency, with any plaintext found for them" >';
     
 	document.getElementById('button_actions').innerHTML= str;	
 }
 
+// The crib is placed on copies of the key tables, so the tables themselves are left alone
+// until the crib is written into them with update_tables().
 function ck_crib_pos() {
-	//also set up keys and keyblock
-	//for speed, check consistency first
-	reset_key();
-	// is inital letter part of a pair?
-    if ( crib_pos&1) {
-       index = 1; // not part of a pair
-    }
-    else
-       index = 0;
-    flag = 0;
-	for (var i=index;i<cribtext.length;i = i+2) {
-		c = cribtext.charAt(i);
-		if (i == cribtext.length-1) {
-			flag = 1; // ends in incomplete pair
-			break;
-		}
-		c1 = cribtext.charAt(i+1)
-		pr =code_array[ (crib_pos+i)/2];
-		i1 = symbols.indexOf(c);
-		row1 = Math.floor(i1/5);
-		col1 = i1%5;
-		i2 = symbols.indexOf(c1);
-		row2 = Math.floor(i2/5);
-		col2 = i2%5;
-		pr = pr.toLowerCase();
-		if ( square_key2[digits.charAt(row1)+digits.charAt(col2)] != '-' 
-			&& square_key2[digits.charAt(row1)+digits.charAt(col2)] != pr.charAt(0))	{
+	var i,p1,p2,ciphertext,last;
+	var start = crib_pos & 1; // an odd crib_pos starts the crib on the second letter of a pair
+	crib_key = Object.assign({}, square_key);
+	crib_key2 = Object.assign({}, square_key2);
+	for (i=start;i+1<cribtext.length;i+=2) {
+		ciphertext = code_array[(crib_pos+i)/2].toLowerCase();
+		p1 = symbols.indexOf(cribtext.charAt(i));
+		p2 = symbols.indexOf(cribtext.charAt(i+1));
+		if (p1 == wildcard || p2 == wildcard)
+			continue;
+		if (!place_crib_letter(crib_key2, square_cell(Math.floor(p1/5), p2%5), ciphertext.charAt(0)))
 			return(0);
-		}
-		if ( square_key[digits.charAt(row2)+digits.charAt(col1)] != '-' 
-			&& square_key[digits.charAt(row2)+digits.charAt(col1)] != pr.charAt(1))	{
+		if (!place_crib_letter(crib_key, square_cell(Math.floor(p2/5), p1%5), ciphertext.charAt(1)))
 			return(0);
-		}
-		
-		for( var d in square_key2){
-			if (square_key2[d] == pr.charAt(0) && d!= digits.charAt(row1)+digits.charAt(col2) )
-				return(0);
-		}
-		for( var d in square_key){
-			if (square_key[d] == pr.charAt(1) && d!= digits.charAt(row2)+digits.charAt(col1) )
-				return(0);
-		}
-		square_key2[digits.charAt(row1)+digits.charAt(col2)]=pr.charAt(0);
-		square_key[digits.charAt(row2)+digits.charAt(col1)] = pr.charAt(1);
 	}
-	if ( index) {// crib starts at odd position
-//		s = 'checking index';
-
-		c1 = cribtext.charAt(0);	
-		pr = code_array[ (crib_pos-1)/2];
-//		s += 'at'+crib_pos+'which is '+pr;
-//		document.debug.output_area.value= s; 			
-		i1 = symbols.indexOf(c1);
-		row1 = Math.floor(i1/5);
-		col1 = i1%5;
-		pr = pr.toLowerCase();
-		for( var d in square_key2){
-			if (square_key2[d] == pr.charAt(0) && d.charAt(1)!= digits.charAt(col1) ){
-//				s = 'no good position 0';
-//				document.debug.output_area.value= s; 	
-				return(0);
-			}
-		}
-		for( var d in square_key){
-			if (square_key[d] == pr.charAt(1) && d.charAt(0)!= digits.charAt(row1) ){
-//				s = 'no good position 1';
-//				document.debug.output_area.value= s; 	
-				return(0);
-			}
-		}
+	if (start == 1) {
+		ciphertext = code_array[(crib_pos-1)/2].toLowerCase();
+		p2 = symbols.indexOf(cribtext.charAt(0));
+		if (p2 != wildcard && !(placed_in_line(crib_key2, ciphertext.charAt(0), 1, p2%5)
+				&& placed_in_line(crib_key, ciphertext.charAt(1), 0, Math.floor(p2/5))))
+			return(0);
 	}
-	if ( flag) {// crib ends at even position
-		c1 = cribtext.charAt(cribtext.length-1);	
-		pr =code_array[ (crib_pos+cribtext.length-1)/2];
-		i1 = symbols.indexOf(c1);
-		row1 = Math.floor(i1/5);
-		col1 = i1%5;
-		pr = pr.toLowerCase();
-		for( var d in square_key2){
-			if (square_key2[d] == pr.charAt(0) && d.charAt(0)!= digits.charAt(row1) )
-				return(0);
-		}
-		for( var d in square_key){
-			if (square_key[d] == pr.charAt(1) && d.charAt(1)!= digits.charAt(col1) )
-				return(0);
-		}
+	last = crib_pos+cribtext.length-1;
+	if ((last & 1) == 0) { // the crib ends on the first letter of a pair
+		ciphertext = code_array[last/2].toLowerCase();
+		p1 = symbols.indexOf(cribtext.charAt(cribtext.length-1));
+		if (p1 != wildcard && !(placed_in_line(crib_key2, ciphertext.charAt(0), 0, Math.floor(p1/5))
+				&& placed_in_line(crib_key, ciphertext.charAt(1), 1, p1%5)))
+			return(0);
 	}
-		
-//	document.debug.output_area.value= s; 	
-	//it's consistent, update keyblock and screen, show pairs only, no single letters
-	update_keyblock();	
-	return(1); //OK at crib_pos!
-}	
+	return(1);
+}
 
+function place_crib_letter(square, cell, letter) {
+	var other;
+	if (square[cell] != '-')
+		return(square[cell] == letter);
+	for (other in square)
+		if (square[other] == letter)
+			return(false);
+	square[cell] = letter;
+	return(true);
+}
 
-function drag_crib(){
-	var crib= prompt('Enter crib');
-	if (crib==' ' || crib==null)
-		return;
-	if (solving_flag){
-		ck=confirm('Dragging will reset the key table. Proceed?');
-		if (ck != true)
+// A crib letter in a half-covered pair fixes only the row or column of each ciphertext letter.
+// axis is 0 for a row, 1 for a column.
+function placed_in_line(square, letter, axis, line) {
+	var cell;
+	for (cell in square)
+		if (square[cell] == letter)
+			return(cell.charAt(axis) == digits.charAt(line));
+	return(true);
+}
+
+// Searches round the whole cipher, so dragging past either end wraps to the next match.
+function drag_crib(step) {
+	var positions = 2*(code_array.length-1)-cribtext.length+1;
+	var tries;
+	clear_selection();
+	for (tries=0;tries<positions;tries++) {
+		crib_pos = (crib_pos+step+positions)%positions;
+		if (ck_crib_pos()) {
+			crib_entered = 1;
+			update_keyblock();
+			xlate();
 			return;
+		}
 	}
-	if (solving_flag ==0) {
+	crib_entered = 2;
+	update_keyblock();
+	xlate();
+	alert('The crib fits nowhere in the cipher with the current key tables.');
+}
+
+function enter_crib() {
+	var crib = prompt('Enter crib');
+	var i,c;
+	if (crib == null)
+		return;
+	if (solving_flag == 0) {
 		setup_code_pairs();
-		if (solving_flag==0) return;//odd number of digits!
+		if (solving_flag == 0) return; //odd number of letters!
 	}
-	cribtext='';
-	crib = crib.toLowerCase();	
+	cribtext = '';
+	crib = crib.toLowerCase();
 	for (i=0;i<crib.length;i++) {
 		c = crib.charAt(i);
-		if (symbols.indexOf(c) !=-1 ) {//allow '-' chars in crib!
-			cribtext = cribtext+c;
-		}
+		if (symbols.indexOf(c) != -1) //allow '-' chars in crib!
+			cribtext += c;
 	}
-	crib_pos=0;
-	not_found=1;
-	while(crib_pos< 2*code_array.length-cribtext.length+1) {
-		if ( ck_crib_pos() ) {
-			not_found=0;
-			break; // OK!
-		}
-		crib_pos++;
-	}
-	if ( not_found ){
-		reset_key();
-		keyblock_setup();	
-	}
-	//fill in plaintext
-	xlate();
-	crib_entered=1;	
+	if (cribtext == '')
+		return;
+	crib_pos = -1;
+	drag_crib(1);
 }
 
-function drag_right(){
-	if (crib_entered==0) {
-		drag_crib();
+function drag_right() {
+	if (crib_entered == 0) {
+		enter_crib();
 		return;
 	}
-	not_found=1;	
-	crib_pos++;
-	if (crib_pos>=2*code_array.length-cribtext.length+1)
-		crib_pos=0;
-	while(crib_pos< 2*code_array.length-cribtext.length+1) {
-		if ( ck_crib_pos() ) {
-			not_found=0;
-			break; // OK!
-		}
-		crib_pos++;
-	}
-	if ( not_found ){
-		reset_key();
-		keyblock_setup();	
-	}	
-	//fill in plaintext
-	xlate();
-
+	drag_crib(1);
 }
-function drag_left(){
-	if (crib_entered==0) {
-		drag_crib();
-		return;
-	}	
-	not_found=1;	
-	crib_pos--;
-	if (crib_pos<0)
-		crib_pos=2*code_array.length-cribtext.length;
-	while(crib_pos>=0) {
-		if ( ck_crib_pos() ) {
-			not_found=0;
-			break; // OK!
-		}
-		crib_pos--;
-	}
-	if ( not_found ){
-		reset_key();
-		keyblock_setup();	
-	}	
-	//fill in plaintext
-	xlate();
 
+function drag_left() {
+	if (crib_entered == 0) {
+		enter_crib();
+		return;
+	}
+	drag_crib(-1);
+}
+
+function update_tables() {
+	var cell;
+	if (crib_entered != 1)
+		return;
+	start_key_change();
+	for (cell in crib_key)
+		square_key[cell] = crib_key[cell];
+	for (cell in crib_key2)
+		square_key2[cell] = crib_key2[cell];
+	crib_entered = 0;
+	update_keyblock();
+	xlate();
+}
+
+function remove_crib() {
+	if (crib_entered == 0)
+		return;
+	clear_selection();
+	crib_entered = 0;
+	update_keyblock();
+	xlate();
 }
 
 function save_to_disk(){
@@ -919,6 +909,48 @@ function clear_disk(){
 	alert("work cleared from disk");
 }
 
+function read_cipher() {
+	if (solving_flag == 1)
+		return true;
+	if (document.ciphertext.cipher_place.value.trim() == '') {
+		alert('No cipher entered.');
+		return false;
+	}
+	setup_code_pairs();
+	if (solving_flag == 0)
+		return false;
+	update_keyblock();
+	xlate();
+	return true;
+}
+
+function show_popup(text) {
+	document.getElementById('popup_text').textContent = text;
+	document.getElementById('popup').style.display = 'flex';
+}
+
+function close_popup() {
+	document.getElementById('popup').style.display = 'none';
+}
+
+function show_frequency_count() {
+	var counts = {};
+	var i,pair,pairs,width,plaintext,lines;
+	if (!read_cipher())
+		return;
+	for (i=0;i<code_array.length-1;i++)
+		counts[code_array[i]] = (counts[code_array[i]] || 0) + 1;
+	pairs = Object.keys(counts).sort(function(a, b) { return counts[b]-counts[a] || (a < b ? -1 : 1); });
+	width = String(counts[pairs[0]]).length;
+	lines = [];
+	for (i=0;i<pairs.length;i++) {
+		pair = pairs[i];
+		plaintext = key_lookup(pair)[0];
+		lines.push(pair+'  '+String(counts[pair]).padStart(width)+(plaintext == '--' ? '' : ' ('+plaintext+')'));
+	}
+	show_popup(lines.join('\n'));
+}
+
 
 </script>
 </HEAD>
@@ -950,10 +982,13 @@ style="float:left; margin-left:50px; margin-top:30px;">
 <!-- container for crib dragging -->
 <div id="cribblock"
 style="float:left; margin-left:50px; margin-top:30px;">
-<INPUT onclick=drag_crib(); type=button value="Enter a crib" >
+<INPUT onclick=enter_crib(); type=button value="Enter a crib" >
 <br>
 <INPUT onclick=drag_left(); type=button value="<- (crib left)" >
 <INPUT onclick=drag_right(); type=button value="(crib right) ->" >
+<br><br>
+<INPUT onclick=update_tables(); type=button value="Update table" title="Write the letters of the placed crib into the key tables" >
+<INPUT onclick=remove_crib(); type=button value="Remove crib" title="Take the placed crib off the display without writing it into the key tables" >
 </div>
 
 
@@ -974,5 +1009,11 @@ output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_
 </Form>
 --->
 
+<div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; z-index:20;">
+<div style="background:white; border:1px solid gray; padding:15px 20px; text-align:center;">
+<pre id="popup_text" style="text-align:left; font-size:15px; max-height:70vh; overflow:auto; margin:0 0 12px 0;"></pre>
+<INPUT onclick=close_popup(); type=button value="OK" >
+</div>
+</div>
 </BODY>
 </HTML>
