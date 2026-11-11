@@ -689,21 +689,21 @@ function screen_check() {
 
 
 function set_original_buttons() {
-	str = '<INPUT onclick=start_over(); type=button value="start over" >';
-	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br>';
-    str += '<INPUT onclick=do_undo(); id = "undo_button" type=button value="undo" disabled >';
-    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
+	str = '<INPUT onclick=start_over(); type=button value="start over" data-tip="Clear both key tables, keeping the ciphertext so it can be edited" >';
+	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" data-tip="Erase the ciphertext and both key tables to start a new cipher" ><br><br>';
+    str += '<INPUT onclick=do_undo(); id = "undo_button" type=button value="undo" disabled data-tip="Undo the last change to the key tables, or remove a crib that has not been accepted" >';
+    str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled data-tip="Redo the last change that was undone" ><br>';
     str += '<br><br>';
-    str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
-    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" ><br><br>';
-    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" ><br><br>';
-    str += '<INPUT onclick=show_frequency_count(); type=button value="show frequency count" title="List the ciphertext pairs by frequency, with any plaintext found for them" >';
+    str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" data-tip="Save the ciphertext and key tables in this browser, replacing any earlier save" >';
+    str += '<INPUT onclick=get_from_disk(); type=button value="retrieve work from disk" data-tip="Reload the ciphertext and key tables last saved in this browser" ><br><br>';
+    str += '<INPUT onclick=clear_disk(); type=button value="clear work from disk" data-tip="Delete the saved work from this browser" ><br><br>';
+    str += '<INPUT onclick=show_frequency_count(); type=button value="show frequency count" data-tip="List the ciphertext pairs by frequency, with any plaintext found for them" >';
     
 	document.getElementById('button_actions').innerHTML= str;	
 }
 
 // The crib is placed on copies of the key tables, so the tables themselves are left alone
-// until the crib is written into them with update_tables().
+// until the crib is written into them with accept_crib().
 function ck_crib_pos() {
 	var i,p1,p2,ciphertext,last;
 	var start = crib_pos & 1; // an odd crib_pos starts the crib on the second letter of a pair
@@ -817,7 +817,7 @@ function drag_left() {
 	drag_crib(-1);
 }
 
-function update_tables() {
+function accept_crib() {
 	var cell;
 	if (crib_entered != 1)
 		return;
@@ -903,6 +903,32 @@ function get_from_disk(){
 	update_keyblock();
 	xlate();
 }
+
+var tooltip_timer;
+
+// a delay keeps tooltips from flashing up as the cursor passes over the buttons
+function schedule_tooltip(e) {
+	var button = e.target;
+	var tip = button.getAttribute('data-tip');
+	hide_tooltip();
+	if (!tip) return;
+	tooltip_timer = setTimeout(function() {
+		var tooltip = document.getElementById('tooltip');
+		var box = button.getBoundingClientRect();
+		tooltip.textContent = tip;
+		tooltip.style.left = (box.left + window.scrollX) + 'px';
+		tooltip.style.top = (box.bottom + window.scrollY + 6) + 'px';
+		tooltip.style.visibility = 'visible';
+	}, 800);
+}
+
+function hide_tooltip() {
+	clearTimeout(tooltip_timer);
+	document.getElementById('tooltip').style.visibility = 'hidden';
+}
+
+document.addEventListener('mouseover', schedule_tooltip);
+document.addEventListener('mousedown', hide_tooltip);
 
 function clear_disk(){
 	localStorage.removeItem("foursquare.cipher");
@@ -995,13 +1021,13 @@ style="float:left; margin-left:50px; margin-top:30px;">
 <!-- container for crib dragging -->
 <div id="cribblock"
 style="float:left; margin-left:50px; margin-top:30px;">
-<INPUT onclick=enter_crib(); type=button value="Enter a crib" >
+<INPUT onclick=enter_crib(); type=button value="Enter a crib" data-tip="Enter a probable word; it is placed at the first position that does not conflict with the key tables" >
 <br>
-<INPUT onclick=drag_left(); type=button value="<- (crib left)" >
-<INPUT onclick=drag_right(); type=button value="(crib right) ->" >
+<INPUT onclick=drag_left(); type=button value="<- (crib left)" data-tip="Move the crib to the previous position that fits" >
+<INPUT onclick=drag_right(); type=button value="(crib right) ->" data-tip="Move the crib to the next position that fits" >
 <br><br>
-<INPUT onclick=update_tables(); type=button value="Update table" title="Write the letters of the placed crib into the key tables" >
-<INPUT onclick=remove_crib(); type=button value="Remove crib" title="Take the placed crib off the display without writing it into the key tables" >
+<INPUT onclick=accept_crib(); type=button value="Accept crib" data-tip="Write the letters of the placed crib into the key tables" >
+<INPUT onclick=remove_crib(); type=button value="Remove crib" data-tip="Take the placed crib off the display without writing it into the key tables" >
 </div>
 
 
@@ -1022,6 +1048,7 @@ output: <BR><TEXTAREA id=output_place styLe="font-family:monospace" name=output_
 </Form>
 --->
 
+<div id="tooltip" style="visibility:hidden; position:absolute; max-width:320px; padding:4px 8px; background:#ffffe1; border:1px solid gray; font-family:sans-serif; font-size:13px; pointer-events:none; z-index:10;"></div>
 <div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; z-index:20;">
 <div style="background:white; border:1px solid gray; padding:15px 20px; text-align:center;">
 <pre id="popup_text" style="text-align:left; font-size:15px; max-height:70vh; overflow:auto; margin:0 0 12px 0;"></pre>
