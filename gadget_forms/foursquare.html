@@ -44,7 +44,6 @@ function do_undo(){
 	}
     pending_plaintext = Object.assign({}, undo_pending[undo_index]);
     crib_entered = 0;
-    document.getElementById('redo_button').disabled = false;
     update_keyblock();
     xlate();
 }
@@ -141,6 +140,12 @@ function reset_key() {
 	}
 	pending_plaintext = {};
     undo_index = redo_index = 0;
+    update_undo_buttons();
+}
+
+function update_undo_buttons() {
+	document.getElementById('undo_button').disabled = undo_index == 0 && crib_entered != 1;
+	document.getElementById('redo_button').disabled = redo_index == 0;
 }
 
 function input_ok() {
@@ -152,13 +157,14 @@ function input_ok() {
 
 
 function setup_code_pairs() {
+	var text;
 	data = document.ciphertext.cipher_place.value;
-	data = data.toUpperCase().replace(/J/g, 'I');
+	text = data.toUpperCase().replace(/J/g, 'I');
 	state=0;
 	code = '';
-	for (i=0;i<data.length;i++) {
-		c = data.charAt(i);
-		if ( letters.indexOf(c) >-1 && letters.indexOf(c) < 26) {
+	for (i=0;i<text.length;i++) {
+		c = text.charAt(i);
+		if (c != '-' && letters.indexOf(c) != -1) {
 			if (state==0) {
 				code = code+c;
 				state=1;
@@ -179,8 +185,9 @@ function setup_code_pairs() {
 	old_xlation = ['--'];
 	for (i = 0;i<code_array.length-1;i++)
 		old_xlation[i]= '--';
-    undo_index = redo_index = 0;                        
-}	
+    undo_index = redo_index = 0;
+    update_undo_buttons();
+}
 
 function key_lookup(c) { // see if letter pair c is represented in the keysquare
 	var c1,p1,c2,p2,pr;
@@ -279,6 +286,7 @@ function xlate() {
 		}
 	}
 	document.getElementById('outputblock').innerHTML=str;
+	update_undo_buttons();
 }
 
 // While a crib is shown, the tables are displayed with the crib's letters added
@@ -345,7 +353,6 @@ function square_cell(row, column) {
 function start_key_change() {
 	clear_selection();
 	update_undo();
-	document.getElementById('redo_button').disabled = true;
 }
 
 function enter_key_letter(id, letter) {
@@ -646,26 +653,26 @@ function update_keyblock() {
 
 function start_over() {
 	if (solving_flag==0) {
-		code = document.ciphertext.cipher_place.value;
+		data = document.ciphertext.cipher_place.value;
 	}
+	crib_entered=0;
 	reset_key();
 	keyblock_setup()
 	input_ok();
-	document.ciphertext.cipher_place.value=code;
+	document.ciphertext.cipher_place.value=data;
 	solving_flag=0;
-	crib_entered=0;
-}	
+}
 
 function reset() {
 	do_erase = confirm("Erase the current cipher?")
 	if ( do_erase == true) {
+		crib_entered=0;
 		reset_key();
 		keyblock_setup()
 		input_ok();
 		document.ciphertext.cipher_place.value='';
 		solving_flag=0;
-		crib_entered=0;
-	}	
+	}
 }	
 
 
@@ -684,7 +691,7 @@ function screen_check() {
 function set_original_buttons() {
 	str = '<INPUT onclick=start_over(); type=button value="start over" >';
 	str = str+'<INPUT onclick=reset(); type=button value="erase cipher" ><br><br>';
-    str += '<INPUT onclick=do_undo(); type=button value="undo" >';
+    str += '<INPUT onclick=do_undo(); id = "undo_button" type=button value="undo" disabled >';
     str += '<INPUT onclick=do_redo(); id = "redo_button" type=button value="redo" disabled ><br>';
     str += '<br><br>';
     str += '<INPUT onclick=save_to_disk(); type=button value="save work to disk" >';
@@ -834,71 +841,65 @@ function remove_crib() {
 }
 
 function save_to_disk(){
-	var i,j, str;
-	
-	if (typeof(localStorage) == 'undefined' ) {
-		alert('Your browser does not support HTML5 localStorage. Try Chrome.');
-	} 
-	else {
-		try {
-			localStorage.setItem("foursquare.cipher", data); //saves to the database, “key”, “value”
-		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-			alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
-			}
-		}
-	}
-	str = '';
-	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		str +=square_key[ digits.charAt(i)+digits.charAt(j) ];
-	}
-	localStorage.setItem("foursquare.key", str);
-	str = '';
-	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		str +=square_key2[ digits.charAt(i)+digits.charAt(j) ];
-	}
-	localStorage.setItem("foursquare.key2", str);
-	localStorage.setItem("foursquare.pending", JSON.stringify(pending_plaintext));
-	alert("Work saved on disk");
+	var i,j,cell,key_text,key2_text;
 
+	if (solving_flag == 0)
+		data = document.ciphertext.cipher_place.value;
+	if (data.trim() == '') {
+		alert('No cipher entered.');
+		return;
+	}
+	key_text = '';
+	key2_text = '';
+	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
+		cell = digits.charAt(i)+digits.charAt(j);
+		key_text += square_key[cell];
+		key2_text += square_key2[cell];
+	}
+	try {
+		localStorage.setItem("foursquare.cipher", data);
+		localStorage.setItem("foursquare.key", key_text);
+		localStorage.setItem("foursquare.key2", key2_text);
+		localStorage.setItem("foursquare.pending", JSON.stringify(pending_plaintext));
+	} catch (e) {
+		alert('Work not saved: '+e.message);
+		return;
+	}
+	alert("Work saved on disk");
 }
 
 function get_from_disk(){
-	var s,i,j,k;
-    var temp;
+	var i,j,cell,cipher_text,key_text,key2_text,pending_text;
 
-	temp = localStorage.getItem("foursquare.cipher");
-	if (temp == undefined){
+	try {
+		cipher_text = localStorage.getItem("foursquare.cipher");
+		key_text = localStorage.getItem("foursquare.key");
+		key2_text = localStorage.getItem("foursquare.key2");
+		pending_text = localStorage.getItem("foursquare.pending");
+	} catch (e) {
+		alert('Work not retrieved: '+e.message);
+		return;
+	}
+	if (cipher_text == null) {
 		alert("No cipher stored");
-		return
+		return;
 	}
-    data = temp;
+	if (key_text == null || key2_text == null || key_text.length != asize*asize || key2_text.length != asize*asize) {
+		alert("The saved work is incomplete, so nothing was retrieved.");
+		return;
+	}
+	data = cipher_text;
+	crib_entered = 0;
 	reset_key();
-	keyblock_setup();
-	set_original_buttons();
-	//set_crib_buttons();
-	
 	input_ok();
-	document.ciphertext.cipher_place.value=data;
-	solving_flag=0;
-	crib_entered=0;
-	pair_setup=0;
-	start_over();
-	xlate();
-	s = localStorage.getItem("foursquare.key");
-	k=0;
+	document.ciphertext.cipher_place.value = data;
+	solving_flag = 0;
 	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		square_key[ digits.charAt(i)+digits.charAt(j) ]= s.charAt(k);
-		k++;
+		cell = digits.charAt(i)+digits.charAt(j);
+		square_key[cell] = key_text.charAt(asize*i+j);
+		square_key2[cell] = key2_text.charAt(asize*i+j);
 	}
-	
-	s = localStorage.getItem("foursquare.key2");	
-	k=0;
-	for (i=0;i<asize;i++) for (j=0;j<asize;j++) {
-		square_key2[ digits.charAt(i)+digits.charAt(j) ]= s.charAt(k);
-		k++;
-	}
-	pending_plaintext = JSON.parse(localStorage.getItem("foursquare.pending") || '{}');
+	pending_plaintext = JSON.parse(pending_text || '{}');
 	update_keyblock();
 	xlate();
 }
@@ -996,9 +997,9 @@ style="float:left; margin-left:50px; margin-top:30px;">
 
 <script type="text/javascript">
 //screen_check();
+set_original_buttons();
 reset_key();
 keyblock_setup();
-set_original_buttons();
 </script>
 
 
